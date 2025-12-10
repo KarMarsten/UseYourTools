@@ -1,0 +1,56 @@
+🌿 UseYourTools v1.0.0 — Initial Release
+
+🎉 Overview
+
+The first official release of UseYourTools, a warm earth-tone minimalist planner-generation system for GoodNotes and other handwriting apps.
+
+This release includes:
+	•	Full GoodNotes planner prompt
+	•	Branding assets
+	•	Repo structure
+	•	Docs + contributing guidelines
+	•	Installer script
+	•	Placeholder assets
+
+⸻
+
+✨ Features
+	•	7-page daily planner generator
+	•	Warm earth-tone aesthetic
+	•	Minimalist leaf motif
+	•	Clean time-block layout
+	•	Handwriting-friendly lines
+	•	GitHub-ready repository
+
+⸻
+
+📁 Files Included
+	•	README
+	•	LICENSE (MIT)
+	•	CONTRIBUTING
+	•	CODE_OF_CONDUCT
+	•	install.sh
+	•	Branding assets
+	•	Full planner prompt
+	•	Folder structure with gitkeeps
+
+⸻
+
+🚧 Known Limitations
+	•	Preview images are text-based mockups
+	•	Banner graphics not yet rendered into PNG
+	•	Planner PDF must be generated manually via prompt
+
+⸻
+
+🛣️ Roadmap
+
+v1.1.0
+	•	Add rendered PNG banner images
+	•	Add sample PDFs
+	•	Add weekly and monthly planners
+
+v2.0.0
+	•	Add hyperlinked digital planner
+	•	Add modular template system
+	•	Add alternative aesthetics (botanical, monochrome, celestial)
