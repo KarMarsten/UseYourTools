@@ -1,3 +1,6 @@
+<img width="1200" height="800" alt="image" src="https://github.com/user-attachments/assets/6f38436d-3074-4100-92fa-b5d1bd9634ec" />
+
+
 # Digital Earth-Tone GoodNotes Planner 🌿
 
 A reusable prompt-driven workflow for generating a **7-page, earth-tone daily planner PDF** optimized for
