@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, Button } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 
 // #region agent log
 let FileSystem: any = null;
@@ -55,17 +55,81 @@ const logDebug = async (location: string, message: string, data: any, hypothesis
 };
 // #endregion
 
-export default function App() {
+// Error Boundary Component
+const errorStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5dc',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#8b7355',
+    marginBottom: 10,
+  },
+  error: {
+    fontSize: 14,
+    color: '#d32f2f',
+    marginBottom: 10,
+    padding: 10,
+    backgroundColor: '#ffebee',
+    borderRadius: 4,
+  },
+});
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    logDebug('App.tsx:ErrorBoundary', 'React error caught', { 
+      error: error.message, 
+      stack: error.stack,
+      componentStack: errorInfo.componentStack 
+    }, 'ERROR').catch(() => {});
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={errorStyles.container}>
+          <Text style={errorStyles.title}>UseYourTools</Text>
+          <Text style={errorStyles.error}>Something went wrong</Text>
+          <Text style={errorStyles.error}>{this.state.error?.message}</Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function AppContent() {
   const [count, setCount] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
     // #region agent log
-    logDebug('App.tsx:useEffect', 'App mounted', { count: 0 }, 'A').catch((err) => {
-      console.error('Logging error on mount:', err);
-      setError(`Logging error: ${err.message}`);
-    });
+    try {
+      logDebug('App.tsx:useEffect', 'App mounted', { count: 0, FileSystemAvailable: !!FileSystem }, 'A').catch((err) => {
+        console.error('Logging error on mount:', err);
+        setError(`Logging error: ${err.message}`);
+      });
+    } catch (err: any) {
+      console.error('Error in mount effect:', err);
+      setInitError(`Initialization error: ${err?.message || err}`);
+    }
     // #endregion
     setMounted(true);
   }, []);
@@ -93,8 +157,14 @@ export default function App() {
     <View style={styles.container}>
       <Text style={styles.title}>UseYourTools</Text>
       <Text style={styles.subtitle}>Digital Earth-Tone Planner</Text>
+      {initError && (
+        <Text style={styles.error}>Init Error: {initError}</Text>
+      )}
       {error && (
-        <Text style={styles.error}>Error: {error}</Text>
+        <Text style={styles.error}>Runtime Error: {error}</Text>
+      )}
+      {!mounted && !initError && (
+        <Text style={styles.counter}>Loading...</Text>
       )}
       {mounted && (
         <>
@@ -140,3 +210,11 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
 });
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
+  );
+}
