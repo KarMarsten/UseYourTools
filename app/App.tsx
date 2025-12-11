@@ -173,12 +173,6 @@ function AppContent() {
             <Text style={styles.promptsButtonText}>📅 Open Planner</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.promptsButton, { backgroundColor: colorScheme.colors.secondary }]} 
-            onPress={handleViewPrompts}
-          >
-            <Text style={styles.promptsButtonText}>🌿 View Prompts</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
             style={[styles.promptsButton, { backgroundColor: colorScheme.colors.accent }]} 
             onPress={handleViewSetup}
           >
