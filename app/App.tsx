@@ -163,7 +163,7 @@ function AppContent() {
   return (
     <View style={[styles.container, dynamicStyles.container]}>
       <Text style={[styles.title, dynamicStyles.title]}>UseYourTools</Text>
-      <Text style={[styles.subtitle, dynamicStyles.subtitle]}>Digital Earth-Tone Planner</Text>
+      <Text style={[styles.subtitle, dynamicStyles.subtitle]}>Structured Daily Planner for Job Hunters</Text>
       {mounted && (
         <View style={styles.buttonContainer}>
           <TouchableOpacity 

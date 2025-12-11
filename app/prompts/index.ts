@@ -9,8 +9,8 @@ export const prompts: Prompt[] = [
   {
     id: 'goodnotes-planner',
     title: 'GoodNotes Planner',
-    description: 'Earth-tone minimalist daily planner prompt optimized for GoodNotes',
-    content: `🌿 UseYourTools – Earth-Tone Minimalist Daily Planner Prompt
+    description: 'Structured Daily Planner for Job Hunters prompt optimized for GoodNotes',
+    content: `🌿 UseYourTools – Structured Daily Planner for Job Hunters
 
 (GoodNotes-Optimized PDF Generator)
 
