@@ -100,15 +100,6 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         return [];
       }
 
-      // Ensure we have enough block definitions for the preview
-      const blockCount = Math.floor((endMinutes - startMinutes) / 120);
-      const availableBlocks = timeBlockOrder.length;
-      
-      if (availableBlocks < blockCount) {
-        // Not enough blocks, return empty to show error
-        return [];
-      }
-
       const tempPreferences: UserPreferences = {
         startTime: `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}`,
         endTime: `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`,
@@ -140,16 +131,6 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
       finalEndHours = finalEndHours % 24;
     }
     const finalEndTime = `${String(finalEndHours).padStart(2, '0')}:${String(finalEndMins).padStart(2, '0')}`;
-    
-    // Check that we have enough block definitions for the generated blocks
-    const generatedCount = Math.floor((saveEndTotalMinutes - saveStartTotalMinutes) / 120);
-    if (timeBlockOrder.length < generatedCount) {
-      Alert.alert(
-        'Not Enough Blocks',
-        `Your day will have ${generatedCount} time blocks, but you only have ${timeBlockOrder.length} block definitions. Please add more blocks or adjust your time range.`
-      );
-      return;
-    }
     
     try {
       const preferences: UserPreferences = {
@@ -209,7 +190,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Day Times</Text>
           <Text style={styles.sectionDescription}>
-            Your day will be divided into 2-hour blocks between these times
+            Set your day start time. The end time is automatically set to 9 hours later. Time blocks will shift to match your schedule.
           </Text>
           <View style={styles.timeInputContainer}>
             <View style={styles.timeInput}>
