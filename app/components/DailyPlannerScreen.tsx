@@ -84,6 +84,7 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
 
       await saveEvent(event);
       await loadEvents(); // Reload events to update UI
+      // Note: Calendar refresh will happen when user navigates back
     } catch (error) {
       console.error('Error saving event:', error);
       Alert.alert('Error', 'Failed to save event');
@@ -98,6 +99,7 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
       }
       await deleteEvent(event.id);
       await loadEvents(); // Reload events to update UI
+      // Note: Calendar refresh will happen when user navigates back
     } catch (error) {
       console.error('Error deleting event:', error);
       Alert.alert('Error', 'Failed to delete event');

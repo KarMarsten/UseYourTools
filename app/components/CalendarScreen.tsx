@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { getDayThemeForDate, getDayName } from '../utils/plannerData';
 import { hasEntriesForDate } from '../utils/entryChecker';
+import { loadEventsForDate } from '../utils/events';
 import { usePreferences } from '../context/PreferencesContext';
 
 interface CalendarScreenProps {
@@ -13,12 +14,14 @@ interface CalendarScreenProps {
 export default function CalendarScreen({ onSelectDate, onBack, refreshTrigger }: CalendarScreenProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [daysWithEntries, setDaysWithEntries] = useState<Set<string>>(new Set());
+  const [daysWithEvents, setDaysWithEvents] = useState<Set<string>>(new Set());
   const { colorScheme } = usePreferences();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   useEffect(() => {
     checkEntriesForMonth();
+    checkEventsForMonth();
   }, [currentDate, refreshTrigger]);
 
   const checkEntriesForMonth = async () => {
@@ -36,6 +39,24 @@ export default function CalendarScreen({ onSelectDate, onBack, refreshTrigger }:
     }
     
     setDaysWithEntries(entriesSet);
+  };
+
+  const checkEventsForMonth = async () => {
+    const days = getDaysInMonth(currentDate);
+    const eventsSet = new Set<string>();
+    
+    // Check events for all days in the current month
+    for (const day of days) {
+      if (day.getMonth() === currentDate.getMonth()) {
+        const dateKey = day.toISOString().split('T')[0];
+        const events = await loadEventsForDate(dateKey);
+        if (events.length > 0) {
+          eventsSet.add(dateKey);
+        }
+      }
+    }
+    
+    setDaysWithEvents(eventsSet);
   };
 
   const getDaysInMonth = (date: Date): Date[] => {
@@ -138,6 +159,7 @@ export default function CalendarScreen({ onSelectDate, onBack, refreshTrigger }:
           const isCurrentMonthDate = isCurrentMonth(date);
           const dateKey = date.toISOString().split('T')[0];
           const hasEntries = daysWithEntries.has(dateKey);
+          const hasEvents = daysWithEvents.has(dateKey);
 
           return (
             <TouchableOpacity
@@ -171,11 +193,18 @@ export default function CalendarScreen({ onSelectDate, onBack, refreshTrigger }:
                       {dayTheme.theme.split(' ')[0]}
                     </Text>
                   </View>
-                  {hasEntries && (
-                    <View style={styles.entryIndicator}>
-                      <View style={[styles.entryDot, { backgroundColor: colorScheme.colors.primary }]} />
-                    </View>
-                  )}
+                  <View style={styles.indicatorsContainer}>
+                    {hasEntries && (
+                      <View style={styles.indicator}>
+                        <Text style={styles.indicatorIcon}>📄</Text>
+                      </View>
+                    )}
+                    {hasEvents && (
+                      <View style={styles.indicator}>
+                        <Text style={styles.indicatorIcon}>💬</Text>
+                      </View>
+                    )}
+                  </View>
                 </>
               )}
             </TouchableOpacity>
@@ -293,16 +322,21 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '500',
   },
-  entryIndicator: {
+  indicatorsContainer: {
     position: 'absolute',
-    top: 6,
-    right: 6,
+    top: 4,
+    right: 4,
+    flexDirection: 'row',
+    gap: 4,
   },
-  entryDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#8C6A4A',
+  indicator: {
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  indicatorIcon: {
+    fontSize: 12,
   },
 });
 
