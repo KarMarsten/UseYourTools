@@ -3,6 +3,8 @@ import { StyleSheet, Text, View, Button, TouchableOpacity } from 'react-native';
 import { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import PromptsScreen from './components/PromptsScreen';
 import PromptDetailScreen from './components/PromptDetailScreen';
+import CalendarScreen from './components/CalendarScreen';
+import DailyPlannerScreen from './components/DailyPlannerScreen';
 import { Prompt } from './prompts';
 
 // Error Boundary Component
@@ -58,11 +60,12 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-type Screen = 'home' | 'prompts' | 'promptDetail';
+type Screen = 'home' | 'prompts' | 'promptDetail' | 'calendar' | 'dailyPlanner';
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -85,6 +88,23 @@ function AppContent() {
   const handleBackToHome = () => {
     setCurrentScreen('home');
     setSelectedPrompt(null);
+    setSelectedDate(null);
+  };
+
+  const handleViewCalendar = () => {
+    setCurrentScreen('calendar');
+  };
+
+  const handleSelectDate = (date: Date) => {
+    // Normalize date to start of day
+    const normalizedDate = new Date(date);
+    normalizedDate.setHours(0, 0, 0, 0);
+    setSelectedDate(normalizedDate);
+    setCurrentScreen('dailyPlanner');
+  };
+
+  const handleBackToCalendar = () => {
+    setCurrentScreen('calendar');
   };
 
   if (currentScreen === 'prompts') {
@@ -95,14 +115,27 @@ function AppContent() {
     return <PromptDetailScreen prompt={selectedPrompt} onBack={handleBackToPrompts} />;
   }
 
+  if (currentScreen === 'calendar') {
+    return <CalendarScreen onSelectDate={handleSelectDate} onBack={handleBackToHome} />;
+  }
+
+  if (currentScreen === 'dailyPlanner' && selectedDate) {
+    return <DailyPlannerScreen date={selectedDate} onBack={handleBackToCalendar} />;
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>UseYourTools</Text>
       <Text style={styles.subtitle}>Digital Earth-Tone Planner</Text>
       {mounted && (
-        <TouchableOpacity style={styles.promptsButton} onPress={handleViewPrompts}>
-          <Text style={styles.promptsButtonText}>🌿 View Prompts</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.promptsButton} onPress={handleViewCalendar}>
+            <Text style={styles.promptsButtonText}>📅 Open Planner</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.promptsButton, styles.secondaryButton]} onPress={handleViewPrompts}>
+            <Text style={styles.promptsButtonText}>🌿 View Prompts</Text>
+          </TouchableOpacity>
+        </View>
       )}
       <StatusBar style="auto" />
     </View>
@@ -141,17 +174,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffebee',
     borderRadius: 4,
   },
+  buttonContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 20,
+  },
   promptsButton: {
     backgroundColor: '#8C6A4A',
     paddingHorizontal: 30,
     paddingVertical: 15,
     borderRadius: 12,
-    marginTop: 20,
+    marginBottom: 16,
+    minWidth: 200,
+    alignItems: 'center',
     shadowColor: '#4A3A2A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
+  },
+  secondaryButton: {
+    backgroundColor: '#C9A66B',
   },
   promptsButtonText: {
     color: '#f5f5dc',

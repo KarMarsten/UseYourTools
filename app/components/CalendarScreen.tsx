@@ -1,0 +1,254 @@
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import { getDayThemeForDate, getDayName } from '../utils/plannerData';
+
+interface CalendarScreenProps {
+  onSelectDate: (date: Date) => void;
+  onBack?: () => void;
+}
+
+export default function CalendarScreen({ onSelectDate, onBack }: CalendarScreenProps) {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const getDaysInMonth = (date: Date): Date[] => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    const days: Date[] = [];
+    
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(new Date(year, month, -startingDayOfWeek + i + 1));
+    }
+
+    // Add all days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(new Date(year, month, day));
+    }
+
+    return days;
+  };
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const navigateMonth = (direction: number) => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + direction, 1));
+  };
+
+  const isToday = (date: Date): boolean => {
+    return date.toDateString() === today.toDateString();
+  };
+
+  const isCurrentMonth = (date: Date): boolean => {
+    return date.getMonth() === currentDate.getMonth();
+  };
+
+  const days = getDaysInMonth(currentDate);
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        {onBack && (
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Text style={styles.backButtonText}>← Home</Text>
+          </TouchableOpacity>
+        )}
+        <View style={styles.headerContent}>
+          <Text style={styles.title}>🌿 Calendar</Text>
+        </View>
+      </View>
+
+      <View style={styles.calendarHeader}>
+        <TouchableOpacity onPress={() => navigateMonth(-1)} style={styles.navButton}>
+          <Text style={styles.navButtonText}>‹</Text>
+        </TouchableOpacity>
+        <Text style={styles.monthYear}>
+          {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+        </Text>
+        <TouchableOpacity onPress={() => navigateMonth(1)} style={styles.navButton}>
+          <Text style={styles.navButtonText}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.weekDaysContainer}>
+        {weekDays.map((day) => (
+          <View key={day} style={styles.weekDay}>
+            <Text style={styles.weekDayText}>{day}</Text>
+          </View>
+        ))}
+      </View>
+
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.calendarGrid}>
+        {days.map((date, index) => {
+          const dayTheme = getDayThemeForDate(date);
+          const dayNumber = date.getDate();
+          const isTodayDate = isToday(date);
+          const isCurrentMonthDate = isCurrentMonth(date);
+
+          return (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.calendarDay,
+                !isCurrentMonthDate && styles.calendarDayOtherMonth,
+                isTodayDate && styles.calendarDayToday,
+              ]}
+              onPress={() => onSelectDate(date)}
+            >
+              <Text
+                style={[
+                  styles.dayNumber,
+                  !isCurrentMonthDate && styles.dayNumberOtherMonth,
+                  isTodayDate && styles.dayNumberToday,
+                ]}
+              >
+                {isCurrentMonthDate ? dayNumber : ''}
+              </Text>
+              {isCurrentMonthDate && (
+                <View style={styles.dayThemeIndicator}>
+                  <Text style={styles.dayThemeText} numberOfLines={1}>
+                    {dayTheme.theme.split(' ')[0]}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5dc',
+  },
+  header: {
+    padding: 20,
+    paddingTop: 50,
+    backgroundColor: '#E7D7C1',
+    borderBottomWidth: 1,
+    borderBottomColor: '#C9A66B',
+  },
+  backButton: {
+    marginBottom: 10,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#8C6A4A',
+    fontWeight: '600',
+  },
+  headerContent: {
+    marginTop: 10,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#8b7355',
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#E7D7C1',
+  },
+  navButton: {
+    padding: 10,
+    minWidth: 44,
+    alignItems: 'center',
+  },
+  navButtonText: {
+    fontSize: 24,
+    color: '#8C6A4A',
+    fontWeight: 'bold',
+  },
+  monthYear: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#4A3A2A',
+  },
+  weekDaysContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#E7D7C1',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#C9A66B',
+  },
+  weekDay: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  weekDayText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b5b4f',
+    textTransform: 'uppercase',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 10,
+  },
+  calendarDay: {
+    width: '14.28%',
+    aspectRatio: 1,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#C9A66B',
+    backgroundColor: '#E7D7C1',
+    margin: 1,
+    borderRadius: 8,
+    justifyContent: 'space-between',
+  },
+  calendarDayOtherMonth: {
+    backgroundColor: '#f5f5dc',
+    opacity: 0.3,
+  },
+  calendarDayToday: {
+    backgroundColor: '#8C6A4A',
+    borderWidth: 2,
+    borderColor: '#4A3A2A',
+  },
+  dayNumber: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4A3A2A',
+  },
+  dayNumberOtherMonth: {
+    color: '#a0826d',
+  },
+  dayNumberToday: {
+    color: '#f5f5dc',
+    fontWeight: 'bold',
+  },
+  dayThemeIndicator: {
+    backgroundColor: '#C9A66B',
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    marginTop: 4,
+  },
+  dayThemeText: {
+    fontSize: 9,
+    color: '#4A3A2A',
+    fontWeight: '500',
+  },
+});
+
