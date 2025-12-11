@@ -1,16 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { getDayThemeForDate, getDayName } from '../utils/plannerData';
+import { hasEntriesForDate } from '../utils/entryChecker';
 
 interface CalendarScreenProps {
   onSelectDate: (date: Date) => void;
   onBack?: () => void;
+  refreshTrigger?: number; // Optional trigger to refresh entry indicators
 }
 
-export default function CalendarScreen({ onSelectDate, onBack }: CalendarScreenProps) {
+export default function CalendarScreen({ onSelectDate, onBack, refreshTrigger }: CalendarScreenProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [daysWithEntries, setDaysWithEntries] = useState<Set<string>>(new Set());
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  useEffect(() => {
+    checkEntriesForMonth();
+  }, [currentDate, refreshTrigger]);
+
+  const checkEntriesForMonth = async () => {
+    const days = getDaysInMonth(currentDate);
+    const entriesSet = new Set<string>();
+    
+    // Check entries for all days in the current month
+    for (const day of days) {
+      if (day.getMonth() === currentDate.getMonth()) {
+        const hasEntries = await hasEntriesForDate(day);
+        if (hasEntries) {
+          entriesSet.add(day.toISOString().split('T')[0]);
+        }
+      }
+    }
+    
+    setDaysWithEntries(entriesSet);
+  };
 
   const getDaysInMonth = (date: Date): Date[] => {
     const year = date.getFullYear();
@@ -95,6 +119,8 @@ export default function CalendarScreen({ onSelectDate, onBack }: CalendarScreenP
           const dayNumber = date.getDate();
           const isTodayDate = isToday(date);
           const isCurrentMonthDate = isCurrentMonth(date);
+          const dateKey = date.toISOString().split('T')[0];
+          const hasEntries = daysWithEntries.has(dateKey);
 
           return (
             <TouchableOpacity
@@ -116,11 +142,18 @@ export default function CalendarScreen({ onSelectDate, onBack }: CalendarScreenP
                 {isCurrentMonthDate ? dayNumber : ''}
               </Text>
               {isCurrentMonthDate && (
-                <View style={styles.dayThemeIndicator}>
-                  <Text style={styles.dayThemeText} numberOfLines={1}>
-                    {dayTheme.theme.split(' ')[0]}
-                  </Text>
-                </View>
+                <>
+                  <View style={styles.dayThemeIndicator}>
+                    <Text style={styles.dayThemeText} numberOfLines={1}>
+                      {dayTheme.theme.split(' ')[0]}
+                    </Text>
+                  </View>
+                  {hasEntries && (
+                    <View style={styles.entryIndicator}>
+                      <View style={styles.entryDot} />
+                    </View>
+                  )}
+                </>
               )}
             </TouchableOpacity>
           );
@@ -249,6 +282,17 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#4A3A2A',
     fontWeight: '500',
+  },
+  entryIndicator: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+  },
+  entryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#8C6A4A',
   },
 });
 

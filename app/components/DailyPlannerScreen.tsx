@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TIME_BLOCKS, getDayThemeForDate, getDayName } from '../utils/plannerData';
+import { TIME_BLOCKS, getDayThemeForDate, getDayName, TimeBlock } from '../utils/plannerData';
+import { loadPreferences } from '../utils/preferences';
 
 interface DailyPlannerScreenProps {
   date: Date;
@@ -14,13 +15,35 @@ interface DayEntries {
 
 export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenProps) {
   const [entries, setEntries] = useState<DayEntries>({});
+  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(TIME_BLOCKS);
   const dateKey = date.toISOString().split('T')[0];
   const dayTheme = getDayThemeForDate(date);
   const dayName = getDayName(date);
 
   useEffect(() => {
     loadEntries();
+    loadCustomTimeBlocks();
   }, [date]);
+
+  const loadCustomTimeBlocks = async () => {
+    try {
+      const preferences = await loadPreferences();
+      // Get time blocks in custom order
+      const orderedBlocks = preferences.timeBlockOrder
+        .map(id => TIME_BLOCKS.find(block => block.id === id))
+        .filter((block): block is TimeBlock => block !== undefined);
+      
+      // Add any blocks that weren't in the order (safety check)
+      const remainingBlocks = TIME_BLOCKS.filter(
+        block => !preferences.timeBlockOrder.includes(block.id)
+      );
+      
+      setTimeBlocks([...orderedBlocks, ...remainingBlocks]);
+    } catch (error) {
+      console.error('Error loading custom time blocks:', error);
+      setTimeBlocks(TIME_BLOCKS);
+    }
+  };
 
   const loadEntries = async () => {
     try {
@@ -70,7 +93,7 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
 
         <View style={styles.divider} />
 
-        {TIME_BLOCKS.map((block) => (
+        {timeBlocks.map((block) => (
           <View key={block.id} style={styles.timeBlock}>
             <View style={styles.timeBlockHeader}>
               <Text style={styles.timeText}>{block.time}</Text>

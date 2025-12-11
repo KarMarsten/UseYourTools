@@ -5,7 +5,9 @@ import PromptsScreen from './components/PromptsScreen';
 import PromptDetailScreen from './components/PromptDetailScreen';
 import CalendarScreen from './components/CalendarScreen';
 import DailyPlannerScreen from './components/DailyPlannerScreen';
+import SetupScreen from './components/SetupScreen';
 import { Prompt } from './prompts';
+import { loadPreferences } from './utils/preferences';
 
 // Error Boundary Component
 const errorStyles = StyleSheet.create({
@@ -60,17 +62,30 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-type Screen = 'home' | 'prompts' | 'promptDetail' | 'calendar' | 'dailyPlanner';
+type Screen = 'home' | 'prompts' | 'promptDetail' | 'calendar' | 'dailyPlanner' | 'setup';
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    checkSetupStatus();
     setMounted(true);
   }, []);
+
+  const checkSetupStatus = async () => {
+    try {
+      const preferences = await loadPreferences();
+      if (!preferences.hasCompletedSetup) {
+        setCurrentScreen('setup');
+      }
+    } catch (error) {
+      console.error('Error checking setup status:', error);
+    }
+  };
 
   const handleViewPrompts = () => {
     setCurrentScreen('prompts');
@@ -105,7 +120,21 @@ function AppContent() {
 
   const handleBackToCalendar = () => {
     setCurrentScreen('calendar');
+    // Trigger calendar refresh to update entry indicators
+    setCalendarRefreshTrigger(prev => prev + 1);
   };
+
+  const handleViewSetup = () => {
+    setCurrentScreen('setup');
+  };
+
+  const handleSetupComplete = () => {
+    setCurrentScreen('home');
+  };
+
+  if (currentScreen === 'setup') {
+    return <SetupScreen onComplete={handleSetupComplete} onBack={handleBackToHome} />;
+  }
 
   if (currentScreen === 'prompts') {
     return <PromptsScreen onSelectPrompt={handleSelectPrompt} onBack={handleBackToHome} />;
@@ -116,7 +145,7 @@ function AppContent() {
   }
 
   if (currentScreen === 'calendar') {
-    return <CalendarScreen onSelectDate={handleSelectDate} onBack={handleBackToHome} />;
+    return <CalendarScreen onSelectDate={handleSelectDate} onBack={handleBackToHome} refreshTrigger={calendarRefreshTrigger} />;
   }
 
   if (currentScreen === 'dailyPlanner' && selectedDate) {
@@ -134,6 +163,9 @@ function AppContent() {
           </TouchableOpacity>
           <TouchableOpacity style={[styles.promptsButton, styles.secondaryButton]} onPress={handleViewPrompts}>
             <Text style={styles.promptsButtonText}>🌿 View Prompts</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.promptsButton, styles.tertiaryButton]} onPress={handleViewSetup}>
+            <Text style={styles.promptsButtonText}>⚙️ Setup</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -195,6 +227,9 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     backgroundColor: '#C9A66B',
+  },
+  tertiaryButton: {
+    backgroundColor: '#A67C52',
   },
   promptsButtonText: {
     color: '#f5f5dc',
