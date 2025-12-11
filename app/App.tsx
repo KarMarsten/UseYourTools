@@ -5,7 +5,7 @@ import { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 // #region agent log
 let FileSystem: any = null;
 try {
-  FileSystem = require('expo-file-system/legacy');
+  FileSystem = require('expo-file-system');
 } catch (importError) {
   console.log('expo-file-system not available, using console logging only');
 }
