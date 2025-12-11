@@ -1,6 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Button } from 'react-native';
+import { StyleSheet, Text, View, Button, TouchableOpacity } from 'react-native';
 import { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
+import PromptsScreen from './components/PromptsScreen';
+import PromptDetailScreen from './components/PromptDetailScreen';
+import { Prompt } from './prompts';
 
 // Error Boundary Component
 const errorStyles = StyleSheet.create({
@@ -55,27 +58,51 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
+type Screen = 'home' | 'prompts' | 'promptDetail';
+
 function AppContent() {
-  const [count, setCount] = useState(0);
+  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
+  const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handlePress = () => {
-    setCount(count + 1);
+  const handleViewPrompts = () => {
+    setCurrentScreen('prompts');
   };
+
+  const handleSelectPrompt = (prompt: Prompt) => {
+    setSelectedPrompt(prompt);
+    setCurrentScreen('promptDetail');
+  };
+
+  const handleBackToPrompts = () => {
+    setCurrentScreen('prompts');
+  };
+
+  const handleBackToHome = () => {
+    setCurrentScreen('home');
+    setSelectedPrompt(null);
+  };
+
+  if (currentScreen === 'prompts') {
+    return <PromptsScreen onSelectPrompt={handleSelectPrompt} onBack={handleBackToHome} />;
+  }
+
+  if (currentScreen === 'promptDetail' && selectedPrompt) {
+    return <PromptDetailScreen prompt={selectedPrompt} onBack={handleBackToPrompts} />;
+  }
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>UseYourTools</Text>
       <Text style={styles.subtitle}>Digital Earth-Tone Planner</Text>
       {mounted && (
-        <>
-          <Text style={styles.counter}>Count: {count}</Text>
-          <Button title="Increment" onPress={handlePress} />
-        </>
+        <TouchableOpacity style={styles.promptsButton} onPress={handleViewPrompts}>
+          <Text style={styles.promptsButtonText}>🌿 View Prompts</Text>
+        </TouchableOpacity>
       )}
       <StatusBar style="auto" />
     </View>
@@ -113,6 +140,23 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#ffebee',
     borderRadius: 4,
+  },
+  promptsButton: {
+    backgroundColor: '#8C6A4A',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 12,
+    marginTop: 20,
+    shadowColor: '#4A3A2A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  promptsButtonText: {
+    color: '#f5f5dc',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
 
