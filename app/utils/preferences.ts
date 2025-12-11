@@ -1,11 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TimeBlock, TIME_BLOCKS } from './plannerData';
+import { ColorSchemeName } from './colorSchemes';
 
 export interface UserPreferences {
   startTime: string; // Format: "HH:MM" (24-hour)
   endTime: string; // Format: "HH:MM" (24-hour)
   timeBlockOrder: string[]; // Array of time block IDs in custom order
   hasCompletedSetup: boolean;
+  use12HourClock: boolean; // Toggle between 12-hour and 24-hour clock
+  colorScheme: ColorSchemeName; // Selected color scheme
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -13,6 +16,8 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   endTime: '22:00',
   timeBlockOrder: TIME_BLOCKS.map(block => block.id), // Default: all blocks in order
   hasCompletedSetup: false,
+  use12HourClock: false, // Default to 24-hour clock
+  colorScheme: 'earth-tone', // Default to Earth-Tone
 };
 
 const PREFERENCES_KEY = 'planner_preferences';

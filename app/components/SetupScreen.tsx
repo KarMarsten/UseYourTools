@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TextInput, TouchableOpacity, Alert, Switch } from 'react-native';
 import { TIME_BLOCKS, TimeBlock } from '../utils/plannerData';
 import { UserPreferences, savePreferences, loadPreferences } from '../utils/preferences';
 import { generateTimeBlocks, GeneratedTimeBlock } from '../utils/timeBlockGenerator';
+import { COLOR_SCHEMES, ColorSchemeName, getColorScheme } from '../utils/colorSchemes';
+import { formatTimeRange } from '../utils/timeFormatter';
+import { usePreferences } from '../context/PreferencesContext';
 
 interface SetupScreenProps {
   onComplete: () => void;
@@ -13,7 +16,12 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('17:00'); // Will be auto-updated when start time changes
   const [timeBlockOrder, setTimeBlockOrder] = useState<string[]>(TIME_BLOCKS.map(b => b.id));
+  const [use12HourClock, setUse12HourClock] = useState(false);
+  const [colorScheme, setColorScheme] = useState<ColorSchemeName>('earth-tone');
   const [loading, setLoading] = useState(true);
+  const { refreshPreferences } = usePreferences();
+  
+  const currentColorScheme = getColorScheme(colorScheme);
 
   useEffect(() => {
     loadUserPreferences();
@@ -64,6 +72,8 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
       const calculatedEndTime = `${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`;
       setEndTime(calculatedEndTime);
       setTimeBlockOrder(prefs.timeBlockOrder);
+      setUse12HourClock(prefs.use12HourClock ?? false);
+      setColorScheme(prefs.colorScheme ?? 'earth-tone');
     } catch (error) {
       console.error('Error loading preferences:', error);
     } finally {
@@ -105,6 +115,8 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         endTime: `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`,
         timeBlockOrder,
         hasCompletedSetup: false,
+        use12HourClock: false, // Preview always uses 24-hour format
+        colorScheme: 'earth-tone', // Preview uses default colors
       };
 
       return generateTimeBlocks(tempPreferences);
@@ -138,8 +150,11 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         endTime: finalEndTime, // Always save as 9 hours after start
         timeBlockOrder,
         hasCompletedSetup: true,
+        use12HourClock,
+        colorScheme,
       };
       await savePreferences(preferences);
+      await refreshPreferences(); // Refresh preferences context
       Alert.alert('Success', 'Preferences saved!', [
         { text: 'OK', onPress: onComplete }
       ]);
@@ -174,16 +189,24 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
     );
   }
 
+  const dynamicStyles = {
+    container: { backgroundColor: currentColorScheme.colors.background },
+    header: { backgroundColor: currentColorScheme.colors.surface, borderBottomColor: currentColorScheme.colors.border },
+    title: { color: currentColorScheme.colors.text },
+    subtitle: { color: currentColorScheme.colors.textSecondary },
+    backButtonText: { color: currentColorScheme.colors.primary },
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, dynamicStyles.container]}>
+      <View style={[styles.header, dynamicStyles.header]}>
         {onBack && (
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Text style={styles.backButtonText}>← Cancel</Text>
+            <Text style={[styles.backButtonText, dynamicStyles.backButtonText]}>← Cancel</Text>
           </TouchableOpacity>
         )}
-        <Text style={styles.title}>🌿 Setup Planner</Text>
-        <Text style={styles.subtitle}>Customize your daily schedule</Text>
+        <Text style={[styles.title, dynamicStyles.title]}>🌿 Setup Planner</Text>
+        <Text style={[styles.subtitle, dynamicStyles.subtitle]}>Customize your daily schedule</Text>
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -217,45 +240,72 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
             </View>
           </View>
           {generatedBlocksPreview.length > 0 && (
-            <View style={styles.previewContainer}>
-              <Text style={styles.previewTitle}>Preview: {generatedBlocksPreview.length} time blocks</Text>
+            <View style={[
+              styles.previewContainer,
+              {
+                backgroundColor: currentColorScheme.colors.background,
+                borderColor: currentColorScheme.colors.border,
+              }
+            ]}>
+              <Text style={[styles.previewTitle, { color: currentColorScheme.colors.text }]}>
+                Preview: {generatedBlocksPreview.length} time blocks
+              </Text>
               {generatedBlocksPreview.slice(0, 3).map((block, idx) => (
-                <Text key={idx} style={styles.previewText}>
-                  {block.time} - {block.title}
+                <Text key={idx} style={[styles.previewText, { color: currentColorScheme.colors.textSecondary }]}>
+                  {use12HourClock ? formatTimeRange(block.time, true) : block.time} - {block.title}
                 </Text>
               ))}
               {generatedBlocksPreview.length > 3 && (
-                <Text style={styles.previewText}>...</Text>
+                <Text style={[styles.previewText, { color: currentColorScheme.colors.textSecondary }]}>...</Text>
               )}
             </View>
           )}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Time Block Labels</Text>
-          <Text style={styles.sectionDescription}>
-            Reorder your time block labels. These will be assigned to 2-hour slots in order (first block = first 2 hours, etc.)
-          </Text>
-          {timeBlockOrder.map((blockId, index) => {
-            const block = getTimeBlockById(blockId);
-            if (!block) return null;
-            
-            // Get the generated time for this block from preview
-            const generatedBlock = generatedBlocksPreview[index];
-            const displayTime = generatedBlock ? generatedBlock.time : block.time;
+            <Text style={[styles.sectionTitle, { color: currentColorScheme.colors.text }]}>
+              Time Block Labels
+            </Text>
+            <Text style={[styles.sectionDescription, { color: currentColorScheme.colors.textSecondary }]}>
+              Reorder your time block labels. Times will shift based on your start time.
+            </Text>
+            {timeBlockOrder.map((blockId, index) => {
+              const block = getTimeBlockById(blockId);
+              if (!block) return null;
+              
+              // Get the generated time for this block from preview
+              const generatedBlock = generatedBlocksPreview[index];
+              const displayTime = generatedBlock ? generatedBlock.time : block.time;
+              const formattedTime = use12HourClock ? formatTimeRange(displayTime, true) : displayTime;
 
-            return (
-              <View key={blockId} style={styles.blockItem}>
-                <View style={styles.blockContent}>
-                  <Text style={styles.blockTitle}>🌿 {block.title}</Text>
-                  {block.description && (
-                    <Text style={styles.blockDescription}>{block.description}</Text>
-                  )}
-                  <Text style={styles.blockTime}>{displayTime}</Text>
-                </View>
+              return (
+                <View key={blockId} style={[
+                  styles.blockItem,
+                  {
+                    backgroundColor: currentColorScheme.colors.surface,
+                    borderColor: currentColorScheme.colors.border,
+                  }
+                ]}>
+                  <View style={styles.blockContent}>
+                    <Text style={[styles.blockTitle, { color: currentColorScheme.colors.text }]}>
+                      🌿 {block.title}
+                    </Text>
+                    {block.description && (
+                      <Text style={[styles.blockDescription, { color: currentColorScheme.colors.textSecondary }]}>
+                        {block.description}
+                      </Text>
+                    )}
+                    <Text style={[styles.blockTime, { color: currentColorScheme.colors.primary }]}>
+                      {formattedTime}
+                    </Text>
+                  </View>
                 <View style={styles.blockActions}>
                   <TouchableOpacity
-                    style={[styles.moveButton, index === 0 && styles.moveButtonDisabled]}
+                    style={[
+                      styles.moveButton,
+                      { backgroundColor: currentColorScheme.colors.primary },
+                      index === 0 && styles.moveButtonDisabled
+                    ]}
                     onPress={() => moveBlockUp(index)}
                     disabled={index === 0}
                   >
@@ -264,6 +314,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
                   <TouchableOpacity
                     style={[
                       styles.moveButton,
+                      { backgroundColor: currentColorScheme.colors.primary },
                       index === timeBlockOrder.length - 1 && styles.moveButtonDisabled
                     ]}
                     onPress={() => moveBlockDown(index)}
@@ -277,7 +328,65 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
           })}
         </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Display Settings</Text>
+          
+          <View style={[styles.settingRow, {
+            backgroundColor: currentColorScheme.colors.surface,
+            borderColor: currentColorScheme.colors.border,
+          }]}>
+            <View style={styles.settingContent}>
+              <Text style={[styles.settingLabel, { color: currentColorScheme.colors.text }]}>
+                12-Hour Clock
+              </Text>
+              <Text style={[styles.settingDescription, { color: currentColorScheme.colors.textSecondary }]}>
+                Display times in 12-hour format (AM/PM)
+              </Text>
+            </View>
+            <Switch
+              value={use12HourClock}
+              onValueChange={setUse12HourClock}
+              trackColor={{ false: '#a0826d', true: currentColorScheme.colors.secondary }}
+              thumbColor={use12HourClock ? currentColorScheme.colors.primary : '#f4f3f4'}
+            />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: currentColorScheme.colors.text }]}>
+            Color Scheme
+          </Text>
+          <Text style={[styles.sectionDescription, { color: currentColorScheme.colors.textSecondary }]}>
+            Choose your preferred color palette
+          </Text>
+          {Object.values(COLOR_SCHEMES).map((scheme) => (
+            <TouchableOpacity
+              key={scheme.name}
+              style={[
+                styles.colorSchemeOption,
+                {
+                  backgroundColor: currentColorScheme.colors.surface,
+                  borderColor: colorScheme === scheme.name ? scheme.colors.primary : currentColorScheme.colors.border,
+                },
+                colorScheme === scheme.name && { borderWidth: 2 }
+              ]}
+              onPress={() => setColorScheme(scheme.name)}
+            >
+              <View style={[styles.colorSchemePreview, { backgroundColor: scheme.colors.primary }]} />
+              <View style={[styles.colorSchemePreview, { backgroundColor: scheme.colors.secondary }]} />
+              <View style={[styles.colorSchemePreview, { backgroundColor: scheme.colors.accent }]} />
+              <Text style={[
+                styles.colorSchemeName,
+                { color: currentColorScheme.colors.text },
+                colorScheme === scheme.name && { color: scheme.colors.primary, fontWeight: 'bold' }
+              ]}>
+                {scheme.displayName}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <TouchableOpacity style={[styles.saveButton, { backgroundColor: currentColorScheme.colors.primary }]} onPress={handleSave}>
           <Text style={styles.saveButtonText}>Save Preferences</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -440,7 +549,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   saveButton: {
-    backgroundColor: '#8C6A4A',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -455,6 +563,57 @@ const styles = StyleSheet.create({
     color: '#f5f5dc',
     fontSize: 18,
     fontWeight: '600',
+  },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#E7D7C1',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#C9A66B',
+  },
+  settingContent: {
+    flex: 1,
+    marginRight: 16,
+  },
+  settingLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4A3A2A',
+    marginBottom: 4,
+  },
+  settingDescription: {
+    fontSize: 14,
+    color: '#6b5b4f',
+  },
+  colorSchemeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E7D7C1',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  colorSchemeOptionSelected: {
+    borderWidth: 2,
+  },
+  colorSchemePreview: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#a0826d',
+  },
+  colorSchemeName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#4A3A2A',
   },
 });
 

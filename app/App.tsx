@@ -6,6 +6,7 @@ import PromptDetailScreen from './components/PromptDetailScreen';
 import CalendarScreen from './components/CalendarScreen';
 import DailyPlannerScreen from './components/DailyPlannerScreen';
 import SetupScreen from './components/SetupScreen';
+import { PreferencesProvider, usePreferences } from './context/PreferencesContext';
 import { Prompt } from './prompts';
 import { loadPreferences } from './utils/preferences';
 
@@ -70,6 +71,7 @@ function AppContent() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const { colorScheme } = usePreferences();
 
   useEffect(() => {
     checkSetupStatus();
@@ -152,19 +154,34 @@ function AppContent() {
     return <DailyPlannerScreen date={selectedDate} onBack={handleBackToCalendar} />;
   }
 
+  const dynamicStyles = {
+    container: { backgroundColor: colorScheme.colors.background },
+    title: { color: colorScheme.colors.text },
+    subtitle: { color: colorScheme.colors.textSecondary },
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>UseYourTools</Text>
-      <Text style={styles.subtitle}>Digital Earth-Tone Planner</Text>
+    <View style={[styles.container, dynamicStyles.container]}>
+      <Text style={[styles.title, dynamicStyles.title]}>UseYourTools</Text>
+      <Text style={[styles.subtitle, dynamicStyles.subtitle]}>Digital Earth-Tone Planner</Text>
       {mounted && (
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.promptsButton} onPress={handleViewCalendar}>
+          <TouchableOpacity 
+            style={[styles.promptsButton, { backgroundColor: colorScheme.colors.primary }]} 
+            onPress={handleViewCalendar}
+          >
             <Text style={styles.promptsButtonText}>📅 Open Planner</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.promptsButton, styles.secondaryButton]} onPress={handleViewPrompts}>
+          <TouchableOpacity 
+            style={[styles.promptsButton, { backgroundColor: colorScheme.colors.secondary }]} 
+            onPress={handleViewPrompts}
+          >
             <Text style={styles.promptsButtonText}>🌿 View Prompts</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.promptsButton, styles.tertiaryButton]} onPress={handleViewSetup}>
+          <TouchableOpacity 
+            style={[styles.promptsButton, { backgroundColor: colorScheme.colors.accent }]} 
+            onPress={handleViewSetup}
+          >
             <Text style={styles.promptsButtonText}>⚙️ Setup</Text>
           </TouchableOpacity>
         </View>
@@ -212,7 +229,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   promptsButton: {
-    backgroundColor: '#8C6A4A',
     paddingHorizontal: 30,
     paddingVertical: 15,
     borderRadius: 12,
@@ -225,12 +241,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  secondaryButton: {
-    backgroundColor: '#C9A66B',
-  },
-  tertiaryButton: {
-    backgroundColor: '#A67C52',
-  },
   promptsButtonText: {
     color: '#f5f5dc',
     fontSize: 18,
@@ -241,7 +251,9 @@ const styles = StyleSheet.create({
 export default function App() {
   return (
     <ErrorBoundary>
-      <AppContent />
+      <PreferencesProvider>
+        <AppContent />
+      </PreferencesProvider>
     </ErrorBoundary>
   );
 }

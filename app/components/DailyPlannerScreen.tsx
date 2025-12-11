@@ -4,6 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDayThemeForDate, getDayName } from '../utils/plannerData';
 import { loadPreferences } from '../utils/preferences';
 import { generateTimeBlocks, GeneratedTimeBlock } from '../utils/timeBlockGenerator';
+import { usePreferences } from '../context/PreferencesContext';
+import { formatTimeRange } from '../utils/timeFormatter';
 
 interface DailyPlannerScreenProps {
   date: Date;
@@ -17,31 +19,30 @@ interface DayEntries {
 export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenProps) {
   const [entries, setEntries] = useState<DayEntries>({});
   const [timeBlocks, setTimeBlocks] = useState<GeneratedTimeBlock[]>([]);
+  const { preferences, colorScheme } = usePreferences();
   const dateKey = date.toISOString().split('T')[0];
   const dayTheme = getDayThemeForDate(date);
   const dayName = getDayName(date);
+  
+  const use12Hour = preferences?.use12HourClock ?? false;
 
   useEffect(() => {
     loadEntries();
     loadCustomTimeBlocks();
-  }, [date]);
+  }, [date, preferences]);
 
   const loadCustomTimeBlocks = async () => {
     try {
-      const preferences = await loadPreferences();
+      const prefs = preferences || await loadPreferences();
       // Generate time blocks based on start/end times
-      const generatedBlocks = generateTimeBlocks(preferences);
+      const generatedBlocks = generateTimeBlocks(prefs);
       setTimeBlocks(generatedBlocks);
     } catch (error) {
       console.error('Error loading custom time blocks:', error);
-      // Fallback to default blocks if preferences are invalid
-      const defaultPrefs = {
-        startTime: '08:00',
-        endTime: '22:00',
-        timeBlockOrder: [],
-        hasCompletedSetup: false,
-      };
-      setTimeBlocks(generateTimeBlocks(defaultPrefs));
+      // Use current preferences or fallback
+      if (preferences) {
+        setTimeBlocks(generateTimeBlocks(preferences));
+      }
     }
   };
 
@@ -73,43 +74,67 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
     return date.toLocaleDateString('en-US', options);
   };
 
+  const dynamicStyles = {
+    container: { backgroundColor: colorScheme.colors.background },
+    header: { backgroundColor: colorScheme.colors.surface, borderBottomColor: colorScheme.colors.border },
+    backButtonText: { color: colorScheme.colors.primary },
+    dayName: { color: colorScheme.colors.text },
+    dateText: { color: colorScheme.colors.textSecondary },
+    themeContainer: { backgroundColor: colorScheme.colors.secondary },
+    themeText: { color: colorScheme.colors.text },
+    divider: { backgroundColor: colorScheme.colors.border },
+    textInput: { backgroundColor: colorScheme.colors.background, borderColor: colorScheme.colors.border },
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, dynamicStyles.container]}>
+      <View style={[styles.header, dynamicStyles.header]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Calendar</Text>
+          <Text style={[styles.backButtonText, dynamicStyles.backButtonText]}>← Calendar</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.dayHeader}>
-          <Text style={styles.dayName}>{dayName}</Text>
-          <Text style={styles.dateText}>{formatDate(date)}</Text>
-          <View style={styles.themeContainer}>
+          <Text style={[styles.dayName, dynamicStyles.dayName]}>{dayName}</Text>
+          <Text style={[styles.dateText, dynamicStyles.dateText]}>{formatDate(date)}</Text>
+          <View style={[styles.themeContainer, dynamicStyles.themeContainer]}>
             <Text style={styles.themeLabel}>🌿</Text>
-            <Text style={styles.themeText}>{dayTheme.theme}</Text>
+            <Text style={[styles.themeText, dynamicStyles.themeText]}>{dayTheme.theme}</Text>
           </View>
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, dynamicStyles.divider]} />
 
         {timeBlocks.map((block) => (
-          <View key={block.id} style={styles.timeBlock}>
+          <View key={block.id} style={[
+            styles.timeBlock,
+            {
+              backgroundColor: colorScheme.colors.surface,
+              borderColor: colorScheme.colors.border,
+            }
+          ]}>
             <View style={styles.timeBlockHeader}>
-              <Text style={styles.timeText}>{block.time}</Text>
+              <Text style={[styles.timeText, { color: colorScheme.colors.primary }]}>
+                {formatTimeRange(block.time, use12Hour)}
+              </Text>
               <View style={styles.timeBlockTitleContainer}>
-                <Text style={styles.timeBlockTitle}>🌿 {block.title}</Text>
+                <Text style={[styles.timeBlockTitle, { color: colorScheme.colors.text }]}>
+                  🌿 {block.title}
+                </Text>
                 {block.description && (
-                  <Text style={styles.timeBlockDescription}>• {block.description}</Text>
+                  <Text style={[styles.timeBlockDescription, { color: colorScheme.colors.textSecondary }]}>
+                    • {block.description}
+                  </Text>
                 )}
               </View>
             </View>
             <View style={styles.inputContainer}>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, dynamicStyles.textInput, { color: colorScheme.colors.text }]}
                 multiline
                 placeholder="Write your plans here..."
-                placeholderTextColor="#a0826d"
+                placeholderTextColor={colorScheme.colors.textSecondary}
                 value={entries[block.id] || ''}
                 onChangeText={(text) => saveEntry(block.id, text)}
               />

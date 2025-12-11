@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { getDayThemeForDate, getDayName } from '../utils/plannerData';
 import { hasEntriesForDate } from '../utils/entryChecker';
+import { usePreferences } from '../context/PreferencesContext';
 
 interface CalendarScreenProps {
   onSelectDate: (date: Date) => void;
@@ -12,6 +13,7 @@ interface CalendarScreenProps {
 export default function CalendarScreen({ onSelectDate, onBack, refreshTrigger }: CalendarScreenProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [daysWithEntries, setDaysWithEntries] = useState<Set<string>>(new Set());
+  const { colorScheme } = usePreferences();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -80,35 +82,47 @@ export default function CalendarScreen({ onSelectDate, onBack, refreshTrigger }:
 
   const days = getDaysInMonth(currentDate);
 
+  const dynamicStyles = {
+    container: { backgroundColor: colorScheme.colors.background },
+    header: { backgroundColor: colorScheme.colors.surface, borderBottomColor: colorScheme.colors.border },
+    title: { color: colorScheme.colors.text },
+    backButtonText: { color: colorScheme.colors.primary },
+    calendarHeader: { backgroundColor: colorScheme.colors.surface },
+    navButtonText: { color: colorScheme.colors.primary },
+    monthYear: { color: colorScheme.colors.text },
+    weekDaysContainer: { backgroundColor: colorScheme.colors.surface, borderBottomColor: colorScheme.colors.border },
+    weekDayText: { color: colorScheme.colors.textSecondary },
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, dynamicStyles.container]}>
+      <View style={[styles.header, dynamicStyles.header]}>
         {onBack && (
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Text style={styles.backButtonText}>← Home</Text>
+            <Text style={[styles.backButtonText, dynamicStyles.backButtonText]}>← Home</Text>
           </TouchableOpacity>
         )}
         <View style={styles.headerContent}>
-          <Text style={styles.title}>🌿 Calendar</Text>
+          <Text style={[styles.title, dynamicStyles.title]}>🌿 Calendar</Text>
         </View>
       </View>
 
-      <View style={styles.calendarHeader}>
+      <View style={[styles.calendarHeader, dynamicStyles.calendarHeader]}>
         <TouchableOpacity onPress={() => navigateMonth(-1)} style={styles.navButton}>
-          <Text style={styles.navButtonText}>‹</Text>
+          <Text style={[styles.navButtonText, dynamicStyles.navButtonText]}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.monthYear}>
+        <Text style={[styles.monthYear, dynamicStyles.monthYear]}>
           {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
         </Text>
         <TouchableOpacity onPress={() => navigateMonth(1)} style={styles.navButton}>
-          <Text style={styles.navButtonText}>›</Text>
+          <Text style={[styles.navButtonText, dynamicStyles.navButtonText]}>›</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.weekDaysContainer}>
+      <View style={[styles.weekDaysContainer, dynamicStyles.weekDaysContainer]}>
         {weekDays.map((day) => (
           <View key={day} style={styles.weekDay}>
-            <Text style={styles.weekDayText}>{day}</Text>
+            <Text style={[styles.weekDayText, dynamicStyles.weekDayText]}>{day}</Text>
           </View>
         ))}
       </View>
@@ -127,30 +141,38 @@ export default function CalendarScreen({ onSelectDate, onBack, refreshTrigger }:
               key={index}
               style={[
                 styles.calendarDay,
+                {
+                  backgroundColor: isCurrentMonthDate ? colorScheme.colors.surface : colorScheme.colors.background,
+                  borderColor: colorScheme.colors.border,
+                },
                 !isCurrentMonthDate && styles.calendarDayOtherMonth,
-                isTodayDate && styles.calendarDayToday,
+                isTodayDate && {
+                  backgroundColor: colorScheme.colors.primary,
+                  borderColor: colorScheme.colors.text,
+                  borderWidth: 2,
+                },
               ]}
               onPress={() => onSelectDate(date)}
             >
               <Text
                 style={[
                   styles.dayNumber,
-                  !isCurrentMonthDate && styles.dayNumberOtherMonth,
-                  isTodayDate && styles.dayNumberToday,
+                  { color: isCurrentMonthDate ? colorScheme.colors.text : colorScheme.colors.textSecondary },
+                  isTodayDate && { color: colorScheme.colors.background, fontWeight: 'bold' },
                 ]}
               >
                 {isCurrentMonthDate ? dayNumber : ''}
               </Text>
               {isCurrentMonthDate && (
                 <>
-                  <View style={styles.dayThemeIndicator}>
-                    <Text style={styles.dayThemeText} numberOfLines={1}>
+                  <View style={[styles.dayThemeIndicator, { backgroundColor: colorScheme.colors.secondary }]}>
+                    <Text style={[styles.dayThemeText, { color: colorScheme.colors.text }]} numberOfLines={1}>
                       {dayTheme.theme.split(' ')[0]}
                     </Text>
                   </View>
                   {hasEntries && (
                     <View style={styles.entryIndicator}>
-                      <View style={styles.entryDot} />
+                      <View style={[styles.entryDot, { backgroundColor: colorScheme.colors.primary }]} />
                     </View>
                   )}
                 </>
