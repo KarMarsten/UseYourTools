@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { StyleSheet, Text, View, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { TIME_BLOCKS, TimeBlock } from '../utils/plannerData';
 import { UserPreferences, savePreferences, loadPreferences } from '../utils/preferences';
-import { generateTimeBlocks } from '../utils/timeBlockGenerator';
+import { generateTimeBlocks, GeneratedTimeBlock } from '../utils/timeBlockGenerator';
 
 interface SetupScreenProps {
   onComplete: () => void;
@@ -23,26 +23,29 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
   const handleStartTimeChange = (newStartTime: string) => {
     setStartTime(newStartTime);
     
-    // Validate format first
-    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    if (!timeRegex.test(newStartTime)) {
-      return; // Don't update end time if format is invalid
+    // Try to parse the time, even if incomplete
+    const parts = newStartTime.split(':');
+    if (parts.length === 2) {
+      const startHours = parseInt(parts[0]) || 0;
+      const startMinutes = parseInt(parts[1]) || 0;
+      
+      // Validate ranges
+      if (startHours >= 0 && startHours < 24 && startMinutes >= 0 && startMinutes < 60) {
+        const startTotalMinutes = startHours * 60 + startMinutes;
+        const endTotalMinutes = startTotalMinutes + (9 * 60); // Add 9 hours
+        
+        let endHours = Math.floor(endTotalMinutes / 60);
+        const endMins = endTotalMinutes % 60;
+        
+        // Handle day wrap-around (if end time goes past midnight)
+        if (endHours >= 24) {
+          endHours = endHours % 24;
+        }
+        
+        const newEndTime = `${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`;
+        setEndTime(newEndTime);
+      }
     }
-    
-    const [startHours, startMinutes] = newStartTime.split(':').map(Number);
-    const startTotalMinutes = startHours * 60 + startMinutes;
-    const endTotalMinutes = startTotalMinutes + (9 * 60); // Add 9 hours
-    
-    let endHours = Math.floor(endTotalMinutes / 60);
-    const endMins = endTotalMinutes % 60;
-    
-    // Handle day wrap-around (if end time goes past midnight)
-    if (endHours >= 24) {
-      endHours = endHours % 24;
-    }
-    
-    const newEndTime = `${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`;
-    setEndTime(newEndTime);
   };
 
   const loadUserPreferences = async () => {
@@ -68,15 +71,28 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
     }
   };
 
-  const getGeneratedBlocksPreview = () => {
+  // Memoize the generated blocks preview so it updates when startTime, endTime, or timeBlockOrder changes
+  const generatedBlocksPreview = useMemo((): GeneratedTimeBlock[] => {
     try {
-      const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
-      if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+      // Try to parse times even if format is incomplete
+      const startParts = startTime.split(':');
+      const endParts = endTime.split(':');
+      
+      if (startParts.length !== 2 || endParts.length !== 2) {
         return [];
       }
 
-      const [startH, startM] = startTime.split(':').map(Number);
-      const [endH, endM] = endTime.split(':').map(Number);
+      const startH = parseInt(startParts[0]) || 0;
+      const startM = parseInt(startParts[1]) || 0;
+      const endH = parseInt(endParts[0]) || 0;
+      const endM = parseInt(endParts[1]) || 0;
+      
+      // Validate ranges
+      if (startH < 0 || startH >= 24 || startM < 0 || startM >= 60 ||
+          endH < 0 || endH >= 24 || endM < 0 || endM >= 60) {
+        return [];
+      }
+
       const startMinutes = startH * 60 + startM;
       const endMinutes = endH * 60 + endM;
 
@@ -94,8 +110,8 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
       }
 
       const tempPreferences: UserPreferences = {
-        startTime,
-        endTime,
+        startTime: `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}`,
+        endTime: `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`,
         timeBlockOrder,
         hasCompletedSetup: false,
       };
@@ -104,7 +120,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
     } catch {
       return [];
     }
-  };
+  }, [startTime, endTime, timeBlockOrder]);
 
   const handleSave = async () => {
     // Validate time format
@@ -219,25 +235,19 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
               <Text style={styles.timeHint}>Automatically set to 9 hours after start</Text>
             </View>
           </View>
-          {(() => {
-            const preview = getGeneratedBlocksPreview();
-            if (preview.length > 0) {
-              return (
-                <View style={styles.previewContainer}>
-                  <Text style={styles.previewTitle}>Preview: {preview.length} time blocks</Text>
-                  {preview.slice(0, 3).map((block, idx) => (
-                    <Text key={idx} style={styles.previewText}>
-                      {block.time} - {block.title}
-                    </Text>
-                  ))}
-                  {preview.length > 3 && (
-                    <Text style={styles.previewText}>...</Text>
-                  )}
-                </View>
-              );
-            }
-            return null;
-          })()}
+          {generatedBlocksPreview.length > 0 && (
+            <View style={styles.previewContainer}>
+              <Text style={styles.previewTitle}>Preview: {generatedBlocksPreview.length} time blocks</Text>
+              {generatedBlocksPreview.slice(0, 3).map((block, idx) => (
+                <Text key={idx} style={styles.previewText}>
+                  {block.time} - {block.title}
+                </Text>
+              ))}
+              {generatedBlocksPreview.length > 3 && (
+                <Text style={styles.previewText}>...</Text>
+              )}
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -245,25 +255,23 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
           <Text style={styles.sectionDescription}>
             Reorder your time block labels. These will be assigned to 2-hour slots in order (first block = first 2 hours, etc.)
           </Text>
-          {(() => {
-            const preview = getGeneratedBlocksPreview();
-            return timeBlockOrder.map((blockId, index) => {
-              const block = getTimeBlockById(blockId);
-              if (!block) return null;
-              
-              // Get the generated time for this block from preview
-              const generatedBlock = preview[index];
-              const displayTime = generatedBlock ? generatedBlock.time : block.time;
+          {timeBlockOrder.map((blockId, index) => {
+            const block = getTimeBlockById(blockId);
+            if (!block) return null;
+            
+            // Get the generated time for this block from preview
+            const generatedBlock = generatedBlocksPreview[index];
+            const displayTime = generatedBlock ? generatedBlock.time : block.time;
 
-              return (
-                <View key={blockId} style={styles.blockItem}>
-                  <View style={styles.blockContent}>
-                    <Text style={styles.blockTitle}>🌿 {block.title}</Text>
-                    {block.description && (
-                      <Text style={styles.blockDescription}>{block.description}</Text>
-                    )}
-                    <Text style={styles.blockTime}>{displayTime}</Text>
-                  </View>
+            return (
+              <View key={blockId} style={styles.blockItem}>
+                <View style={styles.blockContent}>
+                  <Text style={styles.blockTitle}>🌿 {block.title}</Text>
+                  {block.description && (
+                    <Text style={styles.blockDescription}>{block.description}</Text>
+                  )}
+                  <Text style={styles.blockTime}>{displayTime}</Text>
+                </View>
                 <View style={styles.blockActions}>
                   <TouchableOpacity
                     style={[styles.moveButton, index === 0 && styles.moveButtonDisabled]}
@@ -284,9 +292,8 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
                   </TouchableOpacity>
                 </View>
               </View>
-              );
-            });
-          })()}
+            );
+          })}
         </View>
 
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
