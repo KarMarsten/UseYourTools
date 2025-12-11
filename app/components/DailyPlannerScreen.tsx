@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDayThemeForDate, getDayName } from '../utils/plannerData';
 import { loadPreferences } from '../utils/preferences';
 import { generateTimeBlocks, GeneratedTimeBlock } from '../utils/timeBlockGenerator';
 import { usePreferences } from '../context/PreferencesContext';
 import { formatTimeRange } from '../utils/timeFormatter';
+import { Event, loadEventsForDate, saveEvent, deleteEvent, generateEventId } from '../utils/events';
+import { scheduleEventNotification, cancelEventNotification } from '../utils/eventNotifications';
+import AddEventModal from './AddEventModal';
 
 interface DailyPlannerScreenProps {
   date: Date;
@@ -19,6 +22,8 @@ interface DayEntries {
 export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenProps) {
   const [entries, setEntries] = useState<DayEntries>({});
   const [timeBlocks, setTimeBlocks] = useState<GeneratedTimeBlock[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [showAddEventModal, setShowAddEventModal] = useState(false);
   const { preferences, colorScheme } = usePreferences();
   const dateKey = date.toISOString().split('T')[0];
   const dayTheme = getDayThemeForDate(date);
@@ -29,6 +34,7 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
   useEffect(() => {
     loadEntries();
     loadCustomTimeBlocks();
+    loadEvents();
   }, [date, preferences]);
 
   const loadCustomTimeBlocks = async () => {
@@ -56,6 +62,45 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
       }
     } catch (error) {
       console.error('Error loading entries:', error);
+    }
+  };
+
+  const loadEvents = async () => {
+    try {
+      const loadedEvents = await loadEventsForDate(dateKey);
+      setEvents(loadedEvents);
+    } catch (error) {
+      console.error('Error loading events:', error);
+    }
+  };
+
+  const handleSaveEvent = async (event: Event) => {
+    try {
+      // Schedule notification 10 minutes before event
+      const notificationId = await scheduleEventNotification(event);
+      if (notificationId) {
+        event.notificationId = notificationId;
+      }
+
+      await saveEvent(event);
+      await loadEvents(); // Reload events to update UI
+    } catch (error) {
+      console.error('Error saving event:', error);
+      Alert.alert('Error', 'Failed to save event');
+    }
+  };
+
+  const handleDeleteEvent = async (event: Event) => {
+    try {
+      // Cancel notification if it exists
+      if (event.notificationId) {
+        await cancelEventNotification(event.notificationId);
+      }
+      await deleteEvent(event.id);
+      await loadEvents(); // Reload events to update UI
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      Alert.alert('Error', 'Failed to delete event');
     }
   };
 
@@ -96,8 +141,18 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.dayHeader}>
-          <Text style={[styles.dayName, dynamicStyles.dayName]}>{dayName}</Text>
-          <Text style={[styles.dateText, dynamicStyles.dateText]}>{formatDate(date)}</Text>
+          <View style={styles.dayHeaderTop}>
+            <View style={styles.dayHeaderLeft}>
+              <Text style={[styles.dayName, dynamicStyles.dayName]}>{dayName}</Text>
+              <Text style={[styles.dateText, dynamicStyles.dateText]}>{formatDate(date)}</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.addButton, { backgroundColor: colorScheme.colors.primary }]}
+              onPress={() => setShowAddEventModal(true)}
+            >
+              <Text style={styles.addButtonText}>+ Add Event</Text>
+            </TouchableOpacity>
+          </View>
           <View style={[styles.themeContainer, dynamicStyles.themeContainer]}>
             <Text style={styles.themeLabel}>🌿</Text>
             <Text style={[styles.themeText, dynamicStyles.themeText]}>{dayTheme.theme}</Text>
@@ -105,6 +160,47 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
         </View>
 
         <View style={[styles.divider, dynamicStyles.divider]} />
+
+        {/* Display Events */}
+        {events.length > 0 && (
+          <View style={styles.eventsSection}>
+            <Text style={[styles.sectionTitle, { color: colorScheme.colors.text }]}>Events</Text>
+            {events.map((event) => (
+              <View
+                key={event.id}
+                style={[
+                  styles.eventCard,
+                  {
+                    backgroundColor: colorScheme.colors.surface,
+                    borderColor: colorScheme.colors.border,
+                  },
+                ]}
+              >
+                <View style={styles.eventContent}>
+                  <View style={styles.eventHeader}>
+                    <Text style={[styles.eventTitle, { color: colorScheme.colors.text }]}>
+                      {event.type === 'interview' ? '💼' : event.type === 'appointment' ? '📅' : '🔔'} {event.title}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => handleDeleteEvent(event)}
+                      style={styles.deleteButton}
+                    >
+                      <Text style={[styles.deleteButtonText, { color: colorScheme.colors.textSecondary }]}>×</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={[styles.eventTime, { color: colorScheme.colors.primary }]}>
+                    {formatTimeRange(`${event.startTime}–${event.endTime}`, use12Hour)}
+                  </Text>
+                  <Text style={[styles.eventType, { color: colorScheme.colors.textSecondary }]}>
+                    {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {events.length > 0 && <View style={[styles.divider, dynamicStyles.divider]} />}
 
         {timeBlocks.map((block) => (
           <View key={block.id} style={[
@@ -146,6 +242,15 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
           </View>
         ))}
       </ScrollView>
+
+      <AddEventModal
+        visible={showAddEventModal}
+        dateKey={dateKey}
+        onClose={() => setShowAddEventModal(false)}
+        onSave={handleSaveEvent}
+        colorScheme={colorScheme.colors}
+        use12Hour={use12Hour}
+      />
     </View>
   );
 }
@@ -272,6 +377,71 @@ const styles = StyleSheet.create({
     height: 1,
     marginBottom: 8,
     opacity: 0.5,
+  },
+  dayHeaderTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  dayHeaderLeft: {
+    flex: 1,
+  },
+  addButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginLeft: 12,
+  },
+  addButtonText: {
+    color: '#FFF8E7',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  eventsSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  eventCard: {
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  eventContent: {
+    flex: 1,
+  },
+  eventHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  eventTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+  },
+  deleteButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  deleteButtonText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  eventTime: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  eventType: {
+    fontSize: 12,
+    textTransform: 'uppercase',
   },
 });
 
