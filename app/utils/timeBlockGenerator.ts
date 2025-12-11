@@ -44,14 +44,19 @@ export const generateTimeBlocks = (preferences: UserPreferences): GeneratedTimeB
     // Use the corresponding block definition, or create a default one
     const blockDefinition = orderedBlockDefinitions[i] || {
       id: `block-${i}`,
-      time: `${startTime}–${endTime}`,
+      time: '', // Will be set below
       title: 'Time Block',
       description: '',
     };
     
+    // Always use the generated time, never the original time from block definition
+    const generatedTime = `${startTime}–${endTime}`;
+    
     blocks.push({
-      ...blockDefinition,
-      time: `${startTime}–${endTime}`,
+      id: blockDefinition.id,
+      title: blockDefinition.title,
+      description: blockDefinition.description,
+      time: generatedTime, // Always use generated time based on start/end times
       startTime,
       endTime,
     });

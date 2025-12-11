@@ -48,6 +48,15 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         return [];
       }
 
+      // Ensure we have enough block definitions for the preview
+      const blockCount = Math.floor((endMinutes - startMinutes) / 120);
+      const availableBlocks = timeBlockOrder.length;
+      
+      if (availableBlocks < blockCount) {
+        // Not enough blocks, return empty to show error
+        return [];
+      }
+
       const tempPreferences: UserPreferences = {
         startTime,
         endTime,
