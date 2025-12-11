@@ -139,8 +139,8 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
                 onChangeText={(text) => saveEntry(block.id, text)}
               />
               <View style={styles.handwritingLines}>
-                <View style={styles.line} />
-                <View style={styles.line} />
+                <View style={[styles.line, { backgroundColor: colorScheme.colors.border }]} />
+                <View style={[styles.line, { backgroundColor: colorScheme.colors.border }]} />
               </View>
             </View>
           </View>
@@ -270,7 +270,6 @@ const styles = StyleSheet.create({
   },
   line: {
     height: 1,
-    backgroundColor: '#A67C52',
     marginBottom: 8,
     opacity: 0.5,
   },

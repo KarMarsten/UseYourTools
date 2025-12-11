@@ -127,7 +127,10 @@ export default function CalendarScreen({ onSelectDate, onBack, refreshTrigger }:
         ))}
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.calendarGrid}>
+      <ScrollView 
+        style={[styles.scrollView, { backgroundColor: colorScheme.colors.background }]} 
+        contentContainerStyle={styles.calendarGrid}
+      >
         {days.map((date, index) => {
           const dayTheme = getDayThemeForDate(date);
           const dayNumber = date.getDate();
@@ -142,14 +145,12 @@ export default function CalendarScreen({ onSelectDate, onBack, refreshTrigger }:
               style={[
                 styles.calendarDay,
                 {
-                  backgroundColor: isCurrentMonthDate ? colorScheme.colors.surface : colorScheme.colors.background,
-                  borderColor: colorScheme.colors.border,
-                },
-                !isCurrentMonthDate && styles.calendarDayOtherMonth,
-                isTodayDate && {
-                  backgroundColor: colorScheme.colors.primary,
-                  borderColor: colorScheme.colors.text,
-                  borderWidth: 2,
+                  backgroundColor: isCurrentMonthDate 
+                    ? (isTodayDate ? colorScheme.colors.primary : colorScheme.colors.surface)
+                    : colorScheme.colors.background,
+                  borderColor: isTodayDate ? colorScheme.colors.text : colorScheme.colors.border,
+                  opacity: !isCurrentMonthDate ? 0.3 : 1,
+                  borderWidth: isTodayDate ? 2 : 1,
                 },
               ]}
               onPress={() => onSelectDate(date)}
@@ -260,26 +261,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     padding: 10,
+    backgroundColor: 'transparent', // Will be overridden by scrollView background
   },
   calendarDay: {
     width: '14.28%',
     aspectRatio: 1,
     padding: 8,
-    borderWidth: 1,
-    borderColor: '#C9A66B',
-    backgroundColor: '#E7D7C1',
     margin: 1,
     borderRadius: 8,
     justifyContent: 'space-between',
-  },
-  calendarDayOtherMonth: {
-    backgroundColor: '#f5f5dc',
-    opacity: 0.3,
-  },
-  calendarDayToday: {
-    backgroundColor: '#8C6A4A',
-    borderWidth: 2,
-    borderColor: '#4A3A2A',
   },
   dayNumber: {
     fontSize: 16,
@@ -294,7 +284,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   dayThemeIndicator: {
-    backgroundColor: '#C9A66B',
     borderRadius: 4,
     paddingHorizontal: 4,
     paddingVertical: 2,
@@ -302,7 +291,6 @@ const styles = StyleSheet.create({
   },
   dayThemeText: {
     fontSize: 9,
-    color: '#4A3A2A',
     fontWeight: '500',
   },
   entryIndicator: {
