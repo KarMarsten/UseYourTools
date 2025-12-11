@@ -11,7 +11,7 @@ export interface UserPreferences {
 const DEFAULT_PREFERENCES: UserPreferences = {
   startTime: '08:00',
   endTime: '22:00',
-  timeBlockOrder: TIME_BLOCKS.map(block => block.id),
+  timeBlockOrder: TIME_BLOCKS.map(block => block.id), // Default: all blocks in order
   hasCompletedSetup: false,
 };
 

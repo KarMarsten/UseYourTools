@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { TIME_BLOCKS, TimeBlock } from '../utils/plannerData';
 import { UserPreferences, savePreferences, loadPreferences } from '../utils/preferences';
+import { generateTimeBlocks } from '../utils/timeBlockGenerator';
 
 interface SetupScreenProps {
   onComplete: () => void;
@@ -31,6 +32,35 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
     }
   };
 
+  const getGeneratedBlocksPreview = () => {
+    try {
+      const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+        return [];
+      }
+
+      const [startH, startM] = startTime.split(':').map(Number);
+      const [endH, endM] = endTime.split(':').map(Number);
+      const startMinutes = startH * 60 + startM;
+      const endMinutes = endH * 60 + endM;
+
+      if (startMinutes >= endMinutes) {
+        return [];
+      }
+
+      const tempPreferences: UserPreferences = {
+        startTime,
+        endTime,
+        timeBlockOrder,
+        hasCompletedSetup: false,
+      };
+
+      return generateTimeBlocks(tempPreferences);
+    } catch {
+      return [];
+    }
+  };
+
   const handleSave = async () => {
     // Validate time format
     const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
@@ -47,6 +77,16 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
 
     if (startMinutes >= endMinutes) {
       Alert.alert('Invalid Time', 'Start time must be before end time.');
+      return;
+    }
+
+    // Check that we have enough block definitions for the generated blocks
+    const generatedCount = Math.floor((endMinutes - startMinutes) / 120);
+    if (timeBlockOrder.length < generatedCount) {
+      Alert.alert(
+        'Not Enough Blocks',
+        `Your day will have ${generatedCount} time blocks, but you only have ${timeBlockOrder.length} block definitions. Please add more blocks or adjust your time range.`
+      );
       return;
     }
 
@@ -107,6 +147,9 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Day Times</Text>
+          <Text style={styles.sectionDescription}>
+            Your day will be divided into 2-hour blocks between these times
+          </Text>
           <View style={styles.timeInputContainer}>
             <View style={styles.timeInput}>
               <Text style={styles.timeLabel}>Start Time</Text>
@@ -131,12 +174,31 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
               <Text style={styles.timeHint}>24-hour format (HH:MM)</Text>
             </View>
           </View>
+          {(() => {
+            const preview = getGeneratedBlocksPreview();
+            if (preview.length > 0) {
+              return (
+                <View style={styles.previewContainer}>
+                  <Text style={styles.previewTitle}>Preview: {preview.length} time blocks</Text>
+                  {preview.slice(0, 3).map((block, idx) => (
+                    <Text key={idx} style={styles.previewText}>
+                      {block.time} - {block.title}
+                    </Text>
+                  ))}
+                  {preview.length > 3 && (
+                    <Text style={styles.previewText}>...</Text>
+                  )}
+                </View>
+              );
+            }
+            return null;
+          })()}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Time Block Order</Text>
+          <Text style={styles.sectionTitle}>Time Block Labels</Text>
           <Text style={styles.sectionDescription}>
-            Reorder your time blocks by moving them up or down
+            Reorder your time block labels. These will be assigned to 2-hour slots in order (first block = first 2 hours, etc.)
           </Text>
           {timeBlockOrder.map((blockId, index) => {
             const block = getTimeBlockById(blockId);
@@ -263,6 +325,25 @@ const styles = StyleSheet.create({
     color: '#6b5b4f',
     marginTop: 4,
     textAlign: 'center',
+  },
+  previewContainer: {
+    marginTop: 16,
+    backgroundColor: '#f5f5dc',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#C9A66B',
+  },
+  previewTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4A3A2A',
+    marginBottom: 8,
+  },
+  previewText: {
+    fontSize: 12,
+    color: '#6b5b4f',
+    marginBottom: 4,
   },
   blockItem: {
     flexDirection: 'row',
