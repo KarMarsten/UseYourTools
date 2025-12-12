@@ -4,7 +4,8 @@ import { getDayThemeForDate, getDayName } from '../utils/plannerData';
 import { hasEntriesForDate } from '../utils/entryChecker';
 import { loadEventsForDate, Event } from '../utils/events';
 import { usePreferences } from '../context/PreferencesContext';
-import { formatTimeRange } from '../utils/timeFormatter';
+import { formatTimeRange, formatTime12Hour } from '../utils/timeFormatter';
+import { openAddressInMaps, openPhoneNumber, openEmail } from '../utils/eventActions';
 
 interface CalendarScreenProps {
   onSelectDate: (date: Date) => void;
@@ -285,11 +286,61 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
                     {event.type === 'interview' ? '💼' : event.type === 'appointment' ? '📅' : '🔔'} {event.title}
                   </Text>
                   <Text style={[styles.eventTime, { color: colorScheme.colors.primary }]}>
-                    {formatTimeRange(`${event.startTime}–${event.endTime}`, use12Hour)}
+                    {event.endTime 
+                      ? formatTimeRange(`${event.startTime}–${event.endTime}`, use12Hour)
+                      : formatTime12Hour(event.startTime)}
                   </Text>
                   <Text style={[styles.eventType, { color: colorScheme.colors.textSecondary }]}>
                     {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
                   </Text>
+                  
+                  {/* Display contact information for interviews/appointments */}
+                  {event.type !== 'reminder' && (
+                    <View style={styles.eventDetails}>
+                      {event.contactName && (
+                        <Text style={[styles.eventDetailText, { color: colorScheme.colors.text }]}>
+                          👤 {event.contactName}
+                        </Text>
+                      )}
+                      {event.address && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            const mapPref = preferences?.mapAppPreference || 'apple-maps';
+                            openAddressInMaps(event.address!, mapPref);
+                          }}
+                        >
+                          <Text style={[styles.eventDetailLink, { color: colorScheme.colors.primary }]}>
+                            📍 {event.address}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                      {event.email && (
+                        <TouchableOpacity
+                          onPress={() => openEmail(event.email!)}
+                        >
+                          <Text style={[styles.eventDetailLink, { color: colorScheme.colors.primary }]}>
+                            ✉️ {event.email}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                      {event.phone && (
+                        <TouchableOpacity
+                          onPress={() => openPhoneNumber(event.phone!)}
+                        >
+                          <Text style={[styles.eventDetailLink, { color: colorScheme.colors.primary }]}>
+                            📞 {event.phone}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                  
+                  {/* Display notes for all event types */}
+                  {event.notes && (
+                    <Text style={[styles.eventNotes, { color: colorScheme.colors.textSecondary }]}>
+                      {event.notes}
+                    </Text>
+                  )}
                 </View>
               </View>
             ))}
@@ -509,6 +560,25 @@ const styles = StyleSheet.create({
   eventType: {
     fontSize: 12,
     textTransform: 'uppercase',
+  },
+  eventDetails: {
+    marginTop: 8,
+    gap: 6,
+  },
+  eventDetailText: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  eventDetailLink: {
+    fontSize: 14,
+    marginTop: 4,
+    textDecorationLine: 'underline',
+  },
+  eventNotes: {
+    fontSize: 14,
+    marginTop: 8,
+    fontStyle: 'italic',
+    lineHeight: 20,
   },
   noEventsText: {
     padding: 16,

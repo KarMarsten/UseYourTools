@@ -9,6 +9,7 @@ export interface UserPreferences {
   hasCompletedSetup: boolean;
   use12HourClock: boolean; // Toggle between 12-hour and 24-hour clock
   colorScheme: ColorSchemeName; // Selected color scheme
+  mapAppPreference: 'apple-maps' | 'google-maps'; // Preferred map app
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -18,6 +19,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   hasCompletedSetup: false,
   use12HourClock: false, // Default to 24-hour clock
   colorScheme: 'earth-tone', // Default to Earth-Tone
+  mapAppPreference: 'apple-maps', // Default to Apple Maps
 };
 
 const PREFERENCES_KEY = 'planner_preferences';

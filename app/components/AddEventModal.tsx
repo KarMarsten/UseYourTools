@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { Event } from '../utils/events';
 import { formatTimeRange } from '../utils/timeFormatter';
@@ -25,6 +26,7 @@ interface AddEventModalProps {
     border: string;
   };
   use12Hour: boolean;
+  event?: Event; // Optional event for editing
 }
 
 export default function AddEventModal({
@@ -34,11 +36,43 @@ export default function AddEventModal({
   onSave,
   colorScheme,
   use12Hour,
+  event,
 }: AddEventModalProps) {
-  const [title, setTitle] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [type, setType] = useState<'interview' | 'appointment' | 'reminder'>('reminder');
+  const [title, setTitle] = useState(event?.title || '');
+  const [startTime, setStartTime] = useState(event?.startTime || '');
+  const [endTime, setEndTime] = useState(event?.endTime || '');
+  const [type, setType] = useState<'interview' | 'appointment' | 'reminder'>(event?.type || 'reminder');
+  const [notes, setNotes] = useState(event?.notes || '');
+  const [address, setAddress] = useState(event?.address || '');
+  const [contactName, setContactName] = useState(event?.contactName || '');
+  const [email, setEmail] = useState(event?.email || '');
+  const [phone, setPhone] = useState(event?.phone || '');
+
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (visible && event) {
+      setTitle(event.title || '');
+      setStartTime(event.startTime || '');
+      setEndTime(event.endTime || '');
+      setType(event.type || 'reminder');
+      setNotes(event.notes || '');
+      setAddress(event.address || '');
+      setContactName(event.contactName || '');
+      setEmail(event.email || '');
+      setPhone(event.phone || '');
+    } else if (!visible) {
+      // Reset when closing
+      setTitle('');
+      setStartTime('');
+      setEndTime('');
+      setType('reminder');
+      setNotes('');
+      setAddress('');
+      setContactName('');
+      setEmail('');
+      setPhone('');
+    }
+  }, [visible, event]);
 
   const handleSave = () => {
     // Validate inputs
@@ -53,45 +87,44 @@ export default function AddEventModal({
       return;
     }
 
-    if (!timeRegex.test(endTime)) {
-      Alert.alert('Error', 'Please enter a valid end time (HH:MM format)');
-      return;
+    // End time is only required for interviews and appointments
+    if (type !== 'reminder') {
+      if (!endTime || !timeRegex.test(endTime)) {
+        Alert.alert('Error', 'Please enter a valid end time (HH:MM format)');
+        return;
+      }
+
+      // Validate that end time is after start time
+      const [startH, startM] = startTime.split(':').map(Number);
+      const [endH, endM] = endTime.split(':').map(Number);
+      const startTotal = startH * 60 + startM;
+      const endTotal = endH * 60 + endM;
+
+      if (endTotal <= startTotal) {
+        Alert.alert('Error', 'End time must be after start time');
+        return;
+      }
     }
 
-    // Validate that end time is after start time
-    const [startH, startM] = startTime.split(':').map(Number);
-    const [endH, endM] = endTime.split(':').map(Number);
-    const startTotal = startH * 60 + startM;
-    const endTotal = endH * 60 + endM;
-
-    if (endTotal <= startTotal) {
-      Alert.alert('Error', 'End time must be after start time');
-      return;
-    }
-
-    const event: Event = {
-      id: `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    const savedEvent: Event = {
+      id: event?.id || `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       dateKey,
       title: title.trim(),
       startTime,
-      endTime,
+      endTime: type !== 'reminder' ? endTime : undefined,
       type,
+      notes: notes.trim() || undefined,
+      address: (type !== 'reminder' && address.trim()) ? address.trim() : undefined,
+      contactName: (type !== 'reminder' && contactName.trim()) ? contactName.trim() : undefined,
+      email: (type !== 'reminder' && email.trim()) ? email.trim() : undefined,
+      phone: (type !== 'reminder' && phone.trim()) ? phone.trim() : undefined,
     };
 
-    onSave(event);
-    // Reset form
-    setTitle('');
-    setStartTime('');
-    setEndTime('');
-    setType('reminder');
+    onSave(savedEvent);
     onClose();
   };
 
   const handleCancel = () => {
-    setTitle('');
-    setStartTime('');
-    setEndTime('');
-    setType('reminder');
     onClose();
   };
 
@@ -104,7 +137,11 @@ export default function AddEventModal({
     >
       <View style={styles.modalOverlay}>
         <View style={[styles.modalContent, { backgroundColor: colorScheme.surface }]}>
-          <Text style={[styles.modalTitle, { color: colorScheme.text }]}>Add Event</Text>
+          <Text style={[styles.modalTitle, { color: colorScheme.text }]}>
+            {event ? 'Edit Event' : 'Add Event'}
+          </Text>
+          
+          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
 
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: colorScheme.text }]}>Title</Text>
@@ -177,27 +214,131 @@ export default function AddEventModal({
               </Text>
             </View>
 
-            <View style={styles.timeInput}>
-              <Text style={[styles.label, { color: colorScheme.text }]}>End Time</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colorScheme.background,
-                    borderColor: colorScheme.border,
-                    color: colorScheme.text,
-                  },
-                ]}
-                value={endTime}
-                onChangeText={setEndTime}
-                placeholder="10:00"
-                placeholderTextColor={colorScheme.textSecondary}
-              />
-              <Text style={[styles.hint, { color: colorScheme.textSecondary }]}>
-                24-hour format (HH:MM)
-              </Text>
-            </View>
+            {type !== 'reminder' && (
+              <View style={styles.timeInput}>
+                <Text style={[styles.label, { color: colorScheme.text }]}>End Time</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colorScheme.background,
+                      borderColor: colorScheme.border,
+                      color: colorScheme.text,
+                    },
+                  ]}
+                  value={endTime}
+                  onChangeText={setEndTime}
+                  placeholder="10:00"
+                  placeholderTextColor={colorScheme.textSecondary}
+                />
+                <Text style={[styles.hint, { color: colorScheme.textSecondary }]}>
+                  24-hour format (HH:MM)
+                </Text>
+              </View>
+            )}
           </View>
+
+          {/* Notes field for all event types */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: colorScheme.text }]}>Notes</Text>
+            <TextInput
+              style={[
+                styles.textArea,
+                {
+                  backgroundColor: colorScheme.background,
+                  borderColor: colorScheme.border,
+                  color: colorScheme.text,
+                },
+              ]}
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="Additional notes..."
+              placeholderTextColor={colorScheme.textSecondary}
+              multiline
+              numberOfLines={3}
+            />
+          </View>
+
+          {/* Additional fields for interviews and appointments */}
+          {type !== 'reminder' && (
+            <>
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colorScheme.text }]}>Address</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colorScheme.background,
+                      borderColor: colorScheme.border,
+                      color: colorScheme.text,
+                    },
+                  ]}
+                  value={address}
+                  onChangeText={setAddress}
+                  placeholder="123 Main St, City, State"
+                  placeholderTextColor={colorScheme.textSecondary}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colorScheme.text }]}>Contact Name</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colorScheme.background,
+                      borderColor: colorScheme.border,
+                      color: colorScheme.text,
+                    },
+                  ]}
+                  value={contactName}
+                  onChangeText={setContactName}
+                  placeholder="John Doe"
+                  placeholderTextColor={colorScheme.textSecondary}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colorScheme.text }]}>Email</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colorScheme.background,
+                      borderColor: colorScheme.border,
+                      color: colorScheme.text,
+                    },
+                  ]}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="john.doe@example.com"
+                  placeholderTextColor={colorScheme.textSecondary}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colorScheme.text }]}>Phone</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colorScheme.background,
+                      borderColor: colorScheme.border,
+                      color: colorScheme.text,
+                    },
+                  ]}
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="(555) 123-4567"
+                  placeholderTextColor={colorScheme.textSecondary}
+                  keyboardType="phone-pad"
+                />
+              </View>
+            </>
+          )}
+          </ScrollView>
 
           <View style={styles.buttonRow}>
             <TouchableOpacity
@@ -232,6 +373,9 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     maxHeight: '90%',
   },
+  scrollView: {
+    maxHeight: 600,
+  },
   modalTitle: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -250,6 +394,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+  },
+  textArea: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 80,
+    textAlignVertical: 'top',
   },
   typeContainer: {
     flexDirection: 'row',

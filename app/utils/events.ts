@@ -5,9 +5,15 @@ export interface Event {
   dateKey: string; // Format: "YYYY-MM-DD"
   title: string;
   startTime: string; // Format: "HH:MM"
-  endTime: string; // Format: "HH:MM"
+  endTime?: string; // Format: "HH:MM" - optional for reminders
   type: 'interview' | 'appointment' | 'reminder';
   notificationId?: string; // ID for scheduled notification
+  // Optional fields for appointments/interviews
+  notes?: string; // General notes for any event type
+  address?: string; // Address (for interviews/appointments)
+  contactName?: string; // Name of contact person (for interviews/appointments)
+  email?: string; // Email address (for interviews/appointments)
+  phone?: string; // Phone number (for interviews/appointments)
 }
 
 const EVENTS_KEY_PREFIX = 'planner_event_';

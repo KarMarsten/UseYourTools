@@ -18,6 +18,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
   const [timeBlockOrder, setTimeBlockOrder] = useState<string[]>(TIME_BLOCKS.map(b => b.id));
   const [use12HourClock, setUse12HourClock] = useState(false);
   const [colorScheme, setColorScheme] = useState<ColorSchemeName>('earth-tone');
+  const [mapAppPreference, setMapAppPreference] = useState<'apple-maps' | 'google-maps'>('apple-maps');
   const [loading, setLoading] = useState(true);
   const { refreshPreferences } = usePreferences();
   
@@ -74,6 +75,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
       setTimeBlockOrder(prefs.timeBlockOrder);
       setUse12HourClock(prefs.use12HourClock ?? false);
       setColorScheme(prefs.colorScheme ?? 'earth-tone');
+      setMapAppPreference(prefs.mapAppPreference ?? 'apple-maps');
     } catch (error) {
       console.error('Error loading preferences:', error);
     } finally {
@@ -117,6 +119,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         hasCompletedSetup: false,
         use12HourClock: false, // Preview always uses 24-hour format
         colorScheme: 'earth-tone', // Preview uses default colors
+        mapAppPreference: 'apple-maps', // Preview uses default
       };
 
       return generateTimeBlocks(tempPreferences);
@@ -152,6 +155,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         hasCompletedSetup: true,
         use12HourClock,
         colorScheme,
+        mapAppPreference,
       };
       await savePreferences(preferences);
       await refreshPreferences(); // Refresh preferences context
@@ -349,6 +353,55 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
               trackColor={{ false: '#a0826d', true: currentColorScheme.colors.secondary }}
               thumbColor={use12HourClock ? currentColorScheme.colors.primary : '#f4f3f4'}
             />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: currentColorScheme.colors.text }]}>
+            Map App Preference
+          </Text>
+          <Text style={[styles.sectionDescription, { color: currentColorScheme.colors.textSecondary }]}>
+            Choose which map app to use when opening addresses
+          </Text>
+          <View style={styles.mapAppContainer}>
+            <TouchableOpacity
+              style={[
+                styles.mapAppOption,
+                {
+                  backgroundColor: currentColorScheme.colors.surface,
+                  borderColor: mapAppPreference === 'apple-maps' ? currentColorScheme.colors.primary : currentColorScheme.colors.border,
+                },
+                mapAppPreference === 'apple-maps' && { borderWidth: 2 }
+              ]}
+              onPress={() => setMapAppPreference('apple-maps')}
+            >
+              <Text style={[
+                styles.mapAppText,
+                { color: currentColorScheme.colors.text },
+                mapAppPreference === 'apple-maps' && { fontWeight: 'bold', color: currentColorScheme.colors.primary }
+              ]}>
+                🗺️ Apple Maps
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.mapAppOption,
+                {
+                  backgroundColor: currentColorScheme.colors.surface,
+                  borderColor: mapAppPreference === 'google-maps' ? currentColorScheme.colors.primary : currentColorScheme.colors.border,
+                },
+                mapAppPreference === 'google-maps' && { borderWidth: 2 }
+              ]}
+              onPress={() => setMapAppPreference('google-maps')}
+            >
+              <Text style={[
+                styles.mapAppText,
+                { color: currentColorScheme.colors.text },
+                mapAppPreference === 'google-maps' && { fontWeight: 'bold', color: currentColorScheme.colors.primary }
+              ]}>
+                🌐 Google Maps
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -614,6 +667,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#4A3A2A',
+  },
+  mapAppContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  mapAppOption: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  mapAppText: {
+    fontSize: 16,
   },
 });
 

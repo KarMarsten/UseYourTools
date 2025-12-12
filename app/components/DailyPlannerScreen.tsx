@@ -5,9 +5,10 @@ import { getDayThemeForDate, getDayName } from '../utils/plannerData';
 import { loadPreferences } from '../utils/preferences';
 import { generateTimeBlocks, GeneratedTimeBlock } from '../utils/timeBlockGenerator';
 import { usePreferences } from '../context/PreferencesContext';
-import { formatTimeRange } from '../utils/timeFormatter';
+import { formatTimeRange, formatTime12Hour } from '../utils/timeFormatter';
 import { Event, loadEventsForDate, saveEvent, deleteEvent, generateEventId } from '../utils/events';
 import { scheduleEventNotification, cancelEventNotification } from '../utils/eventNotifications';
+import { openAddressInMaps, openPhoneNumber, openEmail } from '../utils/eventActions';
 import AddEventModal from './AddEventModal';
 
 interface DailyPlannerScreenProps {
@@ -24,6 +25,7 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
   const [timeBlocks, setTimeBlocks] = useState<GeneratedTimeBlock[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | undefined>(undefined);
   const { preferences, colorScheme } = usePreferences();
   const dateKey = date.toISOString().split('T')[0];
   const dayTheme = getDayThemeForDate(date);
@@ -76,6 +78,11 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
 
   const handleSaveEvent = async (event: Event) => {
     try {
+      // If editing, cancel old notification first
+      if (editingEvent?.notificationId) {
+        await cancelEventNotification(editingEvent.notificationId);
+      }
+      
       // Schedule notification 10 minutes before event
       const notificationId = await scheduleEventNotification(event);
       if (notificationId) {
@@ -84,11 +91,23 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
 
       await saveEvent(event);
       await loadEvents(); // Reload events to update UI
+      setEditingEvent(undefined);
+      setShowAddEventModal(false);
       // Note: Calendar refresh will happen when user navigates back
     } catch (error) {
       console.error('Error saving event:', error);
       Alert.alert('Error', 'Failed to save event');
     }
+  };
+
+  const handleEditEvent = (event: Event) => {
+    setEditingEvent(event);
+    setShowAddEventModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowAddEventModal(false);
+    setEditingEvent(undefined);
   };
 
   const handleDeleteEvent = async (event: Event) => {
@@ -168,7 +187,7 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
           <View style={styles.eventsSection}>
             <Text style={[styles.sectionTitle, { color: colorScheme.colors.text }]}>Events</Text>
             {events.map((event) => (
-              <View
+              <TouchableOpacity
                 key={event.id}
                 style={[
                   styles.eventCard,
@@ -177,6 +196,7 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
                     borderColor: colorScheme.colors.border,
                   },
                 ]}
+                onPress={() => handleEditEvent(event)}
               >
                 <View style={styles.eventContent}>
                   <View style={styles.eventHeader}>
@@ -184,20 +204,80 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
                       {event.type === 'interview' ? '💼' : event.type === 'appointment' ? '📅' : '🔔'} {event.title}
                     </Text>
                     <TouchableOpacity
-                      onPress={() => handleDeleteEvent(event)}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleDeleteEvent(event);
+                      }}
                       style={styles.deleteButton}
                     >
                       <Text style={[styles.deleteButtonText, { color: colorScheme.colors.textSecondary }]}>×</Text>
                     </TouchableOpacity>
                   </View>
                   <Text style={[styles.eventTime, { color: colorScheme.colors.primary }]}>
-                    {formatTimeRange(`${event.startTime}–${event.endTime}`, use12Hour)}
+                    {event.endTime 
+                      ? formatTimeRange(`${event.startTime}–${event.endTime}`, use12Hour)
+                      : formatTime12Hour(event.startTime)}
                   </Text>
                   <Text style={[styles.eventType, { color: colorScheme.colors.textSecondary }]}>
                     {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
                   </Text>
+                  
+                  {/* Display contact information for interviews/appointments */}
+                  {event.type !== 'reminder' && (
+                    <View style={styles.eventDetails}>
+                      {event.contactName && (
+                        <Text style={[styles.eventDetailText, { color: colorScheme.colors.text }]}>
+                          👤 {event.contactName}
+                        </Text>
+                      )}
+                      {event.address && (
+                        <TouchableOpacity
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            const mapPref = preferences?.mapAppPreference || 'apple-maps';
+                            openAddressInMaps(event.address!, mapPref);
+                          }}
+                        >
+                          <Text style={[styles.eventDetailLink, { color: colorScheme.colors.primary }]}>
+                            📍 {event.address}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                      {event.email && (
+                        <TouchableOpacity
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            openEmail(event.email!);
+                          }}
+                        >
+                          <Text style={[styles.eventDetailLink, { color: colorScheme.colors.primary }]}>
+                            ✉️ {event.email}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                      {event.phone && (
+                        <TouchableOpacity
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            openPhoneNumber(event.phone!);
+                          }}
+                        >
+                          <Text style={[styles.eventDetailLink, { color: colorScheme.colors.primary }]}>
+                            📞 {event.phone}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                  
+                  {/* Display notes for all event types */}
+                  {event.notes && (
+                    <Text style={[styles.eventNotes, { color: colorScheme.colors.textSecondary }]}>
+                      {event.notes}
+                    </Text>
+                  )}
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         )}
@@ -248,10 +328,11 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
       <AddEventModal
         visible={showAddEventModal}
         dateKey={dateKey}
-        onClose={() => setShowAddEventModal(false)}
+        onClose={handleCloseModal}
         onSave={handleSaveEvent}
         colorScheme={colorScheme.colors}
         use12Hour={use12Hour}
+        event={editingEvent}
       />
     </View>
   );
@@ -444,6 +525,25 @@ const styles = StyleSheet.create({
   eventType: {
     fontSize: 12,
     textTransform: 'uppercase',
+  },
+  eventDetails: {
+    marginTop: 8,
+    gap: 6,
+  },
+  eventDetailText: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  eventDetailLink: {
+    fontSize: 14,
+    marginTop: 4,
+    textDecorationLine: 'underline',
+  },
+  eventNotes: {
+    fontSize: 14,
+    marginTop: 8,
+    fontStyle: 'italic',
+    lineHeight: 20,
   },
 });
 
