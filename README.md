@@ -1,4 +1,4 @@
-<img width="1200" height="800" alt="image" src="https://github.com/user-attachments/assets/6f38436d-3074-4100-92fa-b5d1bd9634ec" />
+<p align="center"><img width="400" height="400" alt="image" src="https://github.com/KarMarsten/UseYourTools/blob/main/app/assets/icon.png" /></p>
 
 # UseYourTools - Structured Daily Planner for Job Hunters 📅
 
