@@ -2,7 +2,7 @@
 
 # UseYourTools - Structured Daily Planner for Job Hunters 📅
 
-A comprehensive daily planning app designed specifically for job seekers, built with React Native and Expo. This repository contains both the iOS app implementation and the original prompt-driven PDF planner workflow.
+A comprehensive daily planning app designed specifically for job seekers, built with React Native and Expo.
 
 ---
 
@@ -136,12 +136,9 @@ UseYourTools/
 │   │   ├── pdfExports.ts        # PDF generation
 │   │   ├── timeBlockGenerator.ts # Dynamic time block generation
 │   │   └── preferences.ts       # User preferences management
-│   ├── prompts/                 # Original planner prompts
 │   ├── assets/                  # App icons and images
 │   ├── App.tsx                  # Main app component
 │   └── package.json             # Dependencies
-├── prompts/                     # PDF planner prompts
-│   └── GoodNotesPlannerPrompt.md
 ├── docs/                        # Documentation
 │   ├── Overview.md
 │   └── Usage.md
@@ -199,21 +196,6 @@ All color schemes use a cream background (#FFF8E7) for consistency and readabili
 - **expo-notifications** - Event reminders
 - **expo-print** & **expo-sharing** - PDF generation and sharing
 - **react-native-webview** - In-app report viewing
-
----
-
-## 📄 Original PDF Planner
-
-The repository also includes the original prompt-driven PDF planner workflow for generating GoodNotes-compatible planner PDFs.
-
-### Using the PDF Prompt
-
-1. Open `prompts/GoodNotesPlannerPrompt.md`
-2. Copy the prompt and paste into ChatGPT or another LLM
-3. Generate a 7-page PDF with the specified time blocks and earth-tone aesthetic
-4. Import into GoodNotes, Notability, or your favorite handwriting app
-
-See `docs/Usage.md` for detailed instructions on customizing and using the PDF planner.
 
 ---
 
