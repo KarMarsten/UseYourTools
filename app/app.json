@@ -4,11 +4,13 @@
     "slug": "useyourtools",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "splash": {
       "backgroundColor": "#f5f5dc",
-      "resizeMode": "contain"
+      "resizeMode": "contain",
+      "image": "./assets/icon.png"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -22,7 +24,8 @@
       "adaptiveIcon": {
         "backgroundColor": "#f5f5dc"
       },
-      "newArchEnabled": false
+      "newArchEnabled": false,
+      "package": "com.useyourtools.app"
     },
     "web": {},
     "scheme": "useyourtools"

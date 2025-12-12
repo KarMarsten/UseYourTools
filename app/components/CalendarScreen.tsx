@@ -78,9 +78,8 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
       const entries = await loadEntriesForWeek(weekStart);
       const allEvents = await getAllEvents();
       
-      Alert.alert('Exporting', 'Generating weekly schedule PDF...');
       await exportWeeklySchedulePDF(weekStart, preferences, entries, allEvents);
-      Alert.alert('Success', 'Weekly schedule PDF exported successfully!');
+      // Success message is handled by the sharing dialog
     } catch (error) {
       console.error('Error exporting weekly schedule:', error);
       Alert.alert('Error', 'Failed to export weekly schedule');
@@ -92,9 +91,8 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
       const weekStart = getWeekStart(currentDate);
       const allEvents = await getAllEvents();
       
-      Alert.alert('Exporting', 'Generating unemployment report PDF...');
       await exportUnemploymentReportPDF(weekStart, allEvents);
-      Alert.alert('Success', 'Unemployment report PDF exported successfully!');
+      // Success message is handled by the sharing dialog
     } catch (error) {
       console.error('Error exporting unemployment report:', error);
       Alert.alert('Error', 'Failed to export unemployment report');
