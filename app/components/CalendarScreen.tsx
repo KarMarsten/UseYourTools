@@ -19,6 +19,7 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, onRep
   const [currentDate, setCurrentDate] = useState(new Date());
   const [daysWithEntries, setDaysWithEntries] = useState<Set<string>>(new Set());
   const [daysWithEvents, setDaysWithEvents] = useState<Set<string>>(new Set());
+  const [daysWithReminders, setDaysWithReminders] = useState<Set<string>>(new Set());
 
   const handleExit = () => {
     if (Platform.OS === 'android') {
@@ -93,19 +94,30 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, onRep
   const checkEventsForMonth = async () => {
     const days = getDaysInMonth(currentDate);
     const eventsSet = new Set<string>();
+    const remindersSet = new Set<string>();
     
     // Check events for all days in the current month
     for (const day of days) {
       if (day.getMonth() === currentDate.getMonth()) {
         const dateKey = getDateKey(day);
         const events = await loadEventsForDate(dateKey);
-        if (events.length > 0) {
+        
+        // Check for interviews/appointments
+        const hasInterviewsOrAppointments = events.some(e => e.type === 'interview' || e.type === 'appointment');
+        if (hasInterviewsOrAppointments) {
           eventsSet.add(dateKey);
+        }
+        
+        // Check for reminders
+        const hasReminder = events.some(e => e.type === 'reminder');
+        if (hasReminder) {
+          remindersSet.add(dateKey);
         }
       }
     }
     
     setDaysWithEvents(eventsSet);
+    setDaysWithReminders(remindersSet);
   };
 
   const loadSelectedDayEvents = async () => {
@@ -268,6 +280,7 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, onRep
           const dateKey = getDateKey(normalizedDate);
           const hasEntries = daysWithEntries.has(dateKey);
           const hasEvents = daysWithEvents.has(dateKey);
+          const hasReminders = daysWithReminders.has(dateKey);
           const isSelected = selectedDate && dateKey === getDateKey(selectedDate);
 
           return (
@@ -300,13 +313,16 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, onRep
                     {isCurrentMonthDate ? dayNumber : ''}
                   </Text>
                 </View>
-                {isCurrentMonthDate && (hasEntries || hasEvents) && (
+                {isCurrentMonthDate && (hasEntries || hasEvents || hasReminders) && (
                   <View style={styles.indicatorsContainer}>
                     {hasEntries && (
                       <Text style={styles.indicatorIcon}>✏️</Text>
                     )}
                     {hasEvents && (
                       <Text style={styles.indicatorIcon}>💬</Text>
+                    )}
+                    {hasReminders && (
+                      <Text style={styles.indicatorIcon}>🔔</Text>
                     )}
                   </View>
                 )}
@@ -356,7 +372,7 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, onRep
                   <Text style={[styles.eventTime, { color: colorScheme.colors.primary }]}>
                     {event.endTime 
                       ? formatTimeRange(`${event.startTime}–${event.endTime}`, use12Hour)
-                      : formatTime12Hour(event.startTime)}
+                      : use12Hour ? formatTime12Hour(event.startTime) : event.startTime}
                   </Text>
                   <Text style={[styles.eventType, { color: colorScheme.colors.textSecondary }]}>
                     {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
@@ -589,10 +605,14 @@ const styles = StyleSheet.create({
     bottom: 2,
     right: 2,
     flexDirection: 'row',
-    gap: 2,
+    gap: 3,
+    flexWrap: 'wrap',
+    maxWidth: '60%',
+    justifyContent: 'flex-end',
   },
   indicatorIcon: {
     fontSize: 10,
+    lineHeight: 12,
   },
   noEventsContainer: {
     padding: 20,

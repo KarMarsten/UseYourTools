@@ -10,7 +10,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Event } from '../utils/events';
-import { formatTimeRange } from '../utils/timeFormatter';
+import { formatTimeRange, formatTime12Hour } from '../utils/timeFormatter';
 
 interface AddEventModalProps {
   visible: boolean;
@@ -49,6 +49,93 @@ export default function AddEventModal({
   const [phone, setPhone] = useState(event?.phone || '');
   const [company, setCompany] = useState(event?.company || '');
   const [jobTitle, setJobTitle] = useState(event?.jobTitle || '');
+
+  // Time picker states
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  
+  // Parse time to components (for 12-hour or 24-hour display)
+  const parseTimeForDisplay = (time24: string): { hour: number; minute: number; period: 'AM' | 'PM' | null } => {
+    if (!time24 || !time24.includes(':')) {
+      return { hour: use12Hour ? 12 : 9, minute: 0, period: use12Hour ? 'AM' : null };
+    }
+    const [hours24, minutes] = time24.split(':').map(Number);
+    if (use12Hour) {
+      const hour12 = hours24 === 0 ? 12 : hours24 > 12 ? hours24 - 12 : hours24;
+      const period = hours24 >= 12 ? 'PM' : 'AM';
+      return { hour: hour12, minute: minutes, period };
+    } else {
+      return { hour: hours24, minute: minutes, period: null };
+    }
+  };
+
+  // Convert display time back to 24-hour format
+  const convertTo24Hour = (hour: number, minute: number, period: 'AM' | 'PM' | null): string => {
+    let hour24 = hour;
+    if (use12Hour && period) {
+      if (period === 'AM' && hour === 12) {
+        hour24 = 0;
+      } else if (period === 'PM' && hour !== 12) {
+        hour24 = hour + 12;
+      }
+    }
+    return `${String(hour24).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  };
+
+  // Get display time string
+  const getDisplayTime = (time24: string): string => {
+    if (!time24 || !time24.includes(':')) return '';
+    if (use12Hour) {
+      return formatTime12Hour(time24);
+    }
+    return time24;
+  };
+
+  const [startHour, setStartHour] = useState(() => parseTimeForDisplay(event?.startTime || '').hour);
+  const [startMinute, setStartMinute] = useState(() => parseTimeForDisplay(event?.startTime || '').minute);
+  const [startPeriod, setStartPeriod] = useState<'AM' | 'PM' | null>(() => parseTimeForDisplay(event?.startTime || '').period);
+  
+  const [endHour, setEndHour] = useState(() => parseTimeForDisplay(event?.endTime || '').hour);
+  const [endMinute, setEndMinute] = useState(() => parseTimeForDisplay(event?.endTime || '').minute);
+  const [endPeriod, setEndPeriod] = useState<'AM' | 'PM' | null>(() => parseTimeForDisplay(event?.endTime || '').period);
+
+  // Update time components when startTime/endTime changes from props
+  useEffect(() => {
+    if (startTime) {
+      const parsed = parseTimeForDisplay(startTime);
+      setStartHour(parsed.hour);
+      setStartMinute(parsed.minute);
+      setStartPeriod(parsed.period);
+    } else {
+      setStartHour(use12Hour ? 12 : 9);
+      setStartMinute(0);
+      setStartPeriod(use12Hour ? 'AM' : null);
+    }
+  }, [startTime, use12Hour]);
+
+  useEffect(() => {
+    if (endTime) {
+      const parsed = parseTimeForDisplay(endTime);
+      setEndHour(parsed.hour);
+      setEndMinute(parsed.minute);
+      setEndPeriod(parsed.period);
+    } else {
+      setEndHour(use12Hour ? 1 : 10);
+      setEndMinute(0);
+      setEndPeriod(use12Hour ? 'PM' : null);
+    }
+  }, [endTime, use12Hour]);
+
+  // Update time string when components change
+  const updateStartTime = (hour: number, minute: number, period: 'AM' | 'PM' | null) => {
+    const time24 = convertTo24Hour(hour, minute, period);
+    setStartTime(time24);
+  };
+
+  const updateEndTime = (hour: number, minute: number, period: 'AM' | 'PM' | null) => {
+    const time24 = convertTo24Hour(hour, minute, period);
+    setEndTime(time24);
+  };
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -217,45 +304,45 @@ export default function AddEventModal({
           <View style={styles.timeRow}>
             <View style={styles.timeInput}>
               <Text style={[styles.label, { color: colorScheme.text }]}>Start Time</Text>
-              <TextInput
+              <TouchableOpacity
                 style={[
-                  styles.input,
+                  styles.timePickerButton,
                   {
                     backgroundColor: colorScheme.background,
                     borderColor: colorScheme.border,
-                    color: colorScheme.text,
                   },
                 ]}
-                value={startTime}
-                onChangeText={setStartTime}
-                placeholder="09:00"
-                placeholderTextColor={colorScheme.textSecondary}
-              />
-              <Text style={[styles.hint, { color: colorScheme.textSecondary }]}>
-                24-hour format (HH:MM)
-              </Text>
+                onPress={() => {
+                  setShowEndTimePicker(false);
+                  setShowStartTimePicker(true);
+                }}
+              >
+                <Text style={[styles.timePickerText, { color: colorScheme.text }]}>
+                  {startTime ? getDisplayTime(startTime) : 'Select time'}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {type !== 'reminder' && (
               <View style={styles.timeInput}>
                 <Text style={[styles.label, { color: colorScheme.text }]}>End Time</Text>
-                <TextInput
+                <TouchableOpacity
                   style={[
-                    styles.input,
+                    styles.timePickerButton,
                     {
                       backgroundColor: colorScheme.background,
                       borderColor: colorScheme.border,
-                      color: colorScheme.text,
                     },
                   ]}
-                  value={endTime}
-                  onChangeText={setEndTime}
-                  placeholder="10:00"
-                  placeholderTextColor={colorScheme.textSecondary}
-                />
-                <Text style={[styles.hint, { color: colorScheme.textSecondary }]}>
-                  24-hour format (HH:MM)
-                </Text>
+                  onPress={() => {
+                    setShowStartTimePicker(false);
+                    setShowEndTimePicker(true);
+                  }}
+                >
+                  <Text style={[styles.timePickerText, { color: colorScheme.text }]}>
+                    {endTime ? getDisplayTime(endTime) : 'Select time'}
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -398,6 +485,43 @@ export default function AddEventModal({
           )}
           </ScrollView>
 
+          {/* Time picker dropdowns rendered outside ScrollView */}
+          {showStartTimePicker && (
+            <TimePickerDropdown
+              hour={startHour}
+              minute={startMinute}
+              period={startPeriod}
+              use12Hour={use12Hour}
+              colorScheme={colorScheme}
+              onSelect={(h, m, p) => {
+                setStartHour(h);
+                setStartMinute(m);
+                setStartPeriod(p);
+                updateStartTime(h, m, p);
+                setShowStartTimePicker(false);
+              }}
+              onClose={() => setShowStartTimePicker(false)}
+            />
+          )}
+
+          {showEndTimePicker && (
+            <TimePickerDropdown
+              hour={endHour}
+              minute={endMinute}
+              period={endPeriod}
+              use12Hour={use12Hour}
+              colorScheme={colorScheme}
+              onSelect={(h, m, p) => {
+                setEndHour(h);
+                setEndMinute(m);
+                setEndPeriod(p);
+                updateEndTime(h, m, p);
+                setShowEndTimePicker(false);
+              }}
+              onClose={() => setShowEndTimePicker(false)}
+            />
+          )}
+
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={[styles.button, styles.cancelButton, { borderColor: colorScheme.border }]}
@@ -417,6 +541,149 @@ export default function AddEventModal({
     </Modal>
   );
 }
+
+// Time Picker Dropdown Component
+interface TimePickerDropdownProps {
+  hour: number;
+  minute: number;
+  period: 'AM' | 'PM' | null;
+  use12Hour: boolean;
+  colorScheme: {
+    background: string;
+    surface: string;
+    text: string;
+    textSecondary: string;
+    primary: string;
+    border: string;
+  };
+  onSelect: (hour: number, minute: number, period: 'AM' | 'PM' | null) => void;
+  onClose: () => void;
+}
+
+const TimePickerDropdown = ({
+  hour,
+  minute,
+  period,
+  use12Hour,
+  colorScheme,
+  onSelect,
+  onClose,
+}: TimePickerDropdownProps) => {
+  const hours = use12Hour 
+    ? Array.from({ length: 12 }, (_, i) => i + 1)
+    : Array.from({ length: 24 }, (_, i) => i);
+  const minutes = Array.from({ length: 60 }, (_, i) => i);
+  const periods: ('AM' | 'PM')[] = ['AM', 'PM'];
+
+  const [selectedHour, setSelectedHour] = useState(hour);
+  const [selectedMinute, setSelectedMinute] = useState(minute);
+  const [selectedPeriod, setSelectedPeriod] = useState<'AM' | 'PM' | null>(period || 'AM');
+
+  const handleConfirm = () => {
+    onSelect(selectedHour, selectedMinute, selectedPeriod);
+  };
+
+  return (
+    <View style={styles.dropdownOverlay}>
+      <TouchableOpacity style={styles.dropdownBackdrop} onPress={onClose} />
+      <View style={[styles.dropdownContainer, { backgroundColor: colorScheme.surface, borderColor: colorScheme.border }]}>
+        <View style={styles.dropdownRow}>
+          <View style={styles.dropdownColumn}>
+            <Text style={[styles.dropdownLabel, { color: colorScheme.text }]}>Hour</Text>
+            <ScrollView style={styles.dropdownScroll} showsVerticalScrollIndicator={false}>
+              {hours.map((h) => (
+                <TouchableOpacity
+                  key={h}
+                  style={[
+                    styles.dropdownItem,
+                    selectedHour === h && { backgroundColor: colorScheme.primary },
+                  ]}
+                  onPress={() => setSelectedHour(h)}
+                >
+                  <Text
+                    style={[
+                      styles.dropdownItemText,
+                      { color: selectedHour === h ? colorScheme.background : colorScheme.text },
+                    ]}
+                  >
+                    {String(h).padStart(2, '0')}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={styles.dropdownColumn}>
+            <Text style={[styles.dropdownLabel, { color: colorScheme.text }]}>Minute</Text>
+            <ScrollView style={styles.dropdownScroll} showsVerticalScrollIndicator={false}>
+              {minutes.map((m) => (
+                <TouchableOpacity
+                  key={m}
+                  style={[
+                    styles.dropdownItem,
+                    selectedMinute === m && { backgroundColor: colorScheme.primary },
+                  ]}
+                  onPress={() => setSelectedMinute(m)}
+                >
+                  <Text
+                    style={[
+                      styles.dropdownItemText,
+                      { color: selectedMinute === m ? colorScheme.background : colorScheme.text },
+                    ]}
+                  >
+                    {String(m).padStart(2, '0')}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {use12Hour && (
+            <View style={styles.dropdownColumn}>
+              <Text style={[styles.dropdownLabel, { color: colorScheme.text }]}>Period</Text>
+              <ScrollView style={styles.dropdownScroll} showsVerticalScrollIndicator={false}>
+                {periods.map((p) => (
+                  <TouchableOpacity
+                    key={p}
+                    style={[
+                      styles.dropdownItem,
+                      selectedPeriod === p && { backgroundColor: colorScheme.primary },
+                    ]}
+                    onPress={() => setSelectedPeriod(p)}
+                  >
+                    <Text
+                      style={[
+                        styles.dropdownItemText,
+                        { color: selectedPeriod === p ? colorScheme.background : colorScheme.text },
+                      ]}
+                    >
+                      {p}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.dropdownButtons}>
+          <TouchableOpacity
+            style={[styles.dropdownButton, { borderColor: colorScheme.border }]}
+            onPress={onClose}
+          >
+            <Text style={[styles.dropdownButtonText, { color: colorScheme.text }]}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.dropdownButton, { backgroundColor: colorScheme.primary }]}
+            onPress={handleConfirm}
+          >
+            <Text style={[styles.dropdownButtonText, { color: colorScheme.background }]}>OK</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -483,6 +750,82 @@ const styles = StyleSheet.create({
   },
   timeInput: {
     flex: 1,
+  },
+  timePickerButton: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 48,
+    justifyContent: 'center',
+  },
+  timePickerText: {
+    fontSize: 16,
+  },
+  dropdownOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1000,
+  },
+  dropdownBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  dropdownContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+    maxHeight: 350,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  dropdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
+  dropdownColumn: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  dropdownLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  dropdownScroll: {
+    maxHeight: 200,
+    width: '100%',
+  },
+  dropdownItem: {
+    padding: 12,
+    borderRadius: 8,
+    marginVertical: 2,
+    alignItems: 'center',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+  },
+  dropdownButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  dropdownButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  dropdownButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   hint: {
     fontSize: 12,

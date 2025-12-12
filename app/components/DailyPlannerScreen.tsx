@@ -221,7 +221,7 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
                   <Text style={[styles.eventTime, { color: colorScheme.colors.primary }]}>
                     {event.endTime 
                       ? formatTimeRange(`${event.startTime}–${event.endTime}`, use12Hour)
-                      : formatTime12Hour(event.startTime)}
+                      : use12Hour ? formatTime12Hour(event.startTime) : event.startTime}
                   </Text>
                   <Text style={[styles.eventType, { color: colorScheme.colors.textSecondary }]}>
                     {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
