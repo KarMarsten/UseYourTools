@@ -1,0 +1,777 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, BackHandler, Platform, Alert } from 'react-native';
+import { getDayThemeForDate, getDayName } from '../utils/plannerData';
+import { hasEntriesForDate } from '../utils/entryChecker';
+import { loadEventsForDate, Event, getAllEvents } from '../utils/events';
+import { usePreferences } from '../context/PreferencesContext';
+import { formatTimeRange, formatTime12Hour } from '../utils/timeFormatter';
+import { openAddressInMaps, openPhoneNumber, openEmail } from '../utils/eventActions';
+import { exportWeeklySchedulePDF, exportUnemploymentReportPDF } from '../utils/pdfExports';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+interface CalendarScreenProps {
+  onSelectDate: (date: Date) => void;
+  onBack?: () => void;
+  onSettings?: () => void;
+  refreshTrigger?: number; // Optional trigger to refresh entry indicators
+}
+
+export default function CalendarScreen({ onSelectDate, onBack, onSettings, refreshTrigger }: CalendarScreenProps) {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [daysWithEntries, setDaysWithEntries] = useState<Set<string>>(new Set());
+  const [daysWithEvents, setDaysWithEvents] = useState<Set<string>>(new Set());
+
+  const handleExit = () => {
+    if (Platform.OS === 'android') {
+      Alert.alert(
+        'Exit App',
+        'Are you sure you want to exit?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Exit',
+            style: 'destructive',
+            onPress: () => BackHandler.exitApp(),
+          },
+        ]
+      );
+    } else {
+      // iOS doesn't support programmatic exit, but we can show a message
+      Alert.alert('Exit App', 'On iOS, you can exit by swiping up from the bottom and swiping the app away.');
+    }
+  };
+
+  const getWeekStart = (date: Date): Date => {
+    const weekStart = new Date(date);
+    const day = weekStart.getDay();
+    const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1); // Adjust so Monday is first day
+    weekStart.setDate(diff);
+    weekStart.setHours(0, 0, 0, 0);
+    return weekStart;
+  };
+
+  const loadEntriesForWeek = async (weekStart: Date): Promise<Record<string, Record<string, string>>> => {
+    const entries: Record<string, Record<string, string>> = {};
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(weekStart);
+      date.setDate(weekStart.getDate() + i);
+      const dateKey = date.toISOString().split('T')[0];
+      try {
+        const stored = await AsyncStorage.getItem(`planner_${dateKey}`);
+        if (stored) {
+          entries[dateKey] = JSON.parse(stored);
+        }
+      } catch (error) {
+        console.error(`Error loading entries for ${dateKey}:`, error);
+      }
+    }
+    return entries;
+  };
+
+  const handleExportWeeklySchedule = async () => {
+    if (!preferences) {
+      Alert.alert('Error', 'Preferences not loaded');
+      return;
+    }
+    try {
+      const weekStart = getWeekStart(currentDate);
+      const entries = await loadEntriesForWeek(weekStart);
+      const allEvents = await getAllEvents();
+      
+      await exportWeeklySchedulePDF(weekStart, preferences, entries, allEvents);
+      // Success message is handled by the sharing dialog
+    } catch (error) {
+      console.error('Error exporting weekly schedule:', error);
+      Alert.alert('Error', 'Failed to export weekly schedule');
+    }
+  };
+
+  const handleExportUnemploymentReport = async () => {
+    try {
+      const weekStart = getWeekStart(currentDate);
+      const allEvents = await getAllEvents();
+      
+      await exportUnemploymentReportPDF(weekStart, allEvents);
+      // Success message is handled by the sharing dialog
+    } catch (error) {
+      console.error('Error exporting unemployment report:', error);
+      Alert.alert('Error', 'Failed to export unemployment report');
+    }
+  };
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedEvents, setSelectedEvents] = useState<Event[]>([]);
+  const initialLoadRef = useRef(false);
+  const { colorScheme, preferences } = usePreferences();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const use12Hour = preferences?.use12HourClock ?? false;
+
+  // On initial load, automatically select today if it's in the current month
+  useEffect(() => {
+    if (!initialLoadRef.current) {
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0);
+      const currentMonth = currentDate.getMonth();
+      const currentYear = currentDate.getFullYear();
+      if (todayDate.getMonth() === currentMonth && todayDate.getFullYear() === currentYear) {
+        setSelectedDate(todayDate);
+      }
+      initialLoadRef.current = true;
+    }
+  }, [currentDate]);
+
+  useEffect(() => {
+    checkEntriesForMonth();
+    checkEventsForMonth();
+  }, [currentDate, refreshTrigger]);
+
+  useEffect(() => {
+    if (selectedDate) {
+      loadSelectedDayEvents();
+    }
+  }, [selectedDate, refreshTrigger]);
+
+  const checkEntriesForMonth = async () => {
+    const days = getDaysInMonth(currentDate);
+    const entriesSet = new Set<string>();
+    
+    // Check entries for all days in the current month
+    for (const day of days) {
+      if (day.getMonth() === currentDate.getMonth()) {
+        const hasEntries = await hasEntriesForDate(day);
+        if (hasEntries) {
+          entriesSet.add(day.toISOString().split('T')[0]);
+        }
+      }
+    }
+    
+    setDaysWithEntries(entriesSet);
+  };
+
+  const checkEventsForMonth = async () => {
+    const days = getDaysInMonth(currentDate);
+    const eventsSet = new Set<string>();
+    
+    // Check events for all days in the current month
+    for (const day of days) {
+      if (day.getMonth() === currentDate.getMonth()) {
+        const dateKey = day.toISOString().split('T')[0];
+        const events = await loadEventsForDate(dateKey);
+        if (events.length > 0) {
+          eventsSet.add(dateKey);
+        }
+      }
+    }
+    
+    setDaysWithEvents(eventsSet);
+  };
+
+  const loadSelectedDayEvents = async () => {
+    if (!selectedDate) return;
+    const dateKey = selectedDate.toISOString().split('T')[0];
+    const events = await loadEventsForDate(dateKey);
+    setSelectedEvents(events);
+  };
+
+  const handleDayPress = (date: Date) => {
+    // Normalize date to start of day
+    const normalizedDate = new Date(date);
+    normalizedDate.setHours(0, 0, 0, 0);
+    setSelectedDate(normalizedDate);
+  };
+
+  const handleOpenPlanner = () => {
+    if (selectedDate) {
+      onSelectDate(selectedDate);
+    }
+  };
+
+  const getDaysInMonth = (date: Date): Date[] => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    const days: Date[] = [];
+    
+    // Add empty cells for days before the first day of the month
+    // Use negative day indices to get previous month's days: -1 is last day, -2 is second-to-last, etc.
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(new Date(year, month, -i));
+    }
+
+    // Add all days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(new Date(year, month, day));
+    }
+
+    return days;
+  };
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const navigateMonth = (direction: number) => {
+    const newMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + direction, 1);
+    setCurrentDate(newMonth);
+    // Clear selected date when month changes, then auto-select today if it's in the new month
+    setSelectedDate(null);
+    setSelectedEvents([]);
+    // Auto-select today if navigating to the month containing today
+    if (today.getMonth() === newMonth.getMonth() && today.getFullYear() === newMonth.getFullYear()) {
+      setTimeout(() => {
+        setSelectedDate(today);
+      }, 100); // Small delay to ensure month has loaded
+    }
+  };
+
+  const isToday = (date: Date): boolean => {
+    return date.toDateString() === today.toDateString();
+  };
+
+  const isCurrentMonth = (date: Date): boolean => {
+    return date.getMonth() === currentDate.getMonth();
+  };
+
+  const days = getDaysInMonth(currentDate);
+
+  const dynamicStyles = {
+    container: { backgroundColor: colorScheme.colors.background },
+    header: { backgroundColor: colorScheme.colors.surface, borderBottomColor: colorScheme.colors.border },
+    title: { color: colorScheme.colors.text },
+    backButtonText: { color: colorScheme.colors.primary },
+    calendarHeader: { backgroundColor: colorScheme.colors.surface },
+    navButtonText: { color: colorScheme.colors.primary },
+    monthYear: { color: colorScheme.colors.text },
+    weekDaysContainer: { backgroundColor: colorScheme.colors.surface, borderBottomColor: colorScheme.colors.border },
+    weekDayText: { color: colorScheme.colors.textSecondary },
+  };
+
+  return (
+    <View style={[styles.container, dynamicStyles.container]}>
+      <View style={[styles.header, dynamicStyles.header]}>
+        {onBack && (
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Text style={[styles.backButtonText, dynamicStyles.backButtonText]}>← Home</Text>
+          </TouchableOpacity>
+        )}
+        <View style={styles.headerContent}>
+          <Text style={[styles.title, dynamicStyles.title]}>🌿 Calendar</Text>
+        </View>
+        <View style={styles.headerRight}>
+          {onSettings && (
+            <TouchableOpacity onPress={onSettings} style={styles.settingsButton}>
+              <Text style={[styles.settingsIcon, { color: colorScheme.colors.text }]}>⚙️</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={handleExit} style={styles.exitButton}>
+            <Text style={[styles.exitIcon, { color: colorScheme.colors.text }]}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      {/* PDF Export Buttons */}
+      <View style={styles.pdfExportContainer}>
+        <TouchableOpacity
+          style={[styles.pdfExportButton, { backgroundColor: colorScheme.colors.primary }]}
+          onPress={handleExportWeeklySchedule}
+        >
+          <Text style={styles.pdfExportButtonText}>📄 Export Weekly Schedule</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.pdfExportButton, { backgroundColor: colorScheme.colors.accent }]}
+          onPress={handleExportUnemploymentReport}
+        >
+          <Text style={styles.pdfExportButtonText}>📋 Export Unemployment Report</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={[styles.calendarHeader, dynamicStyles.calendarHeader]}>
+        <TouchableOpacity onPress={() => navigateMonth(-1)} style={styles.navButton}>
+          <Text style={[styles.navButtonText, dynamicStyles.navButtonText]}>‹</Text>
+        </TouchableOpacity>
+        <Text style={[styles.monthYear, dynamicStyles.monthYear]}>
+          {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+        </Text>
+        <TouchableOpacity onPress={() => navigateMonth(1)} style={styles.navButton}>
+          <Text style={[styles.navButtonText, dynamicStyles.navButtonText]}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={[styles.weekDaysContainer, dynamicStyles.weekDaysContainer]}>
+        {weekDays.map((day) => (
+          <View key={day} style={styles.weekDay}>
+            <Text style={[styles.weekDayText, dynamicStyles.weekDayText]}>{day}</Text>
+          </View>
+        ))}
+      </View>
+
+      <ScrollView 
+        style={[styles.scrollView, { backgroundColor: colorScheme.colors.background }]} 
+        contentContainerStyle={styles.calendarGrid}
+      >
+        {days.map((date, index) => {
+          const dayTheme = getDayThemeForDate(date);
+          const dayNumber = date.getDate();
+          const isTodayDate = isToday(date);
+          const isCurrentMonthDate = isCurrentMonth(date);
+          const dateKey = date.toISOString().split('T')[0];
+          const hasEntries = daysWithEntries.has(dateKey);
+          const hasEvents = daysWithEvents.has(dateKey);
+          const isSelected = selectedDate && dateKey === selectedDate.toISOString().split('T')[0];
+
+          return (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.calendarDay,
+                {
+                  backgroundColor: isCurrentMonthDate 
+                    ? (isTodayDate ? colorScheme.colors.primary : 
+                       isSelected ? colorScheme.colors.accent : colorScheme.colors.surface)
+                    : colorScheme.colors.background,
+                  borderColor: isTodayDate ? colorScheme.colors.text : 
+                              isSelected ? colorScheme.colors.primary : colorScheme.colors.border,
+                  opacity: !isCurrentMonthDate ? 0.3 : 1,
+                  borderWidth: (isTodayDate || isSelected) ? 2 : 1,
+                },
+              ]}
+              onPress={() => handleDayPress(date)}
+            >
+              <Text
+                style={[
+                  styles.dayNumber,
+                  { color: isCurrentMonthDate ? colorScheme.colors.text : colorScheme.colors.textSecondary },
+                  isTodayDate && { color: colorScheme.colors.background, fontWeight: 'bold' },
+                ]}
+              >
+                {isCurrentMonthDate ? dayNumber : ''}
+              </Text>
+              {isCurrentMonthDate && (
+                <>
+                  <View style={[styles.dayThemeIndicator, { backgroundColor: colorScheme.colors.secondary }]}>
+                    <Text style={[styles.dayThemeText, { color: colorScheme.colors.text }]} numberOfLines={1}>
+                      {dayTheme.theme.split(' ')[0]}
+                    </Text>
+                  </View>
+                  <View style={styles.indicatorsContainer}>
+                    {hasEntries && (
+                      <View style={styles.indicator}>
+                        <Text style={styles.indicatorIcon}>📄</Text>
+                      </View>
+                    )}
+                    {hasEvents && (
+                      <View style={styles.indicator}>
+                        <Text style={styles.indicatorIcon}>💬</Text>
+                      </View>
+                    )}
+                  </View>
+                </>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* Events section for selected day */}
+      {selectedDate && selectedEvents.length > 0 && (
+        <View style={[styles.eventsContainer, { backgroundColor: colorScheme.colors.background, borderTopColor: colorScheme.colors.border }]}>
+          <View style={[styles.eventsHeader, { borderBottomColor: colorScheme.colors.border }]}>
+            <Text style={[styles.eventsTitle, { color: colorScheme.colors.text }]}>
+              Events for {monthNames[selectedDate.getMonth()]} {selectedDate.getDate()}, {selectedDate.getFullYear()}
+            </Text>
+            <TouchableOpacity
+              onPress={handleOpenPlanner}
+              style={[styles.openPlannerButton, { backgroundColor: colorScheme.colors.primary }]}
+            >
+              <Text style={styles.openPlannerButtonText}>Open Planner →</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.eventsScrollView}>
+            {selectedEvents.map((event) => (
+              <View
+                key={event.id}
+                style={[
+                  styles.eventCard,
+                  {
+                    backgroundColor: colorScheme.colors.surface,
+                    borderColor: colorScheme.colors.border,
+                  },
+                ]}
+              >
+                <View style={styles.eventContent}>
+                  <Text style={[styles.eventTitle, { color: colorScheme.colors.text }]}>
+                    {event.type === 'interview' ? '💼' : event.type === 'appointment' ? '📅' : '🔔'} {event.title}
+                  </Text>
+                  <Text style={[styles.eventTime, { color: colorScheme.colors.primary }]}>
+                    {event.endTime 
+                      ? formatTimeRange(`${event.startTime}–${event.endTime}`, use12Hour)
+                      : formatTime12Hour(event.startTime)}
+                  </Text>
+                  <Text style={[styles.eventType, { color: colorScheme.colors.textSecondary }]}>
+                    {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
+                  </Text>
+                  
+                  {/* Display contact information for interviews/appointments */}
+                  {event.type !== 'reminder' && (
+                    <View style={styles.eventDetails}>
+                      {event.company && (
+                        <Text style={[styles.eventDetailText, { color: colorScheme.colors.text }]}>
+                          🏢 {event.company}
+                        </Text>
+                      )}
+                      {event.jobTitle && (
+                        <Text style={[styles.eventDetailText, { color: colorScheme.colors.text }]}>
+                          💼 {event.jobTitle}
+                        </Text>
+                      )}
+                      {event.contactName && (
+                        <Text style={[styles.eventDetailText, { color: colorScheme.colors.text }]}>
+                          👤 {event.contactName}
+                        </Text>
+                      )}
+                      {event.address && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            const mapPref = preferences?.mapAppPreference || 'apple-maps';
+                            openAddressInMaps(event.address!, mapPref);
+                          }}
+                        >
+                          <View style={styles.eventDetailLinkContainer}>
+                            <Text style={styles.eventDetailIcon}>📍</Text>
+                            <Text style={[styles.eventDetailLink, { color: colorScheme.colors.text }]}>
+                              {event.address}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      )}
+                      {event.email && (
+                        <TouchableOpacity
+                          onPress={() => openEmail(event.email!)}
+                        >
+                          <View style={styles.eventDetailLinkContainer}>
+                            <Text style={styles.eventDetailIcon}>✉️</Text>
+                            <Text style={[styles.eventDetailLink, { color: colorScheme.colors.text }]}>
+                              {event.email}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      )}
+                      {event.phone && (
+                        <TouchableOpacity
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            console.log('Phone number pressed:', event.phone);
+                            openPhoneNumber(event.phone!);
+                          }}
+                        >
+                          <View style={styles.eventDetailLinkContainer}>
+                            <Text style={styles.eventDetailIcon}>📞</Text>
+                            <Text style={[styles.eventDetailLink, { color: colorScheme.colors.text }]}>
+                              {event.phone}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                  
+                  {/* Display notes for all event types */}
+                  {event.notes && (
+                    <Text style={[styles.eventNotes, { color: colorScheme.colors.textSecondary }]}>
+                      {event.notes}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {selectedDate && selectedEvents.length === 0 && (
+        <View style={[styles.eventsContainer, { backgroundColor: colorScheme.colors.background, borderTopColor: colorScheme.colors.border }]}>
+          <View style={[styles.eventsHeader, { borderBottomColor: colorScheme.colors.border }]}>
+            <Text style={[styles.eventsTitle, { color: colorScheme.colors.text }]}>
+              {monthNames[selectedDate.getMonth()]} {selectedDate.getDate()}, {selectedDate.getFullYear()}
+            </Text>
+            <TouchableOpacity
+              onPress={handleOpenPlanner}
+              style={[styles.openPlannerButton, { backgroundColor: colorScheme.colors.primary }]}
+            >
+              <Text style={styles.openPlannerButtonText}>Open Planner →</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={[styles.noEventsText, { color: colorScheme.colors.textSecondary }]}>
+            No events scheduled for this day
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5dc',
+  },
+  header: {
+    padding: 20,
+    paddingTop: 50,
+    backgroundColor: '#E7D7C1',
+    borderBottomWidth: 1,
+    borderBottomColor: '#C9A66B',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  backButton: {
+    marginBottom: 10,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#8C6A4A',
+    fontWeight: '600',
+  },
+  headerContent: {
+    marginTop: 10,
+    flex: 1,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#8b7355',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 10,
+  },
+  settingsButton: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  settingsIcon: {
+    fontSize: 24,
+  },
+  exitButton: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  exitIcon: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  pdfExportContainer: {
+    flexDirection: 'row',
+    padding: 12,
+    gap: 8,
+    backgroundColor: '#FFF8E7',
+    borderBottomWidth: 1,
+    borderBottomColor: '#C9A66B',
+  },
+  pdfExportButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  pdfExportButtonText: {
+    color: '#FFF8E7',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#E7D7C1',
+  },
+  navButton: {
+    padding: 10,
+    minWidth: 44,
+    alignItems: 'center',
+  },
+  navButtonText: {
+    fontSize: 24,
+    color: '#8C6A4A',
+    fontWeight: 'bold',
+  },
+  monthYear: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#4A3A2A',
+  },
+  weekDaysContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#E7D7C1',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#C9A66B',
+  },
+  weekDay: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  weekDayText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b5b4f',
+    textTransform: 'uppercase',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 10,
+    backgroundColor: 'transparent', // Will be overridden by scrollView background
+  },
+  calendarDay: {
+    width: '14.28%',
+    aspectRatio: 1,
+    padding: 8,
+    margin: 1,
+    borderRadius: 8,
+    justifyContent: 'space-between',
+  },
+  dayNumber: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4A3A2A',
+  },
+  dayNumberOtherMonth: {
+    color: '#a0826d',
+  },
+  dayNumberToday: {
+    color: '#f5f5dc',
+    fontWeight: 'bold',
+  },
+  dayThemeIndicator: {
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    marginTop: 4,
+  },
+  dayThemeText: {
+    fontSize: 9,
+    fontWeight: '500',
+  },
+  indicatorsContainer: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  indicator: {
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  indicatorIcon: {
+    fontSize: 12,
+  },
+  eventsContainer: {
+    maxHeight: 300,
+    borderTopWidth: 1,
+    borderTopColor: '#C9A66B',
+  },
+  eventsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#C9A66B',
+  },
+  eventsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+  },
+  openPlannerButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  openPlannerButtonText: {
+    color: '#FFF8E7',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  eventsScrollView: {
+    maxHeight: 250,
+  },
+  eventCard: {
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    marginHorizontal: 16,
+    marginTop: 12,
+  },
+  eventContent: {
+    flex: 1,
+  },
+  eventTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  eventTime: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  eventType: {
+    fontSize: 12,
+    textTransform: 'uppercase',
+  },
+  eventDetails: {
+    marginTop: 8,
+    gap: 6,
+  },
+  eventDetailText: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  eventDetailLinkContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  eventDetailIcon: {
+    fontSize: 14,
+    marginRight: 4,
+  },
+  eventDetailLink: {
+    fontSize: 14,
+    textDecorationLine: 'underline',
+  },
+  eventNotes: {
+    fontSize: 14,
+    marginTop: 8,
+    fontStyle: 'italic',
+    lineHeight: 20,
+  },
+  noEventsText: {
+    padding: 16,
+    textAlign: 'center',
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+});
+

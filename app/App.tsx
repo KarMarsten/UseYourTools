@@ -1,6 +1,14 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Button } from 'react-native';
+import { StyleSheet, Text, View, Button, TouchableOpacity } from 'react-native';
 import { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
+import PromptsScreen from './components/PromptsScreen';
+import PromptDetailScreen from './components/PromptDetailScreen';
+import CalendarScreen from './components/CalendarScreen';
+import DailyPlannerScreen from './components/DailyPlannerScreen';
+import SetupScreen from './components/SetupScreen';
+import { PreferencesProvider, usePreferences } from './context/PreferencesContext';
+import { Prompt } from './prompts';
+import { loadPreferences } from './utils/preferences';
 
 // Error Boundary Component
 const errorStyles = StyleSheet.create({
@@ -55,27 +63,130 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
+type Screen = 'home' | 'prompts' | 'promptDetail' | 'calendar' | 'dailyPlanner' | 'setup';
+
 function AppContent() {
-  const [count, setCount] = useState(0);
+  const [currentScreen, setCurrentScreen] = useState<Screen>('calendar');
+  const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const { colorScheme } = usePreferences();
 
   useEffect(() => {
+    checkSetupStatus();
     setMounted(true);
   }, []);
 
-  const handlePress = () => {
-    setCount(count + 1);
+  const checkSetupStatus = async () => {
+    try {
+      const preferences = await loadPreferences();
+      if (!preferences.hasCompletedSetup) {
+        setCurrentScreen('setup');
+      }
+    } catch (error) {
+      console.error('Error checking setup status:', error);
+    }
+  };
+
+  const handleViewPrompts = () => {
+    setCurrentScreen('prompts');
+  };
+
+  const handleSelectPrompt = (prompt: Prompt) => {
+    setSelectedPrompt(prompt);
+    setCurrentScreen('promptDetail');
+  };
+
+  const handleBackToPrompts = () => {
+    setCurrentScreen('prompts');
+  };
+
+  const handleBackToHome = () => {
+    setCurrentScreen('home');
+    setSelectedPrompt(null);
+    setSelectedDate(null);
+  };
+
+  const handleViewCalendar = () => {
+    setCurrentScreen('calendar');
+  };
+
+  const handleSelectDate = (date: Date) => {
+    // Normalize date to start of day
+    const normalizedDate = new Date(date);
+    normalizedDate.setHours(0, 0, 0, 0);
+    setSelectedDate(normalizedDate);
+    setCurrentScreen('dailyPlanner');
+  };
+
+  const handleBackToCalendarFromPlanner = () => {
+    setCurrentScreen('calendar');
+    // Trigger calendar refresh to update entry indicators
+    setCalendarRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleViewSetup = () => {
+    setCurrentScreen('setup');
+  };
+
+  const handleSetupComplete = () => {
+    setCurrentScreen('calendar');
+  };
+
+  const handleViewSettings = () => {
+    setCurrentScreen('setup');
+  };
+
+  const handleBackToCalendar = () => {
+    setCurrentScreen('calendar');
+  };
+
+  if (currentScreen === 'setup') {
+    return <SetupScreen onComplete={handleSetupComplete} onBack={handleBackToCalendar} />;
+  }
+
+  if (currentScreen === 'prompts') {
+    return <PromptsScreen onSelectPrompt={handleSelectPrompt} onBack={handleBackToHome} />;
+  }
+
+  if (currentScreen === 'promptDetail' && selectedPrompt) {
+    return <PromptDetailScreen prompt={selectedPrompt} onBack={handleBackToPrompts} />;
+  }
+
+  if (currentScreen === 'calendar') {
+    return <CalendarScreen onSelectDate={handleSelectDate} onSettings={handleViewSettings} refreshTrigger={calendarRefreshTrigger} />;
+  }
+
+  if (currentScreen === 'dailyPlanner' && selectedDate) {
+    return <DailyPlannerScreen date={selectedDate} onBack={handleBackToCalendarFromPlanner} />;
+  }
+
+  const dynamicStyles = {
+    container: { backgroundColor: colorScheme.colors.background },
+    title: { color: colorScheme.colors.text },
+    subtitle: { color: colorScheme.colors.textSecondary },
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>UseYourTools</Text>
-      <Text style={styles.subtitle}>Digital Earth-Tone Planner</Text>
+    <View style={[styles.container, dynamicStyles.container]}>
+      <Text style={[styles.title, dynamicStyles.title]}>UseYourTools</Text>
+      <Text style={[styles.subtitle, dynamicStyles.subtitle]}>Structured Daily Planner for Job Hunters</Text>
       {mounted && (
-        <>
-          <Text style={styles.counter}>Count: {count}</Text>
-          <Button title="Increment" onPress={handlePress} />
-        </>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity 
+            style={[styles.promptsButton, { backgroundColor: colorScheme.colors.primary }]} 
+            onPress={handleViewCalendar}
+          >
+            <Text style={styles.promptsButtonText}>📅 Open Planner</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.promptsButton, { backgroundColor: colorScheme.colors.accent }]} 
+            onPress={handleViewSetup}
+          >
+            <Text style={styles.promptsButtonText}>⚙️ Setup</Text>
+          </TouchableOpacity>
+        </View>
       )}
       <StatusBar style="auto" />
     </View>
@@ -114,12 +225,37 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffebee',
     borderRadius: 4,
   },
+  buttonContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  promptsButton: {
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 12,
+    marginBottom: 16,
+    minWidth: 200,
+    alignItems: 'center',
+    shadowColor: '#4A3A2A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  promptsButtonText: {
+    color: '#f5f5dc',
+    fontSize: 18,
+    fontWeight: '600',
+  },
 });
 
 export default function App() {
   return (
     <ErrorBoundary>
-      <AppContent />
+      <PreferencesProvider>
+        <AppContent />
+      </PreferencesProvider>
     </ErrorBoundary>
   );
 }
