@@ -8,10 +8,11 @@ import { usePreferences } from '../context/PreferencesContext';
 interface CalendarScreenProps {
   onSelectDate: (date: Date) => void;
   onBack?: () => void;
+  onSettings?: () => void;
   refreshTrigger?: number; // Optional trigger to refresh entry indicators
 }
 
-export default function CalendarScreen({ onSelectDate, onBack, refreshTrigger }: CalendarScreenProps) {
+export default function CalendarScreen({ onSelectDate, onBack, onSettings, refreshTrigger }: CalendarScreenProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [daysWithEntries, setDaysWithEntries] = useState<Set<string>>(new Set());
   const [daysWithEvents, setDaysWithEvents] = useState<Set<string>>(new Set());
@@ -126,6 +127,11 @@ export default function CalendarScreen({ onSelectDate, onBack, refreshTrigger }:
         <View style={styles.headerContent}>
           <Text style={[styles.title, dynamicStyles.title]}>🌿 Calendar</Text>
         </View>
+        {onSettings && (
+          <TouchableOpacity onPress={onSettings} style={styles.settingsButton}>
+            <Text style={[styles.settingsIcon, { color: colorScheme.colors.text }]}>⚙️</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={[styles.calendarHeader, dynamicStyles.calendarHeader]}>
@@ -226,6 +232,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#E7D7C1',
     borderBottomWidth: 1,
     borderBottomColor: '#C9A66B',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   backButton: {
     marginBottom: 10,
@@ -237,11 +246,21 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     marginTop: 10,
+    flex: 1,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
     color: '#8b7355',
+  },
+  settingsButton: {
+    marginTop: 10,
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  settingsIcon: {
+    fontSize: 24,
   },
   calendarHeader: {
     flexDirection: 'row',

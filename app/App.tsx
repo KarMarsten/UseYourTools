@@ -66,7 +66,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 type Screen = 'home' | 'prompts' | 'promptDetail' | 'calendar' | 'dailyPlanner' | 'setup';
 
 function AppContent() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
+  const [currentScreen, setCurrentScreen] = useState<Screen>('calendar');
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
@@ -120,7 +120,7 @@ function AppContent() {
     setCurrentScreen('dailyPlanner');
   };
 
-  const handleBackToCalendar = () => {
+  const handleBackToCalendarFromPlanner = () => {
     setCurrentScreen('calendar');
     // Trigger calendar refresh to update entry indicators
     setCalendarRefreshTrigger(prev => prev + 1);
@@ -131,11 +131,19 @@ function AppContent() {
   };
 
   const handleSetupComplete = () => {
-    setCurrentScreen('home');
+    setCurrentScreen('calendar');
+  };
+
+  const handleViewSettings = () => {
+    setCurrentScreen('setup');
+  };
+
+  const handleBackToCalendar = () => {
+    setCurrentScreen('calendar');
   };
 
   if (currentScreen === 'setup') {
-    return <SetupScreen onComplete={handleSetupComplete} onBack={handleBackToHome} />;
+    return <SetupScreen onComplete={handleSetupComplete} onBack={handleBackToCalendar} />;
   }
 
   if (currentScreen === 'prompts') {
@@ -147,11 +155,11 @@ function AppContent() {
   }
 
   if (currentScreen === 'calendar') {
-    return <CalendarScreen onSelectDate={handleSelectDate} onBack={handleBackToHome} refreshTrigger={calendarRefreshTrigger} />;
+    return <CalendarScreen onSelectDate={handleSelectDate} onSettings={handleViewSettings} refreshTrigger={calendarRefreshTrigger} />;
   }
 
   if (currentScreen === 'dailyPlanner' && selectedDate) {
-    return <DailyPlannerScreen date={selectedDate} onBack={handleBackToCalendar} />;
+    return <DailyPlannerScreen date={selectedDate} onBack={handleBackToCalendarFromPlanner} />;
   }
 
   const dynamicStyles = {
