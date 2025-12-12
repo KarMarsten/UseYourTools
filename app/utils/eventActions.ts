@@ -43,10 +43,18 @@ export const openAddressInMaps = async (address: string, mapAppPreference: MapAp
 /**
  * Opens phone number with option to call or text
  */
-export const openPhoneNumber = async (phone: string): Promise<void> => {
+export const openPhoneNumber = (phone: string): void => {
   try {
+    if (!phone || phone.trim().length === 0) {
+      console.warn('openPhoneNumber called with empty phone number');
+      Alert.alert('Error', 'No phone number provided');
+      return;
+    }
+
     // Clean phone number (remove non-digit characters except +)
     const cleanedPhone = phone.replace(/[^\d+]/g, '');
+    
+    console.log('Opening phone number alert for:', phone);
     
     Alert.alert(
       'Phone Number',
@@ -56,6 +64,7 @@ export const openPhoneNumber = async (phone: string): Promise<void> => {
           text: 'Call',
           onPress: async () => {
             try {
+              console.log('Calling:', cleanedPhone);
               await Linking.openURL(`tel:${cleanedPhone}`);
             } catch (error) {
               console.error('Error opening phone call:', error);
@@ -67,6 +76,7 @@ export const openPhoneNumber = async (phone: string): Promise<void> => {
           text: 'Text',
           onPress: async () => {
             try {
+              console.log('Texting:', cleanedPhone);
               await Linking.openURL(`sms:${cleanedPhone}`);
             } catch (error) {
               console.error('Error opening text message:', error);
@@ -78,7 +88,8 @@ export const openPhoneNumber = async (phone: string): Promise<void> => {
           text: 'Cancel',
           style: 'cancel',
         },
-      ]
+      ],
+      { cancelable: true }
     );
   } catch (error) {
     console.error('Error with phone number:', error);

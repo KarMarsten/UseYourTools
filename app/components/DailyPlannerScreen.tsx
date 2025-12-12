@@ -225,6 +225,16 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
                   {/* Display contact information for interviews/appointments */}
                   {event.type !== 'reminder' && (
                     <View style={styles.eventDetails}>
+                      {event.company && (
+                        <Text style={[styles.eventDetailText, { color: colorScheme.colors.text }]}>
+                          🏢 {event.company}
+                        </Text>
+                      )}
+                      {event.jobTitle && (
+                        <Text style={[styles.eventDetailText, { color: colorScheme.colors.text }]}>
+                          💼 {event.jobTitle}
+                        </Text>
+                      )}
                       {event.contactName && (
                         <Text style={[styles.eventDetailText, { color: colorScheme.colors.text }]}>
                           👤 {event.contactName}
@@ -238,9 +248,12 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
                             openAddressInMaps(event.address!, mapPref);
                           }}
                         >
-                          <Text style={[styles.eventDetailLink, { color: colorScheme.colors.primary }]}>
-                            📍 {event.address}
-                          </Text>
+                          <View style={styles.eventDetailLinkContainer}>
+                            <Text style={styles.eventDetailIcon}>📍</Text>
+                            <Text style={[styles.eventDetailLink, { color: colorScheme.colors.text }]}>
+                              {event.address}
+                            </Text>
+                          </View>
                         </TouchableOpacity>
                       )}
                       {event.email && (
@@ -250,21 +263,29 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
                             openEmail(event.email!);
                           }}
                         >
-                          <Text style={[styles.eventDetailLink, { color: colorScheme.colors.primary }]}>
-                            ✉️ {event.email}
-                          </Text>
+                          <View style={styles.eventDetailLinkContainer}>
+                            <Text style={styles.eventDetailIcon}>✉️</Text>
+                            <Text style={[styles.eventDetailLink, { color: colorScheme.colors.text }]}>
+                              {event.email}
+                            </Text>
+                          </View>
                         </TouchableOpacity>
                       )}
                       {event.phone && (
                         <TouchableOpacity
+                          activeOpacity={0.7}
                           onPress={(e) => {
                             e.stopPropagation();
+                            console.log('Phone number pressed:', event.phone);
                             openPhoneNumber(event.phone!);
                           }}
                         >
-                          <Text style={[styles.eventDetailLink, { color: colorScheme.colors.primary }]}>
-                            📞 {event.phone}
-                          </Text>
+                          <View style={styles.eventDetailLinkContainer}>
+                            <Text style={styles.eventDetailIcon}>📞</Text>
+                            <Text style={[styles.eventDetailLink, { color: colorScheme.colors.text }]}>
+                              {event.phone}
+                            </Text>
+                          </View>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -534,9 +555,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 4,
   },
+  eventDetailLinkContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  eventDetailIcon: {
+    fontSize: 14,
+    marginRight: 4,
+  },
   eventDetailLink: {
     fontSize: 14,
-    marginTop: 4,
     textDecorationLine: 'underline',
   },
   eventNotes: {

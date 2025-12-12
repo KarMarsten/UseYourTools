@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, BackHandler, Platform, Alert } from 'react-native';
 import { getDayThemeForDate, getDayName } from '../utils/plannerData';
 import { hasEntriesForDate } from '../utils/entryChecker';
-import { loadEventsForDate, Event } from '../utils/events';
+import { loadEventsForDate, Event, getAllEvents } from '../utils/events';
 import { usePreferences } from '../context/PreferencesContext';
 import { formatTimeRange, formatTime12Hour } from '../utils/timeFormatter';
 import { openAddressInMaps, openPhoneNumber, openEmail } from '../utils/eventActions';
+import { exportWeeklySchedulePDF, exportUnemploymentReportPDF } from '../utils/pdfExports';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface CalendarScreenProps {
   onSelectDate: (date: Date) => void;
@@ -18,12 +20,107 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
   const [currentDate, setCurrentDate] = useState(new Date());
   const [daysWithEntries, setDaysWithEntries] = useState<Set<string>>(new Set());
   const [daysWithEvents, setDaysWithEvents] = useState<Set<string>>(new Set());
+
+  const handleExit = () => {
+    if (Platform.OS === 'android') {
+      Alert.alert(
+        'Exit App',
+        'Are you sure you want to exit?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Exit',
+            style: 'destructive',
+            onPress: () => BackHandler.exitApp(),
+          },
+        ]
+      );
+    } else {
+      // iOS doesn't support programmatic exit, but we can show a message
+      Alert.alert('Exit App', 'On iOS, you can exit by swiping up from the bottom and swiping the app away.');
+    }
+  };
+
+  const getWeekStart = (date: Date): Date => {
+    const weekStart = new Date(date);
+    const day = weekStart.getDay();
+    const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1); // Adjust so Monday is first day
+    weekStart.setDate(diff);
+    weekStart.setHours(0, 0, 0, 0);
+    return weekStart;
+  };
+
+  const loadEntriesForWeek = async (weekStart: Date): Promise<Record<string, Record<string, string>>> => {
+    const entries: Record<string, Record<string, string>> = {};
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(weekStart);
+      date.setDate(weekStart.getDate() + i);
+      const dateKey = date.toISOString().split('T')[0];
+      try {
+        const stored = await AsyncStorage.getItem(`planner_${dateKey}`);
+        if (stored) {
+          entries[dateKey] = JSON.parse(stored);
+        }
+      } catch (error) {
+        console.error(`Error loading entries for ${dateKey}:`, error);
+      }
+    }
+    return entries;
+  };
+
+  const handleExportWeeklySchedule = async () => {
+    if (!preferences) {
+      Alert.alert('Error', 'Preferences not loaded');
+      return;
+    }
+    try {
+      const weekStart = getWeekStart(currentDate);
+      const entries = await loadEntriesForWeek(weekStart);
+      const allEvents = await getAllEvents();
+      
+      Alert.alert('Exporting', 'Generating weekly schedule PDF...');
+      await exportWeeklySchedulePDF(weekStart, preferences, entries, allEvents);
+      Alert.alert('Success', 'Weekly schedule PDF exported successfully!');
+    } catch (error) {
+      console.error('Error exporting weekly schedule:', error);
+      Alert.alert('Error', 'Failed to export weekly schedule');
+    }
+  };
+
+  const handleExportUnemploymentReport = async () => {
+    try {
+      const weekStart = getWeekStart(currentDate);
+      const allEvents = await getAllEvents();
+      
+      Alert.alert('Exporting', 'Generating unemployment report PDF...');
+      await exportUnemploymentReportPDF(weekStart, allEvents);
+      Alert.alert('Success', 'Unemployment report PDF exported successfully!');
+    } catch (error) {
+      console.error('Error exporting unemployment report:', error);
+      Alert.alert('Error', 'Failed to export unemployment report');
+    }
+  };
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvents, setSelectedEvents] = useState<Event[]>([]);
+  const initialLoadRef = useRef(false);
   const { colorScheme, preferences } = usePreferences();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const use12Hour = preferences?.use12HourClock ?? false;
+
+  // On initial load, automatically select today if it's in the current month
+  useEffect(() => {
+    if (!initialLoadRef.current) {
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0);
+      const currentMonth = currentDate.getMonth();
+      const currentYear = currentDate.getFullYear();
+      if (todayDate.getMonth() === currentMonth && todayDate.getFullYear() === currentYear) {
+        setSelectedDate(todayDate);
+      }
+      initialLoadRef.current = true;
+    }
+  }, [currentDate]);
 
   useEffect(() => {
     checkEntriesForMonth();
@@ -102,8 +199,9 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
     const days: Date[] = [];
     
     // Add empty cells for days before the first day of the month
+    // Use negative day indices to get previous month's days: -1 is last day, -2 is second-to-last, etc.
     for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(new Date(year, month, -startingDayOfWeek + i + 1));
+      days.push(new Date(year, month, -i));
     }
 
     // Add all days of the month
@@ -122,10 +220,17 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   const navigateMonth = (direction: number) => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + direction, 1));
-    // Clear selected date when month changes
+    const newMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + direction, 1);
+    setCurrentDate(newMonth);
+    // Clear selected date when month changes, then auto-select today if it's in the new month
     setSelectedDate(null);
     setSelectedEvents([]);
+    // Auto-select today if navigating to the month containing today
+    if (today.getMonth() === newMonth.getMonth() && today.getFullYear() === newMonth.getFullYear()) {
+      setTimeout(() => {
+        setSelectedDate(today);
+      }, 100); // Small delay to ensure month has loaded
+    }
   };
 
   const isToday = (date: Date): boolean => {
@@ -161,11 +266,31 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
         <View style={styles.headerContent}>
           <Text style={[styles.title, dynamicStyles.title]}>🌿 Calendar</Text>
         </View>
-        {onSettings && (
-          <TouchableOpacity onPress={onSettings} style={styles.settingsButton}>
-            <Text style={[styles.settingsIcon, { color: colorScheme.colors.text }]}>⚙️</Text>
+        <View style={styles.headerRight}>
+          {onSettings && (
+            <TouchableOpacity onPress={onSettings} style={styles.settingsButton}>
+              <Text style={[styles.settingsIcon, { color: colorScheme.colors.text }]}>⚙️</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={handleExit} style={styles.exitButton}>
+            <Text style={[styles.exitIcon, { color: colorScheme.colors.text }]}>✕</Text>
           </TouchableOpacity>
-        )}
+        </View>
+      </View>
+      {/* PDF Export Buttons */}
+      <View style={styles.pdfExportContainer}>
+        <TouchableOpacity
+          style={[styles.pdfExportButton, { backgroundColor: colorScheme.colors.primary }]}
+          onPress={handleExportWeeklySchedule}
+        >
+          <Text style={styles.pdfExportButtonText}>📄 Export Weekly Schedule</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.pdfExportButton, { backgroundColor: colorScheme.colors.accent }]}
+          onPress={handleExportUnemploymentReport}
+        >
+          <Text style={styles.pdfExportButtonText}>📋 Export Unemployment Report</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={[styles.calendarHeader, dynamicStyles.calendarHeader]}>
@@ -297,6 +422,16 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
                   {/* Display contact information for interviews/appointments */}
                   {event.type !== 'reminder' && (
                     <View style={styles.eventDetails}>
+                      {event.company && (
+                        <Text style={[styles.eventDetailText, { color: colorScheme.colors.text }]}>
+                          🏢 {event.company}
+                        </Text>
+                      )}
+                      {event.jobTitle && (
+                        <Text style={[styles.eventDetailText, { color: colorScheme.colors.text }]}>
+                          💼 {event.jobTitle}
+                        </Text>
+                      )}
                       {event.contactName && (
                         <Text style={[styles.eventDetailText, { color: colorScheme.colors.text }]}>
                           👤 {event.contactName}
@@ -309,27 +444,40 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
                             openAddressInMaps(event.address!, mapPref);
                           }}
                         >
-                          <Text style={[styles.eventDetailLink, { color: colorScheme.colors.primary }]}>
-                            📍 {event.address}
-                          </Text>
+                          <View style={styles.eventDetailLinkContainer}>
+                            <Text style={styles.eventDetailIcon}>📍</Text>
+                            <Text style={[styles.eventDetailLink, { color: colorScheme.colors.text }]}>
+                              {event.address}
+                            </Text>
+                          </View>
                         </TouchableOpacity>
                       )}
                       {event.email && (
                         <TouchableOpacity
                           onPress={() => openEmail(event.email!)}
                         >
-                          <Text style={[styles.eventDetailLink, { color: colorScheme.colors.primary }]}>
-                            ✉️ {event.email}
-                          </Text>
+                          <View style={styles.eventDetailLinkContainer}>
+                            <Text style={styles.eventDetailIcon}>✉️</Text>
+                            <Text style={[styles.eventDetailLink, { color: colorScheme.colors.text }]}>
+                              {event.email}
+                            </Text>
+                          </View>
                         </TouchableOpacity>
                       )}
                       {event.phone && (
                         <TouchableOpacity
-                          onPress={() => openPhoneNumber(event.phone!)}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            console.log('Phone number pressed:', event.phone);
+                            openPhoneNumber(event.phone!);
+                          }}
                         >
-                          <Text style={[styles.eventDetailLink, { color: colorScheme.colors.primary }]}>
-                            📞 {event.phone}
-                          </Text>
+                          <View style={styles.eventDetailLinkContainer}>
+                            <Text style={styles.eventDetailIcon}>📞</Text>
+                            <Text style={[styles.eventDetailLink, { color: colorScheme.colors.text }]}>
+                              {event.phone}
+                            </Text>
+                          </View>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -402,14 +550,47 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#8b7355',
   },
-  settingsButton: {
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     marginTop: 10,
+  },
+  settingsButton: {
     padding: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   settingsIcon: {
     fontSize: 24,
+  },
+  exitButton: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  exitIcon: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  pdfExportContainer: {
+    flexDirection: 'row',
+    padding: 12,
+    gap: 8,
+    backgroundColor: '#FFF8E7',
+    borderBottomWidth: 1,
+    borderBottomColor: '#C9A66B',
+  },
+  pdfExportButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  pdfExportButtonText: {
+    color: '#FFF8E7',
+    fontSize: 12,
+    fontWeight: '600',
   },
   calendarHeader: {
     flexDirection: 'row',
@@ -569,9 +750,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 4,
   },
+  eventDetailLinkContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  eventDetailIcon: {
+    fontSize: 14,
+    marginRight: 4,
+  },
   eventDetailLink: {
     fontSize: 14,
-    marginTop: 4,
     textDecorationLine: 'underline',
   },
   eventNotes: {

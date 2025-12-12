@@ -14,6 +14,8 @@ export interface Event {
   contactName?: string; // Name of contact person (for interviews/appointments)
   email?: string; // Email address (for interviews/appointments)
   phone?: string; // Phone number (for interviews/appointments)
+  company?: string; // Company name (for interviews/appointments)
+  jobTitle?: string; // Job title/position (for interviews/appointments)
 }
 
 const EVENTS_KEY_PREFIX = 'planner_event_';

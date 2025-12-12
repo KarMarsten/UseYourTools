@@ -47,6 +47,8 @@ export default function AddEventModal({
   const [contactName, setContactName] = useState(event?.contactName || '');
   const [email, setEmail] = useState(event?.email || '');
   const [phone, setPhone] = useState(event?.phone || '');
+  const [company, setCompany] = useState(event?.company || '');
+  const [jobTitle, setJobTitle] = useState(event?.jobTitle || '');
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -60,6 +62,8 @@ export default function AddEventModal({
       setContactName(event.contactName || '');
       setEmail(event.email || '');
       setPhone(event.phone || '');
+      setCompany(event.company || '');
+      setJobTitle(event.jobTitle || '');
     } else if (!visible) {
       // Reset when closing
       setTitle('');
@@ -71,6 +75,8 @@ export default function AddEventModal({
       setContactName('');
       setEmail('');
       setPhone('');
+      setCompany('');
+      setJobTitle('');
     }
   }, [visible, event]);
 
@@ -118,6 +124,8 @@ export default function AddEventModal({
       contactName: (type !== 'reminder' && contactName.trim()) ? contactName.trim() : undefined,
       email: (type !== 'reminder' && email.trim()) ? email.trim() : undefined,
       phone: (type !== 'reminder' && phone.trim()) ? phone.trim() : undefined,
+      company: (type !== 'reminder' && company.trim()) ? company.trim() : undefined,
+      jobTitle: (type !== 'reminder' && jobTitle.trim()) ? jobTitle.trim() : undefined,
     };
 
     onSave(savedEvent);
@@ -263,7 +271,7 @@ export default function AddEventModal({
           {type !== 'reminder' && (
             <>
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colorScheme.text }]}>Address</Text>
+                <Text style={[styles.label, { color: colorScheme.text }]}>Company</Text>
                 <TextInput
                   style={[
                     styles.input,
@@ -273,9 +281,27 @@ export default function AddEventModal({
                       color: colorScheme.text,
                     },
                   ]}
-                  value={address}
-                  onChangeText={setAddress}
-                  placeholder="123 Main St, City, State"
+                  value={company}
+                  onChangeText={setCompany}
+                  placeholder="Company Name"
+                  placeholderTextColor={colorScheme.textSecondary}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colorScheme.text }]}>Job Title</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colorScheme.background,
+                      borderColor: colorScheme.border,
+                      color: colorScheme.text,
+                    },
+                  ]}
+                  value={jobTitle}
+                  onChangeText={setJobTitle}
+                  placeholder="Software Engineer"
                   placeholderTextColor={colorScheme.textSecondary}
                 />
               </View>
@@ -294,6 +320,24 @@ export default function AddEventModal({
                   value={contactName}
                   onChangeText={setContactName}
                   placeholder="John Doe"
+                  placeholderTextColor={colorScheme.textSecondary}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colorScheme.text }]}>Address</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colorScheme.background,
+                      borderColor: colorScheme.border,
+                      color: colorScheme.text,
+                    },
+                  ]}
+                  value={address}
+                  onChangeText={setAddress}
+                  placeholder="123 Main St, City, State"
                   placeholderTextColor={colorScheme.textSecondary}
                 />
               </View>
