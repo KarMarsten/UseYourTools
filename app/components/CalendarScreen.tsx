@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { getDayThemeForDate, getDayName } from '../utils/plannerData';
 import { hasEntriesForDate } from '../utils/entryChecker';
-import { loadEventsForDate } from '../utils/events';
+import { loadEventsForDate, Event } from '../utils/events';
 import { usePreferences } from '../context/PreferencesContext';
+import { formatTimeRange } from '../utils/timeFormatter';
 
 interface CalendarScreenProps {
   onSelectDate: (date: Date) => void;
@@ -16,14 +17,23 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
   const [currentDate, setCurrentDate] = useState(new Date());
   const [daysWithEntries, setDaysWithEntries] = useState<Set<string>>(new Set());
   const [daysWithEvents, setDaysWithEvents] = useState<Set<string>>(new Set());
-  const { colorScheme } = usePreferences();
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedEvents, setSelectedEvents] = useState<Event[]>([]);
+  const { colorScheme, preferences } = usePreferences();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const use12Hour = preferences?.use12HourClock ?? false;
 
   useEffect(() => {
     checkEntriesForMonth();
     checkEventsForMonth();
   }, [currentDate, refreshTrigger]);
+
+  useEffect(() => {
+    if (selectedDate) {
+      loadSelectedDayEvents();
+    }
+  }, [selectedDate, refreshTrigger]);
 
   const checkEntriesForMonth = async () => {
     const days = getDaysInMonth(currentDate);
@@ -60,6 +70,26 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
     setDaysWithEvents(eventsSet);
   };
 
+  const loadSelectedDayEvents = async () => {
+    if (!selectedDate) return;
+    const dateKey = selectedDate.toISOString().split('T')[0];
+    const events = await loadEventsForDate(dateKey);
+    setSelectedEvents(events);
+  };
+
+  const handleDayPress = (date: Date) => {
+    // Normalize date to start of day
+    const normalizedDate = new Date(date);
+    normalizedDate.setHours(0, 0, 0, 0);
+    setSelectedDate(normalizedDate);
+  };
+
+  const handleOpenPlanner = () => {
+    if (selectedDate) {
+      onSelectDate(selectedDate);
+    }
+  };
+
   const getDaysInMonth = (date: Date): Date[] => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -92,6 +122,9 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
 
   const navigateMonth = (direction: number) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + direction, 1));
+    // Clear selected date when month changes
+    setSelectedDate(null);
+    setSelectedEvents([]);
   };
 
   const isToday = (date: Date): boolean => {
@@ -166,6 +199,7 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
           const dateKey = date.toISOString().split('T')[0];
           const hasEntries = daysWithEntries.has(dateKey);
           const hasEvents = daysWithEvents.has(dateKey);
+          const isSelected = selectedDate && dateKey === selectedDate.toISOString().split('T')[0];
 
           return (
             <TouchableOpacity
@@ -174,14 +208,16 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
                 styles.calendarDay,
                 {
                   backgroundColor: isCurrentMonthDate 
-                    ? (isTodayDate ? colorScheme.colors.primary : colorScheme.colors.surface)
+                    ? (isTodayDate ? colorScheme.colors.primary : 
+                       isSelected ? colorScheme.colors.accent : colorScheme.colors.surface)
                     : colorScheme.colors.background,
-                  borderColor: isTodayDate ? colorScheme.colors.text : colorScheme.colors.border,
+                  borderColor: isTodayDate ? colorScheme.colors.text : 
+                              isSelected ? colorScheme.colors.primary : colorScheme.colors.border,
                   opacity: !isCurrentMonthDate ? 0.3 : 1,
-                  borderWidth: isTodayDate ? 2 : 1,
+                  borderWidth: (isTodayDate || isSelected) ? 2 : 1,
                 },
               ]}
-              onPress={() => onSelectDate(date)}
+              onPress={() => handleDayPress(date)}
             >
               <Text
                 style={[
@@ -217,6 +253,68 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
           );
         })}
       </ScrollView>
+
+      {/* Events section for selected day */}
+      {selectedDate && selectedEvents.length > 0 && (
+        <View style={[styles.eventsContainer, { backgroundColor: colorScheme.colors.background, borderTopColor: colorScheme.colors.border }]}>
+          <View style={[styles.eventsHeader, { borderBottomColor: colorScheme.colors.border }]}>
+            <Text style={[styles.eventsTitle, { color: colorScheme.colors.text }]}>
+              Events for {monthNames[selectedDate.getMonth()]} {selectedDate.getDate()}, {selectedDate.getFullYear()}
+            </Text>
+            <TouchableOpacity
+              onPress={handleOpenPlanner}
+              style={[styles.openPlannerButton, { backgroundColor: colorScheme.colors.primary }]}
+            >
+              <Text style={styles.openPlannerButtonText}>Open Planner →</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.eventsScrollView}>
+            {selectedEvents.map((event) => (
+              <View
+                key={event.id}
+                style={[
+                  styles.eventCard,
+                  {
+                    backgroundColor: colorScheme.colors.surface,
+                    borderColor: colorScheme.colors.border,
+                  },
+                ]}
+              >
+                <View style={styles.eventContent}>
+                  <Text style={[styles.eventTitle, { color: colorScheme.colors.text }]}>
+                    {event.type === 'interview' ? '💼' : event.type === 'appointment' ? '📅' : '🔔'} {event.title}
+                  </Text>
+                  <Text style={[styles.eventTime, { color: colorScheme.colors.primary }]}>
+                    {formatTimeRange(`${event.startTime}–${event.endTime}`, use12Hour)}
+                  </Text>
+                  <Text style={[styles.eventType, { color: colorScheme.colors.textSecondary }]}>
+                    {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {selectedDate && selectedEvents.length === 0 && (
+        <View style={[styles.eventsContainer, { backgroundColor: colorScheme.colors.background, borderTopColor: colorScheme.colors.border }]}>
+          <View style={[styles.eventsHeader, { borderBottomColor: colorScheme.colors.border }]}>
+            <Text style={[styles.eventsTitle, { color: colorScheme.colors.text }]}>
+              {monthNames[selectedDate.getMonth()]} {selectedDate.getDate()}, {selectedDate.getFullYear()}
+            </Text>
+            <TouchableOpacity
+              onPress={handleOpenPlanner}
+              style={[styles.openPlannerButton, { backgroundColor: colorScheme.colors.primary }]}
+            >
+              <Text style={styles.openPlannerButtonText}>Open Planner →</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={[styles.noEventsText, { color: colorScheme.colors.textSecondary }]}>
+            No events scheduled for this day
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -356,6 +454,67 @@ const styles = StyleSheet.create({
   },
   indicatorIcon: {
     fontSize: 12,
+  },
+  eventsContainer: {
+    maxHeight: 300,
+    borderTopWidth: 1,
+    borderTopColor: '#C9A66B',
+  },
+  eventsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#C9A66B',
+  },
+  eventsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+  },
+  openPlannerButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  openPlannerButtonText: {
+    color: '#FFF8E7',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  eventsScrollView: {
+    maxHeight: 250,
+  },
+  eventCard: {
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    marginHorizontal: 16,
+    marginTop: 12,
+  },
+  eventContent: {
+    flex: 1,
+  },
+  eventTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  eventTime: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  eventType: {
+    fontSize: 12,
+    textTransform: 'uppercase',
+  },
+  noEventsText: {
+    padding: 16,
+    textAlign: 'center',
+    fontSize: 14,
+    fontStyle: 'italic',
   },
 });
 
