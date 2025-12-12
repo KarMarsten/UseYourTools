@@ -1,15 +1,12 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, Button, TouchableOpacity } from 'react-native';
 import { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
-import PromptsScreen from './components/PromptsScreen';
-import PromptDetailScreen from './components/PromptDetailScreen';
 import CalendarScreen from './components/CalendarScreen';
 import DailyPlannerScreen from './components/DailyPlannerScreen';
 import SetupScreen from './components/SetupScreen';
 import ReportsScreen from './components/ReportsScreen';
 import ViewReportScreen from './components/ViewReportScreen';
 import { PreferencesProvider, usePreferences } from './context/PreferencesContext';
-import { Prompt } from './prompts';
 import { loadPreferences } from './utils/preferences';
 
 // Error Boundary Component
@@ -65,11 +62,10 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-type Screen = 'home' | 'prompts' | 'promptDetail' | 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport';
+type Screen = 'home' | 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport';
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('calendar');
-  const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
   const [mounted, setMounted] = useState(false);
@@ -91,25 +87,6 @@ function AppContent() {
     } catch (error) {
       console.error('Error checking setup status:', error);
     }
-  };
-
-  const handleViewPrompts = () => {
-    setCurrentScreen('prompts');
-  };
-
-  const handleSelectPrompt = (prompt: Prompt) => {
-    setSelectedPrompt(prompt);
-    setCurrentScreen('promptDetail');
-  };
-
-  const handleBackToPrompts = () => {
-    setCurrentScreen('prompts');
-  };
-
-  const handleBackToHome = () => {
-    setCurrentScreen('home');
-    setSelectedPrompt(null);
-    setSelectedDate(null);
   };
 
   const handleViewCalendar = () => {
@@ -162,14 +139,6 @@ function AppContent() {
 
   if (currentScreen === 'setup') {
     return <SetupScreen onComplete={handleSetupComplete} onBack={handleBackToCalendar} />;
-  }
-
-  if (currentScreen === 'prompts') {
-    return <PromptsScreen onSelectPrompt={handleSelectPrompt} onBack={handleBackToHome} />;
-  }
-
-  if (currentScreen === 'promptDetail' && selectedPrompt) {
-    return <PromptDetailScreen prompt={selectedPrompt} onBack={handleBackToPrompts} />;
   }
 
   if (currentScreen === 'calendar') {
