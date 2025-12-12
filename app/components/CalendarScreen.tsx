@@ -2,21 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, BackHandler, Platform, Alert } from 'react-native';
 import { getDayThemeForDate, getDayName } from '../utils/plannerData';
 import { hasEntriesForDate } from '../utils/entryChecker';
-import { loadEventsForDate, Event, getAllEvents } from '../utils/events';
+import { loadEventsForDate, Event } from '../utils/events';
 import { usePreferences } from '../context/PreferencesContext';
-import { formatTimeRange, formatTime12Hour } from '../utils/timeFormatter';
+import { formatTimeRange, formatTime12Hour, getDateKey } from '../utils/timeFormatter';
 import { openAddressInMaps, openPhoneNumber, openEmail } from '../utils/eventActions';
-import { exportWeeklySchedulePDF, exportUnemploymentReportPDF } from '../utils/pdfExports';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface CalendarScreenProps {
   onSelectDate: (date: Date) => void;
   onBack?: () => void;
   onSettings?: () => void;
+  onReports?: () => void;
   refreshTrigger?: number; // Optional trigger to refresh entry indicators
 }
 
-export default function CalendarScreen({ onSelectDate, onBack, onSettings, refreshTrigger }: CalendarScreenProps) {
+export default function CalendarScreen({ onSelectDate, onBack, onSettings, onReports, refreshTrigger }: CalendarScreenProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [daysWithEntries, setDaysWithEntries] = useState<Set<string>>(new Set());
   const [daysWithEvents, setDaysWithEvents] = useState<Set<string>>(new Set());
@@ -41,63 +40,6 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
     }
   };
 
-  const getWeekStart = (date: Date): Date => {
-    const weekStart = new Date(date);
-    const day = weekStart.getDay();
-    const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1); // Adjust so Monday is first day
-    weekStart.setDate(diff);
-    weekStart.setHours(0, 0, 0, 0);
-    return weekStart;
-  };
-
-  const loadEntriesForWeek = async (weekStart: Date): Promise<Record<string, Record<string, string>>> => {
-    const entries: Record<string, Record<string, string>> = {};
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(weekStart);
-      date.setDate(weekStart.getDate() + i);
-      const dateKey = date.toISOString().split('T')[0];
-      try {
-        const stored = await AsyncStorage.getItem(`planner_${dateKey}`);
-        if (stored) {
-          entries[dateKey] = JSON.parse(stored);
-        }
-      } catch (error) {
-        console.error(`Error loading entries for ${dateKey}:`, error);
-      }
-    }
-    return entries;
-  };
-
-  const handleExportWeeklySchedule = async () => {
-    if (!preferences) {
-      Alert.alert('Error', 'Preferences not loaded');
-      return;
-    }
-    try {
-      const weekStart = getWeekStart(currentDate);
-      const entries = await loadEntriesForWeek(weekStart);
-      const allEvents = await getAllEvents();
-      
-      await exportWeeklySchedulePDF(weekStart, preferences, entries, allEvents);
-      // Success message is handled by the sharing dialog
-    } catch (error) {
-      console.error('Error exporting weekly schedule:', error);
-      Alert.alert('Error', 'Failed to export weekly schedule');
-    }
-  };
-
-  const handleExportUnemploymentReport = async () => {
-    try {
-      const weekStart = getWeekStart(currentDate);
-      const allEvents = await getAllEvents();
-      
-      await exportUnemploymentReportPDF(weekStart, allEvents);
-      // Success message is handled by the sharing dialog
-    } catch (error) {
-      console.error('Error exporting unemployment report:', error);
-      Alert.alert('Error', 'Failed to export unemployment report');
-    }
-  };
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvents, setSelectedEvents] = useState<Event[]>([]);
   const initialLoadRef = useRef(false);
@@ -140,7 +82,7 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
       if (day.getMonth() === currentDate.getMonth()) {
         const hasEntries = await hasEntriesForDate(day);
         if (hasEntries) {
-          entriesSet.add(day.toISOString().split('T')[0]);
+          entriesSet.add(getDateKey(day));
         }
       }
     }
@@ -155,7 +97,7 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
     // Check events for all days in the current month
     for (const day of days) {
       if (day.getMonth() === currentDate.getMonth()) {
-        const dateKey = day.toISOString().split('T')[0];
+        const dateKey = getDateKey(day);
         const events = await loadEventsForDate(dateKey);
         if (events.length > 0) {
           eventsSet.add(dateKey);
@@ -168,7 +110,7 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
 
   const loadSelectedDayEvents = async () => {
     if (!selectedDate) return;
-    const dateKey = selectedDate.toISOString().split('T')[0];
+    const dateKey = getDateKey(selectedDate);
     const events = await loadEventsForDate(dateKey);
     setSelectedEvents(events);
   };
@@ -178,6 +120,8 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
     const normalizedDate = new Date(date);
     normalizedDate.setHours(0, 0, 0, 0);
     setSelectedDate(normalizedDate);
+    // Load events for selected date - don't navigate immediately
+    // User can click "Open Planner" button to navigate
   };
 
   const handleOpenPlanner = () => {
@@ -190,21 +134,28 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
     const year = date.getFullYear();
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
+    firstDay.setHours(0, 0, 0, 0); // Normalize to midnight
     const lastDay = new Date(year, month + 1, 0);
+    lastDay.setHours(0, 0, 0, 0); // Normalize to midnight
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
 
     const days: Date[] = [];
     
     // Add empty cells for days before the first day of the month
-    // Use negative day indices to get previous month's days: -1 is last day, -2 is second-to-last, etc.
+    // Use negative day indices to get previous month's days in chronological order (oldest to newest)
+    // For startingDayOfWeek=3, we need: -2, -1, -0 (third-to-last, second-to-last, last day)
     for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(new Date(year, month, -i));
+      const day = new Date(year, month, -(startingDayOfWeek - 1 - i));
+      day.setHours(0, 0, 0, 0); // Normalize to midnight
+      days.push(day);
     }
 
     // Add all days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      days.push(new Date(year, month, day));
+    for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+      const day = new Date(year, month, dayNum);
+      day.setHours(0, 0, 0, 0); // Normalize to midnight
+      days.push(day);
     }
 
     return days;
@@ -216,6 +167,7 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
   ];
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 
   const navigateMonth = (direction: number) => {
     const newMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + direction, 1);
@@ -265,6 +217,11 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
           <Text style={[styles.title, dynamicStyles.title]}>🌿 Calendar</Text>
         </View>
         <View style={styles.headerRight}>
+          {onReports && (
+            <TouchableOpacity onPress={onReports} style={styles.reportsButton}>
+              <Text style={[styles.reportsIcon, { color: colorScheme.colors.text }]}>📊</Text>
+            </TouchableOpacity>
+          )}
           {onSettings && (
             <TouchableOpacity onPress={onSettings} style={styles.settingsButton}>
               <Text style={[styles.settingsIcon, { color: colorScheme.colors.text }]}>⚙️</Text>
@@ -274,21 +231,6 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
             <Text style={[styles.exitIcon, { color: colorScheme.colors.text }]}>✕</Text>
           </TouchableOpacity>
         </View>
-      </View>
-      {/* PDF Export Buttons */}
-      <View style={styles.pdfExportContainer}>
-        <TouchableOpacity
-          style={[styles.pdfExportButton, { backgroundColor: colorScheme.colors.primary }]}
-          onPress={handleExportWeeklySchedule}
-        >
-          <Text style={styles.pdfExportButtonText}>📄 Export Weekly Schedule</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.pdfExportButton, { backgroundColor: colorScheme.colors.accent }]}
-          onPress={handleExportUnemploymentReport}
-        >
-          <Text style={styles.pdfExportButtonText}>📋 Export Unemployment Report</Text>
-        </TouchableOpacity>
       </View>
 
       <View style={[styles.calendarHeader, dynamicStyles.calendarHeader]}>
@@ -313,17 +255,20 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
 
       <ScrollView 
         style={[styles.scrollView, { backgroundColor: colorScheme.colors.background }]} 
-        contentContainerStyle={styles.calendarGrid}
+        contentContainerStyle={[styles.calendarGrid, { paddingBottom: 20 }]}
+        showsVerticalScrollIndicator={false}
       >
         {days.map((date, index) => {
-          const dayTheme = getDayThemeForDate(date);
-          const dayNumber = date.getDate();
-          const isTodayDate = isToday(date);
-          const isCurrentMonthDate = isCurrentMonth(date);
-          const dateKey = date.toISOString().split('T')[0];
+          // Ensure date is normalized (defensive check)
+          const normalizedDate = new Date(date);
+          normalizedDate.setHours(0, 0, 0, 0);
+          const dayNumber = normalizedDate.getDate();
+          const isTodayDate = isToday(normalizedDate);
+          const isCurrentMonthDate = isCurrentMonth(normalizedDate);
+          const dateKey = getDateKey(normalizedDate);
           const hasEntries = daysWithEntries.has(dateKey);
           const hasEvents = daysWithEvents.has(dateKey);
-          const isSelected = selectedDate && dateKey === selectedDate.toISOString().split('T')[0];
+          const isSelected = selectedDate && dateKey === getDateKey(selectedDate);
 
           return (
             <TouchableOpacity
@@ -341,45 +286,38 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
                   borderWidth: (isTodayDate || isSelected) ? 2 : 1,
                 },
               ]}
-              onPress={() => handleDayPress(date)}
+              onPress={() => handleDayPress(normalizedDate)}
             >
-              <Text
-                style={[
-                  styles.dayNumber,
-                  { color: isCurrentMonthDate ? colorScheme.colors.text : colorScheme.colors.textSecondary },
-                  isTodayDate && { color: colorScheme.colors.background, fontWeight: 'bold' },
-                ]}
-              >
-                {isCurrentMonthDate ? dayNumber : ''}
-              </Text>
-              {isCurrentMonthDate && (
-                <>
-                  <View style={[styles.dayThemeIndicator, { backgroundColor: colorScheme.colors.secondary }]}>
-                    <Text style={[styles.dayThemeText, { color: colorScheme.colors.text }]} numberOfLines={1}>
-                      {dayTheme.theme.split(' ')[0]}
-                    </Text>
-                  </View>
+              <View style={styles.dayContent}>
+                <View style={styles.dayNumberContainer}>
+                  <Text
+                    style={[
+                      styles.dayNumber,
+                      { color: isCurrentMonthDate ? colorScheme.colors.text : colorScheme.colors.textSecondary },
+                      isTodayDate && { color: colorScheme.colors.background, fontWeight: 'bold' },
+                    ]}
+                  >
+                    {isCurrentMonthDate ? dayNumber : ''}
+                  </Text>
+                </View>
+                {isCurrentMonthDate && (hasEntries || hasEvents) && (
                   <View style={styles.indicatorsContainer}>
                     {hasEntries && (
-                      <View style={styles.indicator}>
-                        <Text style={styles.indicatorIcon}>📄</Text>
-                      </View>
+                      <Text style={styles.indicatorIcon}>✏️</Text>
                     )}
                     {hasEvents && (
-                      <View style={styles.indicator}>
-                        <Text style={styles.indicatorIcon}>💬</Text>
-                      </View>
+                      <Text style={styles.indicatorIcon}>💬</Text>
                     )}
                   </View>
-                </>
-              )}
+                )}
+              </View>
             </TouchableOpacity>
           );
         })}
       </ScrollView>
 
       {/* Events section for selected day */}
-      {selectedDate && selectedEvents.length > 0 && (
+      {selectedDate && (
         <View style={[styles.eventsContainer, { backgroundColor: colorScheme.colors.background, borderTopColor: colorScheme.colors.border }]}>
           <View style={[styles.eventsHeader, { borderBottomColor: colorScheme.colors.border }]}>
             <Text style={[styles.eventsTitle, { color: colorScheme.colors.text }]}>
@@ -393,7 +331,14 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.eventsScrollView}>
-            {selectedEvents.map((event) => (
+            {selectedEvents.length === 0 ? (
+              <View style={styles.noEventsContainer}>
+                <Text style={[styles.noEventsText, { color: colorScheme.colors.textSecondary }]}>
+                  No events scheduled for this day
+                </Text>
+              </View>
+            ) : (
+              selectedEvents.map((event) => (
               <View
                 key={event.id}
                 style={[
@@ -489,27 +434,9 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
                   )}
                 </View>
               </View>
-            ))}
+              ))
+            )}
           </ScrollView>
-        </View>
-      )}
-
-      {selectedDate && selectedEvents.length === 0 && (
-        <View style={[styles.eventsContainer, { backgroundColor: colorScheme.colors.background, borderTopColor: colorScheme.colors.border }]}>
-          <View style={[styles.eventsHeader, { borderBottomColor: colorScheme.colors.border }]}>
-            <Text style={[styles.eventsTitle, { color: colorScheme.colors.text }]}>
-              {monthNames[selectedDate.getMonth()]} {selectedDate.getDate()}, {selectedDate.getFullYear()}
-            </Text>
-            <TouchableOpacity
-              onPress={handleOpenPlanner}
-              style={[styles.openPlannerButton, { backgroundColor: colorScheme.colors.primary }]}
-            >
-              <Text style={styles.openPlannerButtonText}>Open Planner →</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={[styles.noEventsText, { color: colorScheme.colors.textSecondary }]}>
-            No events scheduled for this day
-          </Text>
         </View>
       )}
     </View>
@@ -523,7 +450,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
     backgroundColor: '#E7D7C1',
     borderBottomWidth: 1,
     borderBottomColor: '#C9A66B',
@@ -571,24 +498,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
-  pdfExportContainer: {
-    flexDirection: 'row',
-    padding: 12,
-    gap: 8,
-    backgroundColor: '#FFF8E7',
-    borderBottomWidth: 1,
-    borderBottomColor: '#C9A66B',
+  reportsButton: {
+    padding: 8,
+    marginRight: 8,
   },
-  pdfExportButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  pdfExportButtonText: {
-    color: '#FFF8E7',
-    fontSize: 12,
-    fontWeight: '600',
+  reportsIcon: {
+    fontSize: 24,
   },
   calendarHeader: {
     flexDirection: 'row',
@@ -640,12 +555,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent', // Will be overridden by scrollView background
   },
   calendarDay: {
-    width: '14.28%',
+    width: '14.2857%', // More precise: 100/7
     aspectRatio: 1,
-    padding: 8,
-    margin: 1,
+    padding: 4,
+    marginHorizontal: 0,
+    marginVertical: 0,
     borderRadius: 8,
-    justifyContent: 'space-between',
+  },
+  dayContent: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  dayNumberContainer: {
+    paddingTop: 4,
+    paddingLeft: 4,
   },
   dayNumber: {
     fontSize: 16,
@@ -659,31 +584,23 @@ const styles = StyleSheet.create({
     color: '#f5f5dc',
     fontWeight: 'bold',
   },
-  dayThemeIndicator: {
-    borderRadius: 4,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    marginTop: 4,
-  },
-  dayThemeText: {
-    fontSize: 9,
-    fontWeight: '500',
-  },
   indicatorsContainer: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    bottom: 2,
+    right: 2,
     flexDirection: 'row',
-    gap: 4,
-  },
-  indicator: {
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    gap: 2,
   },
   indicatorIcon: {
-    fontSize: 12,
+    fontSize: 10,
+  },
+  noEventsContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  noEventsText: {
+    fontSize: 14,
+    fontStyle: 'italic',
   },
   eventsContainer: {
     maxHeight: 300,

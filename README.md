@@ -1,144 +1,275 @@
 <img width="1200" height="800" alt="image" src="https://github.com/user-attachments/assets/6f38436d-3074-4100-92fa-b5d1bd9634ec" />
 
+# UseYourTools - Structured Daily Planner for Job Hunters 📅
 
-# Digital Earth-Tone GoodNotes Planner 🌿
-
-A reusable prompt-driven workflow for generating a **7-page, earth-tone daily planner PDF** optimized for
-**GoodNotes, Notability, and other handwriting apps**.
-
-This repository is designed to be:
-- 📓 A home for your **planner prompt(s)**
-- 📄 A place to store **generated sample PDFs**
-- 📚 A simple, public-ready reference for others who want to use or adapt your system
+A comprehensive daily planning app designed specifically for job seekers, built with React Native and Expo. This repository contains both the iOS app implementation and the original prompt-driven PDF planner workflow.
 
 ---
 
-## ✨ Features
+## ✨ App Features
 
-- Warm **earth-tone aesthetic** (browns, tans, beiges, muted golds)
-- **GoodNotes-optimized** page size (~600 × 900 px, portrait)
-- Clean layout for **handwriting** (no fillable fields)
-- **Time-blocked daily pages** for each day of the week:
-  - 8:00–9:00 – Morning routine • Centering  
-  - 9:00–11:00 – High-focus work (applications/learning/networking based on theme)  
-  - 11:00–12:00 – Research • Admin tasks  
-  - 12:00–13:00 – Lunch + outdoor time  
-  - 13:00–14:30 – Deep work (learning, projects, portfolio)  
-  - 14:30–15:00 – Break • Movement  
-  - 15:00–16:00 – Networking • Skill refinement  
-  - 16:00–17:00 – Exercise • Walk • Recharge  
-  - Evening – Creativity • Reading • Reflection  
+### 📱 iOS Application
 
-Each block includes handwriting space so you can plan, reflect, and track your day.
+**Calendar View**
+- Interactive monthly calendar as the landing page
+- Visual indicators for days with planner entries (✏️) and events (💬)
+- Tap any date to view events and access the daily planner
+- Automatic highlighting of today's date
 
----
+**Daily Planner**
+- Customizable time blocks that adapt to your schedule
+- Daily themes for focused planning
+- Interactive text fields for each time block
+- Persistent storage of your entries
+- Add events (interviews, appointments, reminders) with:
+  - Custom start/end times
+  - Contact information (name, email, phone)
+  - Address (opens in Maps/Google Maps)
+  - Company and job title
+  - Notes
+  - 10-minute advance notifications
 
-## 📂 Repository Structure
+**Settings & Customization**
+- **Customizable Schedule**: Set your start and end times (automatically calculates 9-hour workday)
+- **Reorderable Time Blocks**: Drag and drop to arrange your daily routine
+- **Color Schemes**: Choose from 4 beautiful themes:
+  - 🌿 Earth-Tone (default) - Browns and tans
+  - 🌊 Cheerful Nature - Greens and blues
+  - ☀️ Sunny Sky - Oranges and yellows
+  - 💜 Imagination Run Wild - Purples and pinks
+  - All backgrounds use a cream color (#FFF8E7)
+- **Clock Format**: Toggle between 12-hour and 24-hour time
+- **Map App Preference**: Choose between Apple Maps and Google Maps
 
-```text
-.
-├── README.md                      # Project overview (this file)
-├── LICENSE                        # MIT License (default, feel free to change)
-├── install.sh                     # Simple setup / usage helper script
-├── docs/
-│   ├── Overview.md                # Concept & design philosophy
-│   └── Usage.md                   # How to use the prompt and planner
-├── prompts/
-│   └── GoodNotesPlannerPrompt.md  # Full prompt used to generate the planner
-├── assets/
-│   └── .gitkeep                   # Placeholder for screenshots, mockups, etc.
-└── samples/
-    └── .gitkeep                   # Placeholder for exported planner PDFs
-```
+**Event Management**
+- Create events with types: Interview, Appointment, or Reminder
+- Reminders don't require an end time
+- Clickable contact information:
+  - 📍 Address → Opens in Maps
+  - 📞 Phone → Call or text option
+  - ✉️ Email → Opens default email app
+- Automatic notifications 10 minutes before event start time
+
+**Reports**
+- **Weekly Schedule**: View or export your complete weekly schedule as PDF
+- **Unemployment Report**: Generate a formatted report with company, contact, date/time, and job title for unemployment filing
+- Week selector to choose any Sunday-Saturday week
+- In-app viewing using WebView
+- PDF export with color scheme preservation
 
 ---
 
 ## 🚀 Getting Started
 
-You don’t need any special tooling to use this project.
+### Prerequisites
 
-### 1. Open the prompt
+- Node.js (v18 or higher)
+- npm or yarn
+- iOS Simulator (for iOS development) or Android Emulator (for Android)
+- Expo CLI (optional, included in dependencies)
 
-Open:
+### Installation
 
-- `prompts/GoodNotesPlannerPrompt.md`
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/UseYourTools.git
+   cd UseYourTools
+   ```
 
-Copy the full prompt inside and paste it into ChatGPT (or another compatible LLM).
+2. **Navigate to the app directory**
+   ```bash
+   cd app
+   ```
 
-### 2. Generate the planner
+3. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-Ask the model to:
+4. **For iOS development (macOS required)**
+   ```bash
+   # Install CocoaPods dependencies
+   cd ios
+   pod install
+   cd ..
+   ```
 
-- Generate a **7-page PDF** using the included prompt
-- Make sure it uses:
-  - Warm earth tones
-  - GoodNotes-friendly dimensions
-  - The exact time blocks and daily themes described in the prompt
+5. **Start the development server**
+   ```bash
+   npm start
+   # or
+   expo start
+   ```
 
-Save that generated PDF into:
+6. **Run on iOS Simulator**
+   ```bash
+   npm run ios
+   # or
+   npx expo run:ios
+   ```
 
-- `samples/`
-
-For example: `samples/seven_day_goodnotes_earthtone_timeslots.pdf`
-
-### 3. Use in GoodNotes (or similar)
-
-- Import the PDF into GoodNotes / Notability / your favorite handwriting app
-- Duplicate pages as needed
-- Optionally, create multiple notebooks (e.g., one per month)
+7. **Run on Android Emulator**
+   ```bash
+   npm run android
+   # or
+   npx expo run:android
+   ```
 
 ---
 
-## 🧭 Documentation
+## 📂 Repository Structure
 
-- `docs/Overview.md` – Why this planner exists, the design goals, and core ideas
-- `docs/Usage.md` – How to use or customize the prompt, plus tips for digital planning
-
----
-
-## 🛠️ install.sh
-
-There’s a small helper script:
-
-```bash
-./install.sh
+```
+UseYourTools/
+├── app/                          # React Native iOS app
+│   ├── components/              # React components
+│   │   ├── CalendarScreen.tsx   # Main calendar view
+│   │   ├── DailyPlannerScreen.tsx # Daily planning interface
+│   │   ├── SetupScreen.tsx      # Settings and preferences
+│   │   ├── ReportsScreen.tsx    # Reports and PDF exports
+│   │   └── AddEventModal.tsx    # Event creation/editing
+│   ├── context/                 # React Context providers
+│   │   └── PreferencesContext.tsx # Global preferences state
+│   ├── utils/                   # Utility functions
+│   │   ├── colorSchemes.ts      # Color scheme definitions
+│   │   ├── events.ts            # Event CRUD operations
+│   │   ├── pdfExports.ts        # PDF generation
+│   │   ├── timeBlockGenerator.ts # Dynamic time block generation
+│   │   └── preferences.ts       # User preferences management
+│   ├── prompts/                 # Original planner prompts
+│   ├── assets/                  # App icons and images
+│   ├── App.tsx                  # Main app component
+│   └── package.json             # Dependencies
+├── prompts/                     # PDF planner prompts
+│   └── GoodNotesPlannerPrompt.md
+├── docs/                        # Documentation
+│   ├── Overview.md
+│   └── Usage.md
+└── README.md                    # This file
 ```
 
-It doesn’t install dependencies (none are required), but:
-- Gives a quick overview in the terminal
-- Points you to the key files to open first
-- Serves as a simple “onboarding” step for new users or collaborators
+---
+
+## 🎨 Color Schemes
+
+All color schemes use a cream background (#FFF8E7) for consistency and readability:
+
+- **Earth-Tone** (Default): Warm browns (#8C6A4A), tans (#E7D7C1), and muted golds
+- **Cheerful Nature**: Greens (#5A8A6A) and blues with nature-inspired tones
+- **Sunny Sky**: Vibrant oranges (#D4A574) and yellows (#F5C842)
+- **Imagination Run Wild**: Purples (#9B6FA8) and pinks with creative flair
 
 ---
 
-## 🧩 Customization Ideas
+## 📱 App Navigation
 
-Things you (or contributors) might add:
+1. **Calendar Screen** (Landing Page)
+   - View monthly calendar
+   - See indicators for entries and events
+   - Tap date to view events
+   - Access Settings (⚙️) and Reports (📊) from header
 
-- 🌿 Botanical or watercolor themes
-- 🌙 Celestial / boho / minimalist aesthetics
-- 📅 Weekly or monthly dashboards
-- ✅ Habit and mood trackers
-- 🗂 Hyperlinked tabbed navigation
-- 🧠 Reflection and journaling pages
+2. **Daily Planner Screen**
+   - View and edit time blocks
+   - Add text entries for each block
+   - Add events with the "+" button
+   - Edit existing events by tapping them
 
-Feel free to fork this repo and adapt it to your own planning style.
+3. **Settings Screen**
+   - Configure start/end times
+   - Reorder time blocks
+   - Select color scheme
+   - Toggle clock format
+   - Choose map app preference
+
+4. **Reports Screen**
+   - Select week (Sunday-Saturday)
+   - View or export Weekly Schedule
+   - View or export Unemployment Report
+
+---
+
+## 🛠️ Technologies Used
+
+- **React Native** (0.81.5) - Cross-platform mobile framework
+- **Expo** (54.0.27) - Development platform
+- **TypeScript** - Type safety
+- **React Context API** - State management
+- **AsyncStorage** - Local data persistence
+- **expo-notifications** - Event reminders
+- **expo-print** & **expo-sharing** - PDF generation and sharing
+- **react-native-webview** - In-app report viewing
+
+---
+
+## 📄 Original PDF Planner
+
+The repository also includes the original prompt-driven PDF planner workflow for generating GoodNotes-compatible planner PDFs.
+
+### Using the PDF Prompt
+
+1. Open `prompts/GoodNotesPlannerPrompt.md`
+2. Copy the prompt and paste into ChatGPT or another LLM
+3. Generate a 7-page PDF with the specified time blocks and earth-tone aesthetic
+4. Import into GoodNotes, Notability, or your favorite handwriting app
+
+See `docs/Usage.md` for detailed instructions on customizing and using the PDF planner.
+
+---
+
+## 🧩 Customization
+
+### Adding New Time Blocks
+
+Edit `app/utils/plannerData.ts` to modify the default time blocks structure.
+
+### Adding New Color Schemes
+
+Edit `app/utils/colorSchemes.ts` to add new color palette options.
+
+### Modifying Event Types
+
+Update the `Event` interface in `app/utils/events.ts` to add new event types or fields.
 
 ---
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/my-idea`)
-3. Commit your changes (`git commit -m "Add new planner template"`)
-4. Push to the branch (`git push origin feature/my-idea`)
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-Suggestions, design tweaks, and new prompt variants are all welcome.
+We welcome contributions including:
+- Bug fixes
+- New features
+- UI/UX improvements
+- Documentation updates
+- New color schemes
+- Additional report types
 
 ---
 
-## 📜 License
+## 📝 License
 
 This project is licensed under the **MIT License**.  
 See the [`LICENSE`](./LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- Built with [Expo](https://expo.dev/)
+- React Native community for excellent documentation and tools
+- Inspired by the need for better job search organization and planning
+
+---
+
+## 📞 Support
+
+For issues, questions, or suggestions, please open an issue on GitHub.
+
+---
+
+**Happy Planning! 📅✨**

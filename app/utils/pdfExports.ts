@@ -7,16 +7,18 @@ import { getAllEvents } from './events';
 import { generateTimeBlocks } from './timeBlockGenerator';
 import { DAY_THEMES } from './plannerData';
 import { getDayThemeForDate } from './plannerData';
-import { formatTime12Hour } from './timeFormatter';
+import { formatTime12Hour, getDateKey } from './timeFormatter';
+import { ColorScheme } from './colorSchemes';
 
 /**
  * Generate HTML for weekly schedule PDF
  */
-const generateWeeklyScheduleHTML = (
+export const generateWeeklyScheduleHTML = (
   weekStart: Date,
   preferences: UserPreferences,
   entries: Record<string, Record<string, string>>,
-  events: Event[]
+  events: Event[],
+  colorScheme: ColorScheme
 ): string => {
   const days = [];
   for (let i = 0; i < 7; i++) {
@@ -37,7 +39,7 @@ const generateWeeklyScheduleHTML = (
   };
 
   const getDayEvents = (date: Date): Event[] => {
-    const dateKey = date.toISOString().split('T')[0];
+    const dateKey = getDateKey(date);
     return events.filter(e => e.dateKey === dateKey).sort((a, b) => {
       const [aH, aM] = a.startTime.split(':').map(Number);
       const [bH, bM] = b.startTime.split(':').map(Number);
@@ -46,7 +48,7 @@ const generateWeeklyScheduleHTML = (
   };
 
   const getDayEntries = (date: Date): Record<string, string> => {
-    const dateKey = date.toISOString().split('T')[0];
+    const dateKey = getDateKey(date);
     return entries[dateKey] || {};
   };
 
@@ -60,8 +62,8 @@ const generateWeeklyScheduleHTML = (
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           margin: 0;
           padding: 20px;
-          background-color: #FFF8E7;
-          color: #4A3A2A;
+          background-color: ${colorScheme.colors.background};
+          color: ${colorScheme.colors.text};
         }
         .week-header {
           text-align: center;
@@ -70,39 +72,39 @@ const generateWeeklyScheduleHTML = (
         .week-title {
           font-size: 24px;
           font-weight: bold;
-          color: #8C6A4A;
+          color: ${colorScheme.colors.primary};
           margin-bottom: 10px;
         }
         .week-dates {
           font-size: 14px;
-          color: #6b5b4f;
+          color: ${colorScheme.colors.textSecondary};
         }
         .day-section {
           page-break-after: always;
           margin-bottom: 30px;
         }
         .day-header {
-          background-color: #E7D7C1;
+          background-color: ${colorScheme.colors.surface};
           padding: 15px;
           border-radius: 8px;
           margin-bottom: 20px;
-          border-left: 4px solid #8C6A4A;
+          border-left: 4px solid ${colorScheme.colors.primary};
         }
         .day-title {
           font-size: 20px;
           font-weight: bold;
-          color: #4A3A2A;
+          color: ${colorScheme.colors.text};
           margin-bottom: 5px;
         }
         .day-theme {
           font-size: 14px;
-          color: #6b5b4f;
+          color: ${colorScheme.colors.textSecondary};
           font-style: italic;
         }
         .time-block {
           margin-bottom: 20px;
           padding-bottom: 15px;
-          border-bottom: 1px solid #C9A66B;
+          border-bottom: 1px solid ${colorScheme.colors.border};
         }
         .time-block-header {
           display: flex;
@@ -111,49 +113,49 @@ const generateWeeklyScheduleHTML = (
         }
         .time-block-time {
           font-size: 12px;
-          color: #8C6A4A;
+          color: ${colorScheme.colors.primary};
           font-weight: 600;
         }
         .time-block-title {
           font-size: 16px;
           font-weight: 600;
-          color: #4A3A2A;
+          color: ${colorScheme.colors.text};
         }
         .time-block-description {
           font-size: 12px;
-          color: #6b5b4f;
+          color: ${colorScheme.colors.textSecondary};
           margin-top: 4px;
         }
         .entry-lines {
           margin-top: 10px;
           min-height: 40px;
-          border-bottom: 1px solid #C9A66B;
+          border-bottom: 1px solid ${colorScheme.colors.border};
           padding-bottom: 5px;
-          color: #4A3A2A;
+          color: ${colorScheme.colors.text};
           white-space: pre-wrap;
           font-size: 14px;
         }
         .event-block {
-          background-color: #E7D7C1;
+          background-color: ${colorScheme.colors.surface};
           padding: 12px;
           border-radius: 6px;
           margin-bottom: 12px;
-          border-left: 3px solid #A67C52;
+          border-left: 3px solid ${colorScheme.colors.accent};
         }
         .event-title {
           font-size: 16px;
           font-weight: 600;
-          color: #4A3A2A;
+          color: ${colorScheme.colors.text};
           margin-bottom: 6px;
         }
         .event-time {
           font-size: 12px;
-          color: #8C6A4A;
+          color: ${colorScheme.colors.primary};
           margin-bottom: 4px;
         }
         .event-details {
           font-size: 12px;
-          color: #6b5b4f;
+          color: ${colorScheme.colors.textSecondary};
           margin-top: 6px;
         }
         .event-detail-row {
@@ -257,7 +259,7 @@ const generateWeeklyScheduleHTML = (
 /**
  * Generate HTML for unemployment report PDF
  */
-const generateUnemploymentReportHTML = (weekStart: Date, events: Event[]): string => {
+export const generateUnemploymentReportHTML = (weekStart: Date, events: Event[], colorScheme: ColorScheme): string => {
   const days = [];
   for (let i = 0; i < 7; i++) {
     const date = new Date(weekStart);
@@ -268,7 +270,7 @@ const generateUnemploymentReportHTML = (weekStart: Date, events: Event[]): strin
   // Filter to only interviews and appointments
   const relevantEvents = events.filter(e => 
     (e.type === 'interview' || e.type === 'appointment') && 
-    days.some(d => d.toISOString().split('T')[0] === e.dateKey)
+    days.some(d => getDateKey(d) === e.dateKey)
   ).sort((a, b) => {
     const dateCompare = a.dateKey.localeCompare(b.dateKey);
     if (dateCompare !== 0) return dateCompare;
@@ -287,8 +289,8 @@ const generateUnemploymentReportHTML = (weekStart: Date, events: Event[]): strin
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           margin: 0;
           padding: 20px;
-          background-color: #FFF8E7;
-          color: #4A3A2A;
+          background-color: ${colorScheme.colors.background};
+          color: ${colorScheme.colors.text};
         }
         .report-header {
           text-align: center;
@@ -297,41 +299,41 @@ const generateUnemploymentReportHTML = (weekStart: Date, events: Event[]): strin
         .report-title {
           font-size: 24px;
           font-weight: bold;
-          color: #8C6A4A;
+          color: ${colorScheme.colors.primary};
           margin-bottom: 10px;
         }
         .report-subtitle {
           font-size: 14px;
-          color: #6b5b4f;
+          color: ${colorScheme.colors.textSecondary};
         }
         table {
           width: 100%;
           border-collapse: collapse;
           margin-top: 20px;
-          background-color: white;
+          background-color: ${colorScheme.colors.background};
         }
         th {
-          background-color: #E7D7C1;
+          background-color: ${colorScheme.colors.surface};
           padding: 12px;
           text-align: left;
-          border: 1px solid #C9A66B;
+          border: 1px solid ${colorScheme.colors.border};
           font-weight: 600;
-          color: #4A3A2A;
+          color: ${colorScheme.colors.text};
           font-size: 12px;
         }
         td {
           padding: 10px;
-          border: 1px solid #C9A66B;
+          border: 1px solid ${colorScheme.colors.border};
           font-size: 12px;
-          color: #4A3A2A;
+          color: ${colorScheme.colors.text};
         }
         tr:nth-child(even) {
-          background-color: #FFF8E7;
+          background-color: ${colorScheme.colors.surface};
         }
         .no-events {
           text-align: center;
           padding: 40px;
-          color: #6b5b4f;
+          color: ${colorScheme.colors.textSecondary};
           font-style: italic;
         }
       </style>
@@ -365,7 +367,10 @@ const generateUnemploymentReportHTML = (weekStart: Date, events: Event[]): strin
     `;
   } else {
     relevantEvents.forEach(event => {
-      const date = new Date(event.dateKey);
+      // Parse dateKey as local date components to avoid timezone issues
+      // dateKey is in format "YYYY-MM-DD"
+      const [year, month, day] = event.dateKey.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
       const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       const startTimeStr = formatTime12Hour(event.startTime);
       const endTimeStr = event.endTime ? formatTime12Hour(event.endTime) : '';
@@ -403,10 +408,11 @@ export const exportWeeklySchedulePDF = async (
   weekStart: Date,
   preferences: UserPreferences,
   entries: Record<string, Record<string, string>>,
-  events: Event[]
+  events: Event[],
+  colorScheme: ColorScheme
 ): Promise<void> => {
   try {
-    const html = generateWeeklyScheduleHTML(weekStart, preferences, entries, events);
+    const html = generateWeeklyScheduleHTML(weekStart, preferences, entries, events, colorScheme);
 
     // printToFileAsync creates a file in a shareable location, we can use it directly
     const { uri } = await Print.printToFileAsync({ html, base64: false });
@@ -429,9 +435,9 @@ export const exportWeeklySchedulePDF = async (
 /**
  * Export unemployment report as PDF
  */
-export const exportUnemploymentReportPDF = async (weekStart: Date, events: Event[]): Promise<void> => {
+export const exportUnemploymentReportPDF = async (weekStart: Date, events: Event[], colorScheme: ColorScheme): Promise<void> => {
   try {
-    const html = generateUnemploymentReportHTML(weekStart, events);
+    const html = generateUnemploymentReportHTML(weekStart, events, colorScheme);
 
     // printToFileAsync creates a file in a shareable location, we can use it directly
     const { uri } = await Print.printToFileAsync({ html, base64: false });

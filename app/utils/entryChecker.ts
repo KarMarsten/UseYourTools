@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getDateKey } from './timeFormatter';
 
 export const hasEntriesForDate = async (date: Date): Promise<boolean> => {
   try {
-    const dateKey = date.toISOString().split('T')[0];
+    const dateKey = getDateKey(date);
     const stored = await AsyncStorage.getItem(`planner_${dateKey}`);
     if (!stored) return false;
     

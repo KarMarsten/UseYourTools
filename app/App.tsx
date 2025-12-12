@@ -6,6 +6,8 @@ import PromptDetailScreen from './components/PromptDetailScreen';
 import CalendarScreen from './components/CalendarScreen';
 import DailyPlannerScreen from './components/DailyPlannerScreen';
 import SetupScreen from './components/SetupScreen';
+import ReportsScreen from './components/ReportsScreen';
+import ViewReportScreen from './components/ViewReportScreen';
 import { PreferencesProvider, usePreferences } from './context/PreferencesContext';
 import { Prompt } from './prompts';
 import { loadPreferences } from './utils/preferences';
@@ -63,7 +65,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-type Screen = 'home' | 'prompts' | 'promptDetail' | 'calendar' | 'dailyPlanner' | 'setup';
+type Screen = 'home' | 'prompts' | 'promptDetail' | 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport';
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('calendar');
@@ -71,6 +73,8 @@ function AppContent() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [reportHtml, setReportHtml] = useState<string>('');
+  const [reportTitle, setReportTitle] = useState<string>('');
   const { colorScheme } = usePreferences();
 
   useEffect(() => {
@@ -142,6 +146,20 @@ function AppContent() {
     setCurrentScreen('calendar');
   };
 
+  const handleViewReports = () => {
+    setCurrentScreen('reports');
+  };
+
+  const handleViewReport = (html: string, title: string) => {
+    setReportHtml(html);
+    setReportTitle(title);
+    setCurrentScreen('viewReport');
+  };
+
+  const handleBackToReports = () => {
+    setCurrentScreen('reports');
+  };
+
   if (currentScreen === 'setup') {
     return <SetupScreen onComplete={handleSetupComplete} onBack={handleBackToCalendar} />;
   }
@@ -155,7 +173,15 @@ function AppContent() {
   }
 
   if (currentScreen === 'calendar') {
-    return <CalendarScreen onSelectDate={handleSelectDate} onSettings={handleViewSettings} refreshTrigger={calendarRefreshTrigger} />;
+    return <CalendarScreen onSelectDate={handleSelectDate} onSettings={handleViewSettings} onReports={handleViewReports} refreshTrigger={calendarRefreshTrigger} />;
+  }
+
+  if (currentScreen === 'reports') {
+    return <ReportsScreen onBack={handleBackToCalendar} onViewReport={handleViewReport} />;
+  }
+
+  if (currentScreen === 'viewReport') {
+    return <ViewReportScreen html={reportHtml} title={reportTitle} onBack={handleBackToReports} />;
   }
 
   if (currentScreen === 'dailyPlanner' && selectedDate) {

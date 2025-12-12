@@ -9,6 +9,7 @@ import { formatTimeRange, formatTime12Hour } from '../utils/timeFormatter';
 import { Event, loadEventsForDate, saveEvent, deleteEvent, generateEventId } from '../utils/events';
 import { scheduleEventNotification, cancelEventNotification } from '../utils/eventNotifications';
 import { openAddressInMaps, openPhoneNumber, openEmail } from '../utils/eventActions';
+import { getDateKey } from '../utils/timeFormatter';
 import AddEventModal from './AddEventModal';
 
 interface DailyPlannerScreenProps {
@@ -27,9 +28,12 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | undefined>(undefined);
   const { preferences, colorScheme } = usePreferences();
-  const dateKey = date.toISOString().split('T')[0];
-  const dayTheme = getDayThemeForDate(date);
-  const dayName = getDayName(date);
+  // Normalize date to ensure consistent dateKey calculation (avoid timezone issues)
+  const normalizedDate = new Date(date);
+  normalizedDate.setHours(0, 0, 0, 0);
+  const dateKey = getDateKey(normalizedDate);
+  const dayTheme = getDayThemeForDate(normalizedDate);
+  const dayName = getDayName(normalizedDate);
   
   const use12Hour = preferences?.use12HourClock ?? false;
 
@@ -37,7 +41,8 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
     loadEntries();
     loadCustomTimeBlocks();
     loadEvents();
-  }, [date, preferences]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateKey, preferences]); // Use dateKey instead of date to avoid re-running on date object reference changes
 
   const loadCustomTimeBlocks = async () => {
     try {

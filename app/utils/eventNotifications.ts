@@ -35,28 +35,34 @@ export const requestNotificationPermissions = async (): Promise<boolean> => {
  */
 export const scheduleEventNotification = async (event: Event): Promise<string | null> => {
   try {
+    // Parse event date and time (using local time components to avoid timezone issues)
+    const [year, month, day] = event.dateKey.split('-').map(Number);
+    const [hours, minutes] = event.startTime.split(':').map(Number);
+    
+    // Create event date using local time components
+    const eventDate = new Date(year, month - 1, day, hours, minutes);
+    
+    // Calculate notification time (10 minutes before)
+    const notificationDate = new Date(eventDate.getTime() - 10 * 60 * 1000);
+    
+    const now = new Date();
+    
+    // Don't schedule if the notification time is in the past
+    if (notificationDate <= now) {
+      console.warn('Cannot schedule notification in the past or at current time');
+      return null;
+    }
+
+    // Only request permissions if we're actually going to schedule a notification
+    // This avoids showing the permission dialog unnecessarily
     const hasPermission = await requestNotificationPermissions();
     if (!hasPermission) {
       console.warn('Notification permissions not granted');
       return null;
     }
 
-    // Parse event date and time
-    const [year, month, day] = event.dateKey.split('-').map(Number);
-    const [hours, minutes] = event.startTime.split(':').map(Number);
-    
-    // Create event date
-    const eventDate = new Date(year, month - 1, day, hours, minutes);
-    
-    // Calculate notification time (10 minutes before)
-    const notificationDate = new Date(eventDate.getTime() - 10 * 60 * 1000);
-    
-    // Don't schedule if the notification time is in the past
-    if (notificationDate < new Date()) {
-      console.warn('Cannot schedule notification in the past');
-      return null;
-    }
-
+    // Schedule notification with Date object as trigger
+    // expo-notifications accepts a Date object directly for absolute time scheduling
     const notificationId = await Notifications.scheduleNotificationAsync({
       content: {
         title: `🔔 ${event.title}`,
@@ -64,7 +70,7 @@ export const scheduleEventNotification = async (event: Event): Promise<string | 
         sound: true,
         data: { eventId: event.id },
       },
-      trigger: notificationDate,
+      trigger: notificationDate, // Date object representing when to trigger the notification
     });
 
     return notificationId;

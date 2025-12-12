@@ -28,3 +28,14 @@ export const formatTimeRange = (timeRange: string, use12Hour: boolean): string =
   return timeRange; // Already in 24-hour format
 };
 
+/**
+ * Converts a Date object to a date key string (YYYY-MM-DD) using local date components.
+ * This avoids timezone issues that occur when using toISOString().
+ */
+export const getDateKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+

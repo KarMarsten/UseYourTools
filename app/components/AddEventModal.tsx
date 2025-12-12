@@ -53,6 +53,7 @@ export default function AddEventModal({
   // Reset form when modal opens/closes
   useEffect(() => {
     if (visible && event) {
+      // Populate form with event data when editing
       setTitle(event.title || '');
       setStartTime(event.startTime || '');
       setEndTime(event.endTime || '');
@@ -64,6 +65,19 @@ export default function AddEventModal({
       setPhone(event.phone || '');
       setCompany(event.company || '');
       setJobTitle(event.jobTitle || '');
+    } else if (visible && !event) {
+      // Reset to empty values when opening to add new event
+      setTitle('');
+      setStartTime('');
+      setEndTime('');
+      setType('reminder');
+      setNotes('');
+      setAddress('');
+      setContactName('');
+      setEmail('');
+      setPhone('');
+      setCompany('');
+      setJobTitle('');
     } else if (!visible) {
       // Reset when closing
       setTitle('');

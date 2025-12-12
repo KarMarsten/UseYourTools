@@ -277,8 +277,8 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
               const block = getTimeBlockById(blockId);
               if (!block) return null;
               
-              // Get the generated time for this block from preview
-              const generatedBlock = generatedBlocksPreview[index];
+              // Get the generated time for this block from preview by matching ID
+              const generatedBlock = generatedBlocksPreview.find(gb => gb.id === blockId);
               const displayTime = generatedBlock ? generatedBlock.time : block.time;
               const formattedTime = use12HourClock ? formatTimeRange(displayTime, true) : displayTime;
 
