@@ -80,11 +80,35 @@ target 'UseYourTools' do
       
       # Fix for React module not found in ExpoModulesCore Swift header
       # The generated header imports 'React' but React Native 0.81 uses 'React-Core'
-      # We'll add this fix as a post-install script that patches the generated file
+      # Add a script phase to ExpoModulesCore target to patch the file after generation
       if target.name == 'ExpoModulesCore'
-        target.build_configurations.each do |config|
-          # Add a preprocessor flag to help with module resolution
-          config.build_settings['SWIFT_OBJC_BRIDGING_HEADER'] ||= ''
+        # Remove existing fix script phase if it exists
+        target.build_phases.delete_if { |phase| phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase) && phase.name == '[Fix] React Module Import' }
+        
+        # Add script phase to patch the generated Swift header
+        fix_phase = target.new_shell_script_build_phase('[Fix] React Module Import')
+        fix_phase.shell_script = <<~SCRIPT
+          # Fix React module import in generated ExpoModulesCore-Swift.h
+          # React Native 0.81 uses 'React-Core' instead of 'React'
+          HEADER_FILE="${DERIVED_SOURCES_DIR}/ExpoModulesCore-Swift.h"
+          if [ -f "$HEADER_FILE" ]; then
+            # First, fix any accidental double replacements (React-Core-Core -> React-Core)
+            sed -i '' 's/React-Core-Core/React-Core/g' "$HEADER_FILE" 2>/dev/null || true
+            # Replace @import React; with @import React-Core; (only standalone React, not React-Core)
+            sed -i '' 's/@import React;$/@import React-Core;/g' "$HEADER_FILE" 2>/dev/null || true
+            # Handle @import React (without semicolon, but followed by whitespace or end)
+            sed -i '' 's/@import React$/@import React-Core/g' "$HEADER_FILE" 2>/dev/null || true
+          fi
+        SCRIPT
+        fix_phase.run_only_for_deployment_postprocessing = '0'
+        
+        # Move the script phase to run after code generation phases but before compilation
+        # Find the index of the first compile sources phase
+        compile_index = target.build_phases.find_index { |phase| phase.is_a?(Xcodeproj::Project::Object::PBXSourcesBuildPhase) }
+        if compile_index
+          # Move our script phase to just before compilation
+          target.build_phases.delete(fix_phase)
+          target.build_phases.insert(compile_index, fix_phase)
         end
       end
     end
