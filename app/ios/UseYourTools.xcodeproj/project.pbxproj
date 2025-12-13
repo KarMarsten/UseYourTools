@@ -25,7 +25,7 @@
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = UseYourTools/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		C4928127133C5D42DC949C8A /* Pods-UseYourTools.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-UseYourTools.release.xcconfig"; path = "Target Support Files/Pods-UseYourTools/Pods-UseYourTools.release.xcconfig"; sourceTree = "<group>"; };
-		E127FEF19400889B06A5F6AA /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = UseYourTools/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		E127FEF19400889B06A5F6AA /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = UseYourTools/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = UseYourTools/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* UseYourTools-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "UseYourTools-Bridging-Header.h"; path = "UseYourTools/UseYourTools-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -50,7 +50,6 @@
 				FF72CA3364996442357ABF32 /* Pods-UseYourTools.debug.xcconfig */,
 				C4928127133C5D42DC949C8A /* Pods-UseYourTools.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -147,6 +146,7 @@
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
 				0D54856B0237716745F6EB4C /* [CP] Embed Pods Frameworks */,
+				434436F05D446CAD16EFFDF8 /* [Fix] ExpoModulesCore React Module Import */,
 			);
 			buildRules = (
 			);
@@ -260,6 +260,24 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-UseYourTools/Pods-UseYourTools-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		434436F05D446CAD16EFFDF8 /* [Fix] ExpoModulesCore React Module Import */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "[Fix] ExpoModulesCore React Module Import";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Fix React module import in ExpoModulesCore-Swift.h\n# React Native 0.81 uses 'React-Core' instead of 'React'\nDERIVED_SOURCES=\"${BUILD_DIR}/Intermediates.noindex/Pods.build/${CONFIGURATION}${EFFECTIVE_PLATFORM_NAME}/ExpoModulesCore.build/DerivedSources\"\nHEADER_FILE=\"${DERIVED_SOURCES}/ExpoModulesCore-Swift.h\"\nif [ -f \"$HEADER_FILE\" ]; then\n  sed -i '' 's/@import React;/@import React-Core;/g' \"$HEADER_FILE\" 2>/dev/null || true\n  sed -i '' '/^import React$/s/^import React$/import React-Core/g' \"$HEADER_FILE\" 2>/dev/null || true\nfi\n";
+		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -345,6 +363,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = UseYourTools/UseYourTools.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = UAHR3JWC24;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -381,6 +400,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = UseYourTools/UseYourTools.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = UAHR3JWC24;
 				INFOPLIST_FILE = UseYourTools/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (

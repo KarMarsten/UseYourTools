@@ -56,5 +56,87 @@ target 'UseYourTools' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
+    
+    # Fix for nullability warnings in Expo modules
+    # Apply to all Expo-related targets and all targets that might use Expo headers
+    installer.pods_project.targets.each do |target|
+      # Check if it's an Expo module or uses Expo headers
+      is_expo_target = target.name.start_with?('Expo') || 
+                       target.name.start_with?('EX') ||
+                       target.name.include?('ExpoModules')
+      
+      if is_expo_target
+        target.build_configurations.each do |config|
+          config.build_settings['CLANG_WARN_NULLABILITY'] = 'NO'
+          config.build_settings['GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS'] = 'NO'
+          # Add compiler flag to suppress nullability warnings
+          if config.build_settings['OTHER_CFLAGS']
+            config.build_settings['OTHER_CFLAGS'] << '-Wno-nullability-completeness' unless config.build_settings['OTHER_CFLAGS'].include?('-Wno-nullability-completeness')
+          else
+            config.build_settings['OTHER_CFLAGS'] = ['-Wno-nullability-completeness']
+          end
+        end
+      end
+      
+      # Fix for React module not found in ExpoModulesCore Swift header
+      # The generated header imports 'React' but React Native 0.81 uses 'React-Core'
+      # We'll add this fix as a post-install script that patches the generated file
+      if target.name == 'ExpoModulesCore'
+        target.build_configurations.each do |config|
+          # Add a preprocessor flag to help with module resolution
+          config.build_settings['SWIFT_OBJC_BRIDGING_HEADER'] ||= ''
+        end
+      end
+    end
+    
+    # Also disable nullability warnings globally for ALL targets to prevent issues when using Expo headers
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        if config.build_settings['OTHER_CFLAGS']
+          config.build_settings['OTHER_CFLAGS'] << '-Wno-nullability-completeness' unless config.build_settings['OTHER_CFLAGS'].include?('-Wno-nullability-completeness')
+        else
+          config.build_settings['OTHER_CFLAGS'] = ['-Wno-nullability-completeness']
+        end
+      end
+    end
+    
+    # Fix React module import in ExpoModulesCore generated Swift header
+    # Add a script phase to the app's Xcode project to patch the file during build
+    app_project_path = File.join(installer.sandbox.root.parent, 'UseYourTools.xcodeproj')
+    if File.exist?(app_project_path)
+      require 'xcodeproj'
+      app_project = Xcodeproj::Project.open(app_project_path)
+      app_target = app_project.targets.find { |t| t.name == 'UseYourTools' }
+      
+      if app_target
+        script_phase_name = '[Fix] ExpoModulesCore React Module Import'
+        existing_phase = app_target.shell_script_build_phases.find { |phase| phase.name == script_phase_name }
+        
+        unless existing_phase
+          fix_phase = app_target.new_shell_script_build_phase(script_phase_name)
+          fix_phase.shell_script = <<~SCRIPT
+            # Fix React module import in ExpoModulesCore-Swift.h
+            # React Native 0.81 uses 'React-Core' instead of 'React'
+            # Search for the generated header file in derived sources
+            FIND_PATHS=(
+              "${BUILD_DIR}/Intermediates.noindex/Pods.build/${CONFIGURATION}${EFFECTIVE_PLATFORM_NAME}/ExpoModulesCore.build/DerivedSources"
+              "${DERIVED_FILE_DIR}"
+              "${DERIVED_SOURCES_DIR}"
+            )
+            for SEARCH_PATH in "${FIND_PATHS[@]}"; do
+              HEADER_FILE="${SEARCH_PATH}/ExpoModulesCore-Swift.h"
+              if [ -f "$HEADER_FILE" ]; then
+                # Replace 'import React' with 'import React-Core'
+                sed -i '' 's/@import React;/@import React-Core;/g' "$HEADER_FILE" 2>/dev/null || true
+                sed -i '' '/^import React$/s/^import React$/import React-Core/g' "$HEADER_FILE" 2>/dev/null || true
+                break
+              fi
+            done
+          SCRIPT
+          fix_phase.run_only_for_deployment_postprocessing = '0'
+          app_project.save
+        end
+      end
+    end
   end
 end
