@@ -253,7 +253,7 @@ export default function AddEventModal({
       <KeyboardAvoidingView
         style={styles.modalOverlay}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        keyboardVerticalOffset={0}
       >
         <View style={[styles.modalContent, { backgroundColor: colorScheme.surface }]}>
           <View style={styles.modalHeader}>
@@ -801,11 +801,11 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 20,
     maxHeight: '90%',
-    flex: 1,
+    width: '100%',
   },
   scrollView: {
-    flex: 1,
-    marginBottom: 10,
+    maxHeight: 400,
+    marginBottom: 16,
   },
   scrollContent: {
     paddingBottom: 20,
@@ -963,7 +963,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     paddingTop: 16,
-    marginTop: 0,
+    marginTop: 10,
+    flexShrink: 0,
   },
   button: {
     flex: 1,
