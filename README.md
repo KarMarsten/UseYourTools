@@ -1,4 +1,4 @@
-<p align="center"><img width="400" height="400" alt="image" src="https://github.com/KarMarsten/UseYourTools/blob/main/app/assets/icon.png" /></p>
+<p align="center"><img width="400" height="400" alt="UseYourTools App Icon" src="https://github.com/KarMarsten/UseYourTools/blob/main/app/assets/icon.png" /></p>
 
 # UseYourTools - Structured Daily Planner for Job Hunters 📅
 
@@ -6,251 +6,161 @@ A comprehensive daily planning app designed specifically for job seekers, built 
 
 ---
 
-## ✨ App Features
+## ✨ Features
 
-### 📱 iOS Application
+### 📱 Calendar & Planning
+- **Interactive Calendar**: Monthly view with visual indicators for days with entries and events
+- **Daily Planner**: Customizable time blocks that adapt to your schedule
+- **Daily Themes**: Focused planning themes for each day of the week
+- **Persistent Storage**: All entries and events are saved locally
 
-**Calendar View**
-- Interactive monthly calendar as the landing page
-- Visual indicators for days with planner entries (✏️) and events (💬)
-- Tap any date to view events and access the daily planner
-- Automatic highlighting of today's date
+### 📅 Event Management
 
-**Daily Planner**
-- Customizable time blocks that adapt to your schedule
-- Daily themes for focused planning
-- Interactive text fields for each time block
-- Persistent storage of your entries
-- Add events (interviews, appointments, reminders) with:
-  - Custom start/end times
-  - Contact information (name, email, phone)
-  - Address (opens in Maps/Google Maps)
-  - Company and job title
-  - Notes
-  - 10-minute advance notifications
+Create and manage events with three types:
 
-**Settings & Customization**
-- **Customizable Schedule**: Set your start and end times (automatically calculates 9-hour workday)
-- **Reorderable Time Blocks**: Drag and drop to arrange your daily routine
-- **Color Schemes**: Choose from 4 beautiful themes:
-  - 🌿 Earth-Tone (default) - Browns and tans
-  - 🌊 Cheerful Nature - Greens and blues
-  - ☀️ Sunny Sky - Oranges and yellows
-  - 💜 Imagination Run Wild - Purples and pinks
-  - All backgrounds use a cream color (#FFF8E7)
-- **Clock Format**: Toggle between 12-hour and 24-hour time
-- **Map App Preference**: Choose between Apple Maps and Google Maps
+- **Interviews**: Full event details with start/end times, company, job title, contact info
+- **Appointments**: Similar to interviews, for any scheduled meeting
+- **Reminders**: Simple reminders that only require a start time (no end time needed)
 
-**Event Management**
-- Create events with types: Interview, Appointment, or Reminder
-- Reminders don't require an end time
-- Clickable contact information:
-  - 📍 Address → Opens in Maps
-  - 📞 Phone → Call or text option
-  - ✉️ Email → Opens default email app
-- Automatic notifications 10 minutes before event start time
+**Event Features:**
+- **Contact Information**: Store company name, job title, contact name, email, phone, and address
+- **Smart Actions**: 
+  - 📍 Tap addresses to open in Maps (Apple Maps or Google Maps)
+  - 📞 Tap phone numbers to call or text
+  - ✉️ Tap email addresses to open your email app
+- **Time Management**: 
+  - Custom start and end times (end time optional for reminders)
+  - Supports both 12-hour and 24-hour time formats
+  - Automatic sorting by start time
+- **Notifications**: Automatic reminders 10 minutes before event start time
+- **View & Edit Modes**: 
+  - Tap an event to view details in read-only mode
+  - Tap "Edit" button in the upper right to modify
+  - Delete events directly from the event list
 
-**Reports**
-- **Weekly Schedule**: View or export your complete weekly schedule as PDF
-- **Unemployment Report**: Generate a formatted report with company, contact, date/time, and job title for unemployment filing
-- Week selector to choose any Sunday-Saturday week
-- In-app viewing using WebView
-- PDF export with color scheme preservation
+### ⚙️ Settings & Customization
+
+**Schedule Configuration**
+- **Custom Start/End Times**: Set your workday hours (automatically calculates 9-hour blocks)
+- **Reorderable Time Blocks**: Drag and drop to arrange your daily routine order
+- **Dynamic Time Blocks**: Blocks automatically adjust based on your start/end times
+
+**Visual Customization**
+- **4 Color Schemes**: 
+  - 🌿 **Earth-Tone** (default): Warm browns, tans, and muted golds
+  - 🌊 **Cheerful Nature**: Greens and blues with nature-inspired tones
+  - ☀️ **Sunny Sky**: Vibrant oranges and yellows
+  - 💜 **Imagination Run Wild**: Purples and pinks with creative flair
+- All schemes use a cream background (#FFF8E7) for consistency
+
+**Preferences**
+- **Clock Format**: Toggle between 12-hour (AM/PM) and 24-hour (HH:MM) time display
+- **Map App Preference**: Choose between Apple Maps and Google Maps for address links
+
+### 📊 Reports
+
+Generate and export professional reports from your planner data:
+
+- **Weekly Schedule Report**
+  - View or export your complete weekly schedule as PDF
+  - Includes all time blocks, entries, and events for the selected week (Sunday-Saturday)
+  - Shows daily themes and formatted time ranges
+  - Perfect for reviewing your weekly planning
+
+- **Unemployment Report**
+  - Generate formatted reports specifically for unemployment filing
+  - Includes company name, contact person, date/time, and job title
+  - Only includes interviews and appointments (excludes reminders)
+  - Filtered to show only events from the selected week
+  - Export as PDF for easy submission
+
+**Report Features:**
+- **Week Selector**: Choose any Sunday-Saturday week to generate reports
+- **In-App Viewing**: View reports using WebView before exporting
+- **PDF Export**: Share or save PDFs with `expo-sharing`
+- **Color Preservation**: PDFs respect your selected color scheme
+- **All Data Included**: Reports pull from your saved planner entries and events
 
 ---
 
 ## 🚀 Getting Started
 
-### Prerequisites
-
-- Node.js (v18 or higher)
-- npm or yarn
-- iOS Simulator (for iOS development) or Android Emulator (for Android)
-- Expo CLI (optional, included in dependencies)
-
-### Installation
+### Quick Start with Expo Go
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/UseYourTools.git
-   cd UseYourTools
+   git clone https://github.com/KarMarsten/UseYourTools.git
+   cd UseYourTools/app
    ```
 
-2. **Navigate to the app directory**
-   ```bash
-   cd app
-   ```
-
-3. **Install dependencies**
+2. **Install dependencies**
    ```bash
    npm install
    ```
 
-4. **For iOS development (macOS required)**
-   ```bash
-   # Install CocoaPods dependencies
-   cd ios
-   pod install
-   cd ..
-   ```
-
-5. **Start the development server**
+3. **Start the development server**
    ```bash
    npm start
-   # or
-   expo start
    ```
 
-6. **Run on iOS Simulator**
-   ```bash
-   npm run ios
-   # or
-   npx expo run:ios
-   ```
+4. **Run on your device**
+   - Install [Expo Go](https://expo.dev/client) on your iOS or Android device
+   - Scan the QR code from the terminal or Expo DevTools
+   - The app will load on your device
 
-7. **Run on Android Emulator**
-   ```bash
-   npm run android
-   # or
-   npx expo run:android
-   ```
+That's it! No need for Xcode, Android Studio, or complex setup.
 
 ---
 
-## 📂 Repository Structure
+## 📂 Project Structure
 
 ```
-UseYourTools/
-├── app/                          # React Native iOS app
-│   ├── components/              # React components
-│   │   ├── CalendarScreen.tsx   # Main calendar view
-│   │   ├── DailyPlannerScreen.tsx # Daily planning interface
-│   │   ├── SetupScreen.tsx      # Settings and preferences
-│   │   ├── ReportsScreen.tsx    # Reports and PDF exports
-│   │   └── AddEventModal.tsx    # Event creation/editing
-│   ├── context/                 # React Context providers
-│   │   └── PreferencesContext.tsx # Global preferences state
-│   ├── utils/                   # Utility functions
-│   │   ├── colorSchemes.ts      # Color scheme definitions
-│   │   ├── events.ts            # Event CRUD operations
-│   │   ├── pdfExports.ts        # PDF generation
-│   │   ├── timeBlockGenerator.ts # Dynamic time block generation
-│   │   └── preferences.ts       # User preferences management
-│   ├── assets/                  # App icons and images
-│   ├── App.tsx                  # Main app component
-│   └── package.json             # Dependencies
-├── docs/                        # Documentation
-│   ├── Overview.md
-│   └── Usage.md
-└── README.md                    # This file
+app/
+├── components/          # React components
+│   ├── CalendarScreen.tsx
+│   ├── DailyPlannerScreen.tsx
+│   ├── SetupScreen.tsx
+│   ├── ReportsScreen.tsx
+│   └── AddEventModal.tsx
+├── context/            # React Context providers
+├── utils/              # Utility functions (events, PDFs, preferences)
+└── assets/             # App icons and images
 ```
 
 ---
 
-## 🎨 Color Schemes
+## 🛠️ Tech Stack
 
-All color schemes use a cream background (#FFF8E7) for consistency and readability:
-
-- **Earth-Tone** (Default): Warm browns (#8C6A4A), tans (#E7D7C1), and muted golds
-- **Cheerful Nature**: Greens (#5A8A6A) and blues with nature-inspired tones
-- **Sunny Sky**: Vibrant oranges (#D4A574) and yellows (#F5C842)
-- **Imagination Run Wild**: Purples (#9B6FA8) and pinks with creative flair
-
----
-
-## 📱 App Navigation
-
-1. **Calendar Screen** (Landing Page)
-   - View monthly calendar
-   - See indicators for entries and events
-   - Tap date to view events
-   - Access Settings (⚙️) and Reports (📊) from header
-
-2. **Daily Planner Screen**
-   - View and edit time blocks
-   - Add text entries for each block
-   - Add events with the "+" button
-   - Edit existing events by tapping them
-
-3. **Settings Screen**
-   - Configure start/end times
-   - Reorder time blocks
-   - Select color scheme
-   - Toggle clock format
-   - Choose map app preference
-
-4. **Reports Screen**
-   - Select week (Sunday-Saturday)
-   - View or export Weekly Schedule
-   - View or export Unemployment Report
+- **React Native** 0.79.6
+- **Expo SDK** 53
+- **TypeScript**
+- **React Context API** for state management
+- **AsyncStorage** for local persistence
+- **expo-notifications** for reminders
+- **expo-print** for PDF generation
 
 ---
 
-## 🛠️ Technologies Used
+## 📱 Usage
 
-- **React Native** (0.81.5) - Cross-platform mobile framework
-- **Expo** (54.0.27) - Development platform
-- **TypeScript** - Type safety
-- **React Context API** - State management
-- **AsyncStorage** - Local data persistence
-- **expo-notifications** - Event reminders
-- **expo-print** & **expo-sharing** - PDF generation and sharing
-- **react-native-webview** - In-app report viewing
-
----
-
-## 🧩 Customization
-
-### Adding New Time Blocks
-
-Edit `app/utils/plannerData.ts` to modify the default time blocks structure.
-
-### Adding New Color Schemes
-
-Edit `app/utils/colorSchemes.ts` to add new color palette options.
-
-### Modifying Event Types
-
-Update the `Event` interface in `app/utils/events.ts` to add new event types or fields.
+1. **First Launch**: Complete the setup wizard to configure your schedule and preferences
+2. **Calendar**: Tap any date to view events and open the daily planner
+3. **Add Events**: Use the "+ Add Event" button in the daily planner
+4. **View Events**: Tap an event to view details in read-only mode
+5. **Edit Events**: Tap "Edit" in the event view or edit directly from the list
+6. **Reports**: Access reports from the calendar header to view or export PDFs
 
 ---
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-We welcome contributions including:
-- Bug fixes
-- New features
-- UI/UX improvements
-- Documentation updates
-- New color schemes
-- Additional report types
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
 ## 📝 License
 
-This project is licensed under the **MIT License**.  
-See the [`LICENSE`](./LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- Built with [Expo](https://expo.dev/)
-- React Native community for excellent documentation and tools
-- Inspired by the need for better job search organization and planning
-
----
-
-## 📞 Support
-
-For issues, questions, or suggestions, please open an issue on GitHub.
+This project is licensed under the **MIT License**.
 
 ---
 
