@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Event } from '../utils/events';
 import { formatTimeRange, formatTime12Hour } from '../utils/timeFormatter';
@@ -248,7 +250,11 @@ export default function AddEventModal({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
+      <KeyboardAvoidingView
+        style={styles.modalOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
         <View style={[styles.modalContent, { backgroundColor: colorScheme.surface }]}>
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: colorScheme.text }]}>
@@ -264,7 +270,12 @@ export default function AddEventModal({
             )}
           </View>
           
-          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            style={styles.scrollView} 
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
 
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: colorScheme.text }]}>Title</Text>
@@ -628,7 +639,7 @@ export default function AddEventModal({
             </View>
           )}
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
