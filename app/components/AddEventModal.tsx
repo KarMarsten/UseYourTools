@@ -272,6 +272,7 @@ export default function AddEventModal({
           
           <ScrollView 
             style={styles.scrollView} 
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
@@ -576,6 +577,33 @@ export default function AddEventModal({
           )}
           </ScrollView>
 
+          {/* Buttons always visible at bottom */}
+          {viewMode ? (
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.button, styles.saveButton, { backgroundColor: colorScheme.primary }]}
+                onPress={handleCancel}
+              >
+                <Text style={[styles.buttonText, { color: colorScheme.background }]}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton, { borderColor: colorScheme.border }]}
+                onPress={handleCancel}
+              >
+                <Text style={[styles.buttonText, { color: colorScheme.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.saveButton, { backgroundColor: colorScheme.primary }]}
+                onPress={handleSave}
+              >
+                <Text style={[styles.buttonText, { color: colorScheme.background }]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Time picker dropdowns rendered outside ScrollView */}
           {showStartTimePicker && (
             <TimePickerDropdown
@@ -611,32 +639,6 @@ export default function AddEventModal({
               }}
               onClose={() => setShowEndTimePicker(false)}
             />
-          )}
-
-          {viewMode ? (
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.button, styles.saveButton, { backgroundColor: colorScheme.primary }]}
-                onPress={handleCancel}
-              >
-                <Text style={[styles.buttonText, { color: colorScheme.background }]}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.button, styles.cancelButton, { borderColor: colorScheme.border }]}
-                onPress={handleCancel}
-              >
-                <Text style={[styles.buttonText, { color: colorScheme.text }]}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.saveButton, { backgroundColor: colorScheme.primary }]}
-                onPress={handleSave}
-              >
-                <Text style={[styles.buttonText, { color: colorScheme.background }]}>Save</Text>
-              </TouchableOpacity>
-            </View>
           )}
         </View>
       </KeyboardAvoidingView>
@@ -797,11 +799,16 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 20,
     maxHeight: '90%',
+    flex: 1,
   },
   scrollView: {
-    maxHeight: 600,
+    flex: 1,
+    marginBottom: 10,
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -955,7 +962,8 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 10,
+    paddingTop: 16,
+    marginTop: 0,
   },
   button: {
     flex: 1,
