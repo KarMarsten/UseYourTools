@@ -140,13 +140,13 @@
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
 				FE22DAEE2949E21B8230B45F /* [Expo] Configure project */,
+				434436F05D446CAD16EFFDF8 /* [Fix] ExpoModulesCore React Module Import */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
 				0D54856B0237716745F6EB4C /* [CP] Embed Pods Frameworks */,
-				434436F05D446CAD16EFFDF8 /* [Fix] ExpoModulesCore React Module Import */,
 			);
 			buildRules = (
 			);
@@ -276,7 +276,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Fix React module import in ExpoModulesCore-Swift.h\n# React Native 0.81 uses 'React-Core' instead of 'React'\n# Search in multiple possible locations for the generated header file\nSEARCH_PATHS=(\n  \"${BUILD_DIR}/Intermediates.noindex/Pods.build/${CONFIGURATION}${EFFECTIVE_PLATFORM_NAME}/ExpoModulesCore.build/DerivedSources\"\n  \"${DERIVED_FILE_DIR}\"\n  \"${DERIVED_SOURCES_DIR}\"\n  \"${TARGET_BUILD_DIR}/../Intermediates.noindex/Pods.build/${CONFIGURATION}${EFFECTIVE_PLATFORM_NAME}/ExpoModulesCore.build/DerivedSources\"\n)\n\nfor SEARCH_PATH in \"${SEARCH_PATHS[@]}\"; do\n  HEADER_FILE=\"${SEARCH_PATH}/ExpoModulesCore-Swift.h\"\n  if [ -f \"$HEADER_FILE\" ]; then\n    # Replace @import React; with @import React-Core; (only if it's exactly \"React\", not \"React-Core\")\n    sed -i '' 's/@import React;$/@import React-Core;/g' \"$HEADER_FILE\" 2>/dev/null || true\n    # Fix any accidental double replacements (React-Core-Core -> React-Core)\n    sed -i '' 's/React-Core-Core/React-Core/g' \"$HEADER_FILE\" 2>/dev/null || true\n    break\n  fi\ndone\n";
+			shellScript = "# Fix React module import in ExpoModulesCore-Swift.h\n# React Native 0.81 uses 'React-Core' instead of 'React'\n# This runs before app sources compilation to patch DerivedData files\n\n# Patch ALL ExpoModulesCore-Swift.h files in DerivedData (pods build here first)\nDERIVED_DATA=\"${HOME}/Library/Developer/Xcode/DerivedData\"\nif [ -d \"$DERIVED_DATA\" ]; then\n  find \"$DERIVED_DATA\" -name \"ExpoModulesCore-Swift.h\" -type f 2>/dev/null | while read header_file; do\n    if [ -f \"$header_file\" ]; then\n      sed -i '' -e 's/React-Core-Core/React-Core/g' -e 's/@import React;/@import React-Core;/g' -e 's/@import React$/@import React-Core/g' \"$header_file\" 2>/dev/null || true\n    fi\n  done\nfi\n";
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -478,6 +478,10 @@
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					" ",
+				);
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -532,6 +536,10 @@
 				);
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
 				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					" ",
+				);
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = true;

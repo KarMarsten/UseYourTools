@@ -76,10 +76,6 @@ export const TIME_BLOCKS: TimeBlock[] = [
   },
 ];
 
-export const getDayTheme = (dayOfWeek: number): DayTheme => {
-  return DAY_THEMES[dayOfWeek] || DAY_THEMES[0];
-};
-
 export const getDayName = (date: Date): string => {
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   return dayNames[date.getDay()];

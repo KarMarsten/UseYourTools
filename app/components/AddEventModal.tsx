@@ -27,6 +27,8 @@ interface AddEventModalProps {
   };
   use12Hour: boolean;
   event?: Event; // Optional event for editing
+  viewMode?: boolean; // If true, show in read-only view mode with edit button
+  onEdit?: () => void; // Callback when edit button is pressed in view mode
 }
 
 export default function AddEventModal({
@@ -37,6 +39,8 @@ export default function AddEventModal({
   colorScheme,
   use12Hour,
   event,
+  viewMode = false,
+  onEdit,
 }: AddEventModalProps) {
   const [title, setTitle] = useState(event?.title || '');
   const [startTime, setStartTime] = useState(event?.startTime || '');
@@ -246,86 +250,91 @@ export default function AddEventModal({
     >
       <View style={styles.modalOverlay}>
         <View style={[styles.modalContent, { backgroundColor: colorScheme.surface }]}>
-          <Text style={[styles.modalTitle, { color: colorScheme.text }]}>
-            {event ? 'Edit Event' : 'Add Event'}
-          </Text>
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalTitle, { color: colorScheme.text }]}>
+              {viewMode ? event?.title || 'Event' : event ? 'Edit Event' : 'Add Event'}
+            </Text>
+            {viewMode && onEdit && (
+              <TouchableOpacity
+                onPress={onEdit}
+                style={styles.editButton}
+              >
+                <Text style={[styles.editButtonText, { color: colorScheme.primary }]}>Edit</Text>
+              </TouchableOpacity>
+            )}
+          </View>
           
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
 
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: colorScheme.text }]}>Title</Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colorScheme.background,
-                  borderColor: colorScheme.border,
-                  color: colorScheme.text,
-                },
-              ]}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="e.g., Interview with Company X"
-              placeholderTextColor={colorScheme.textSecondary}
-            />
+            {viewMode ? (
+              <Text style={[styles.viewText, { color: colorScheme.text }]}>
+                {event?.title || 'No title'}
+              </Text>
+            ) : (
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colorScheme.background,
+                    borderColor: colorScheme.border,
+                    color: colorScheme.text,
+                  },
+                ]}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="e.g., Interview with Company X"
+                placeholderTextColor={colorScheme.textSecondary}
+              />
+            )}
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: colorScheme.text }]}>Type</Text>
-            <View style={styles.typeContainer}>
-              {(['interview', 'appointment', 'reminder'] as const).map((eventType) => (
-                <TouchableOpacity
-                  key={eventType}
-                  style={[
-                    styles.typeButton,
-                    {
-                      backgroundColor:
-                        type === eventType ? colorScheme.primary : colorScheme.background,
-                      borderColor: colorScheme.border,
-                    },
-                  ]}
-                  onPress={() => setType(eventType)}
-                >
-                  <Text
+            {viewMode ? (
+              <Text style={[styles.viewText, { color: colorScheme.text }]}>
+                {event?.type ? event.type.charAt(0).toUpperCase() + event.type.slice(1) : 'N/A'}
+              </Text>
+            ) : (
+              <View style={styles.typeContainer}>
+                {(['interview', 'appointment', 'reminder'] as const).map((eventType) => (
+                  <TouchableOpacity
+                    key={eventType}
                     style={[
-                      styles.typeButtonText,
+                      styles.typeButton,
                       {
-                        color: type === eventType ? colorScheme.background : colorScheme.text,
+                        backgroundColor:
+                          type === eventType ? colorScheme.primary : colorScheme.background,
+                        borderColor: colorScheme.border,
                       },
                     ]}
+                    onPress={() => setType(eventType)}
                   >
-                    {eventType.charAt(0).toUpperCase() + eventType.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+                    <Text
+                      style={[
+                        styles.typeButtonText,
+                        {
+                          color: type === eventType ? colorScheme.background : colorScheme.text,
+                        },
+                      ]}
+                    >
+                      {eventType.charAt(0).toUpperCase() + eventType.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
 
           <View style={styles.timeRow}>
             <View style={styles.timeInput}>
               <Text style={[styles.label, { color: colorScheme.text }]}>Start Time</Text>
-              <TouchableOpacity
-                style={[
-                  styles.timePickerButton,
-                  {
-                    backgroundColor: colorScheme.background,
-                    borderColor: colorScheme.border,
-                  },
-                ]}
-                onPress={() => {
-                  setShowEndTimePicker(false);
-                  setShowStartTimePicker(true);
-                }}
-              >
-                <Text style={[styles.timePickerText, { color: colorScheme.text }]}>
-                  {startTime ? getDisplayTime(startTime) : 'Select time'}
+              {viewMode ? (
+                <Text style={[styles.viewText, { color: colorScheme.text }]}>
+                  {event?.startTime ? getDisplayTime(event.startTime) : 'N/A'}
                 </Text>
-              </TouchableOpacity>
-            </View>
-
-            {type !== 'reminder' && (
-              <View style={styles.timeInput}>
-                <Text style={[styles.label, { color: colorScheme.text }]}>End Time</Text>
+              ) : (
                 <TouchableOpacity
                   style={[
                     styles.timePickerButton,
@@ -335,14 +344,43 @@ export default function AddEventModal({
                     },
                   ]}
                   onPress={() => {
-                    setShowStartTimePicker(false);
-                    setShowEndTimePicker(true);
+                    setShowEndTimePicker(false);
+                    setShowStartTimePicker(true);
                   }}
                 >
                   <Text style={[styles.timePickerText, { color: colorScheme.text }]}>
-                    {endTime ? getDisplayTime(endTime) : 'Select time'}
+                    {startTime ? getDisplayTime(startTime) : 'Select time'}
                   </Text>
                 </TouchableOpacity>
+              )}
+            </View>
+
+            {(viewMode ? event?.type !== 'reminder' : type !== 'reminder') && (
+              <View style={styles.timeInput}>
+                <Text style={[styles.label, { color: colorScheme.text }]}>End Time</Text>
+                {viewMode ? (
+                  <Text style={[styles.viewText, { color: colorScheme.text }]}>
+                    {event?.endTime ? getDisplayTime(event.endTime) : 'N/A'}
+                  </Text>
+                ) : (
+                  <TouchableOpacity
+                    style={[
+                      styles.timePickerButton,
+                      {
+                        backgroundColor: colorScheme.background,
+                        borderColor: colorScheme.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setShowStartTimePicker(false);
+                      setShowEndTimePicker(true);
+                    }}
+                  >
+                    <Text style={[styles.timePickerText, { color: colorScheme.text }]}>
+                      {endTime ? getDisplayTime(endTime) : 'Select time'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </View>
@@ -350,136 +388,178 @@ export default function AddEventModal({
           {/* Notes field for all event types */}
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: colorScheme.text }]}>Notes</Text>
-            <TextInput
-              style={[
-                styles.textArea,
-                {
-                  backgroundColor: colorScheme.background,
-                  borderColor: colorScheme.border,
-                  color: colorScheme.text,
-                },
-              ]}
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Additional notes..."
-              placeholderTextColor={colorScheme.textSecondary}
-              multiline
-              numberOfLines={3}
-            />
+            {viewMode ? (
+              <Text style={[styles.viewText, { color: colorScheme.text }]}>
+                {event?.notes || 'No notes'}
+              </Text>
+            ) : (
+              <TextInput
+                style={[
+                  styles.textArea,
+                  {
+                    backgroundColor: colorScheme.background,
+                    borderColor: colorScheme.border,
+                    color: colorScheme.text,
+                  },
+                ]}
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Additional notes..."
+                placeholderTextColor={colorScheme.textSecondary}
+                multiline
+                numberOfLines={3}
+              />
+            )}
           </View>
 
           {/* Additional fields for interviews and appointments */}
-          {type !== 'reminder' && (
+          {(viewMode ? event?.type !== 'reminder' : type !== 'reminder') && (
             <>
               <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: colorScheme.text }]}>Company</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colorScheme.background,
-                      borderColor: colorScheme.border,
-                      color: colorScheme.text,
-                    },
-                  ]}
-                  value={company}
-                  onChangeText={setCompany}
-                  placeholder="Company Name"
-                  placeholderTextColor={colorScheme.textSecondary}
-                />
+                {viewMode ? (
+                  <Text style={[styles.viewText, { color: colorScheme.text }]}>
+                    {event?.company || 'N/A'}
+                  </Text>
+                ) : (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: colorScheme.background,
+                        borderColor: colorScheme.border,
+                        color: colorScheme.text,
+                      },
+                    ]}
+                    value={company}
+                    onChangeText={setCompany}
+                    placeholder="Company Name"
+                    placeholderTextColor={colorScheme.textSecondary}
+                  />
+                )}
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: colorScheme.text }]}>Job Title</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colorScheme.background,
-                      borderColor: colorScheme.border,
-                      color: colorScheme.text,
-                    },
-                  ]}
-                  value={jobTitle}
-                  onChangeText={setJobTitle}
-                  placeholder="Software Engineer"
-                  placeholderTextColor={colorScheme.textSecondary}
-                />
+                {viewMode ? (
+                  <Text style={[styles.viewText, { color: colorScheme.text }]}>
+                    {event?.jobTitle || 'N/A'}
+                  </Text>
+                ) : (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: colorScheme.background,
+                        borderColor: colorScheme.border,
+                        color: colorScheme.text,
+                      },
+                    ]}
+                    value={jobTitle}
+                    onChangeText={setJobTitle}
+                    placeholder="Software Engineer"
+                    placeholderTextColor={colorScheme.textSecondary}
+                  />
+                )}
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: colorScheme.text }]}>Contact Name</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colorScheme.background,
-                      borderColor: colorScheme.border,
-                      color: colorScheme.text,
-                    },
-                  ]}
-                  value={contactName}
-                  onChangeText={setContactName}
-                  placeholder="John Doe"
-                  placeholderTextColor={colorScheme.textSecondary}
-                />
+                {viewMode ? (
+                  <Text style={[styles.viewText, { color: colorScheme.text }]}>
+                    {event?.contactName || 'N/A'}
+                  </Text>
+                ) : (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: colorScheme.background,
+                        borderColor: colorScheme.border,
+                        color: colorScheme.text,
+                      },
+                    ]}
+                    value={contactName}
+                    onChangeText={setContactName}
+                    placeholder="John Doe"
+                    placeholderTextColor={colorScheme.textSecondary}
+                  />
+                )}
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: colorScheme.text }]}>Address</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colorScheme.background,
-                      borderColor: colorScheme.border,
-                      color: colorScheme.text,
-                    },
-                  ]}
-                  value={address}
-                  onChangeText={setAddress}
-                  placeholder="123 Main St, City, State"
-                  placeholderTextColor={colorScheme.textSecondary}
-                />
+                {viewMode ? (
+                  <Text style={[styles.viewText, { color: colorScheme.text }]}>
+                    {event?.address || 'N/A'}
+                  </Text>
+                ) : (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: colorScheme.background,
+                        borderColor: colorScheme.border,
+                        color: colorScheme.text,
+                      },
+                    ]}
+                    value={address}
+                    onChangeText={setAddress}
+                    placeholder="123 Main St, City, State"
+                    placeholderTextColor={colorScheme.textSecondary}
+                  />
+                )}
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: colorScheme.text }]}>Email</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colorScheme.background,
-                      borderColor: colorScheme.border,
-                      color: colorScheme.text,
-                    },
-                  ]}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="john.doe@example.com"
-                  placeholderTextColor={colorScheme.textSecondary}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
+                {viewMode ? (
+                  <Text style={[styles.viewText, { color: colorScheme.text }]}>
+                    {event?.email || 'N/A'}
+                  </Text>
+                ) : (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: colorScheme.background,
+                        borderColor: colorScheme.border,
+                        color: colorScheme.text,
+                      },
+                    ]}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="john.doe@example.com"
+                    placeholderTextColor={colorScheme.textSecondary}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                )}
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: colorScheme.text }]}>Phone</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colorScheme.background,
-                      borderColor: colorScheme.border,
-                      color: colorScheme.text,
-                    },
-                  ]}
-                  value={phone}
-                  onChangeText={setPhone}
-                  placeholder="(555) 123-4567"
-                  placeholderTextColor={colorScheme.textSecondary}
-                  keyboardType="phone-pad"
-                />
+                {viewMode ? (
+                  <Text style={[styles.viewText, { color: colorScheme.text }]}>
+                    {event?.phone || 'N/A'}
+                  </Text>
+                ) : (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: colorScheme.background,
+                        borderColor: colorScheme.border,
+                        color: colorScheme.text,
+                      },
+                    ]}
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="(555) 123-4567"
+                    placeholderTextColor={colorScheme.textSecondary}
+                    keyboardType="phone-pad"
+                  />
+                )}
               </View>
             </>
           )}
@@ -522,20 +602,31 @@ export default function AddEventModal({
             />
           )}
 
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton, { borderColor: colorScheme.border }]}
-              onPress={handleCancel}
-            >
-              <Text style={[styles.buttonText, { color: colorScheme.text }]}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.saveButton, { backgroundColor: colorScheme.primary }]}
-              onPress={handleSave}
-            >
-              <Text style={[styles.buttonText, { color: colorScheme.background }]}>Save</Text>
-            </TouchableOpacity>
-          </View>
+          {viewMode ? (
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.button, styles.saveButton, { backgroundColor: colorScheme.primary }]}
+                onPress={handleCancel}
+              >
+                <Text style={[styles.buttonText, { color: colorScheme.background }]}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton, { borderColor: colorScheme.border }]}
+                onPress={handleCancel}
+              >
+                <Text style={[styles.buttonText, { color: colorScheme.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.saveButton, { backgroundColor: colorScheme.primary }]}
+                onPress={handleSave}
+              >
+                <Text style={[styles.buttonText, { color: colorScheme.background }]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </View>
     </Modal>
@@ -701,10 +792,29 @@ const styles = StyleSheet.create({
   scrollView: {
     maxHeight: 600,
   },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   modalTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    flex: 1,
+  },
+  editButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  editButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  viewText: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
   },
   inputGroup: {
     marginBottom: 20,

@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, LogBox } from 'react-native';
 import { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import CalendarScreen from './components/CalendarScreen';
 import DailyPlannerScreen from './components/DailyPlannerScreen';
@@ -7,6 +7,12 @@ import ReportsScreen from './components/ReportsScreen';
 import ViewReportScreen from './components/ViewReportScreen';
 import { PreferencesProvider } from './context/PreferencesContext';
 import { loadPreferences } from './utils/preferences';
+
+// Suppress harmless warnings
+LogBox.ignoreLogs([
+  'The app is running using the Legacy Architecture',
+  'Failed to open debugger',
+]);
 
 // Error Boundary Component
 const errorStyles = StyleSheet.create({

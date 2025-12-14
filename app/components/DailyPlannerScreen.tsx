@@ -6,7 +6,7 @@ import { loadPreferences } from '../utils/preferences';
 import { generateTimeBlocks, GeneratedTimeBlock } from '../utils/timeBlockGenerator';
 import { usePreferences } from '../context/PreferencesContext';
 import { formatTimeRange, formatTime12Hour } from '../utils/timeFormatter';
-import { Event, loadEventsForDate, saveEvent, deleteEvent, generateEventId } from '../utils/events';
+import { Event, loadEventsForDate, saveEvent, deleteEvent } from '../utils/events';
 import { scheduleEventNotification, cancelEventNotification } from '../utils/eventNotifications';
 import { openAddressInMaps, openPhoneNumber, openEmail } from '../utils/eventActions';
 import { getDateKey } from '../utils/timeFormatter';
@@ -27,6 +27,8 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
   const [events, setEvents] = useState<Event[]>([]);
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | undefined>(undefined);
+  const [viewingEvent, setViewingEvent] = useState<Event | undefined>(undefined);
+  const [isViewMode, setIsViewMode] = useState(false);
   const { preferences, colorScheme } = usePreferences();
   // Normalize date to ensure consistent dateKey calculation (avoid timezone issues)
   const normalizedDate = new Date(date);
@@ -97,6 +99,8 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
       await saveEvent(event);
       await loadEvents(); // Reload events to update UI
       setEditingEvent(undefined);
+      setViewingEvent(undefined);
+      setIsViewMode(false);
       setShowAddEventModal(false);
       // Note: Calendar refresh will happen when user navigates back
     } catch (error) {
@@ -105,14 +109,31 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
     }
   };
 
+  const handleViewEvent = (event: Event) => {
+    setViewingEvent(event);
+    setIsViewMode(true);
+    setShowAddEventModal(true);
+  };
+
   const handleEditEvent = (event: Event) => {
     setEditingEvent(event);
+    setIsViewMode(false);
     setShowAddEventModal(true);
+  };
+
+  const handleSwitchToEdit = () => {
+    if (viewingEvent) {
+      setEditingEvent(viewingEvent);
+      setIsViewMode(false);
+      setViewingEvent(undefined);
+    }
   };
 
   const handleCloseModal = () => {
     setShowAddEventModal(false);
     setEditingEvent(undefined);
+    setViewingEvent(undefined);
+    setIsViewMode(false);
   };
 
   const handleDeleteEvent = async (event: Event) => {
@@ -201,7 +222,7 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
                     borderColor: colorScheme.colors.border,
                   },
                 ]}
-                onPress={() => handleEditEvent(event)}
+                onPress={() => handleViewEvent(event)}
               >
                 <View style={styles.eventContent}>
                   <View style={styles.eventHeader}>
@@ -358,7 +379,9 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
         onSave={handleSaveEvent}
         colorScheme={colorScheme.colors}
         use12Hour={use12Hour}
-        event={editingEvent}
+        event={isViewMode ? viewingEvent : editingEvent}
+        viewMode={isViewMode}
+        onEdit={handleSwitchToEdit}
       />
     </View>
   );
