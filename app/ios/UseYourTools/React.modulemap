@@ -1,8 +1,0 @@
-module React {
-    // Re-export React-Core as React for compatibility
-    // This allows @import React to resolve to React-Core in ExpoModulesCore
-    umbrella header "../../Pods/Headers/Public/React/React-Core-umbrella.h"
-    export *
-    module * { export * }
-}
-

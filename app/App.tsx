@@ -5,6 +5,8 @@ import DailyPlannerScreen from './components/DailyPlannerScreen';
 import SetupScreen from './components/SetupScreen';
 import ReportsScreen from './components/ReportsScreen';
 import ViewReportScreen from './components/ViewReportScreen';
+import ApplicationsScreen from './components/ApplicationsScreen';
+import ResumeScreen from './components/ResumeScreen';
 import { PreferencesProvider } from './context/PreferencesContext';
 import { loadPreferences } from './utils/preferences';
 
@@ -67,7 +69,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-type Screen = 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport';
+type Screen = 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport' | 'applications' | 'resumes';
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('calendar');
@@ -131,12 +133,20 @@ function AppContent() {
     setCurrentScreen('reports');
   };
 
+  const handleViewApplications = () => {
+    setCurrentScreen('applications');
+  };
+
+  const handleViewResumes = () => {
+    setCurrentScreen('resumes');
+  };
+
   if (currentScreen === 'setup') {
     return <SetupScreen onComplete={handleSetupComplete} onBack={handleBackToCalendar} />;
   }
 
   if (currentScreen === 'calendar') {
-    return <CalendarScreen onSelectDate={handleSelectDate} onSettings={handleViewSettings} onReports={handleViewReports} refreshTrigger={calendarRefreshTrigger} />;
+    return <CalendarScreen onSelectDate={handleSelectDate} onSettings={handleViewSettings} onReports={handleViewReports} onApplications={handleViewApplications} onResumes={handleViewResumes} refreshTrigger={calendarRefreshTrigger} />;
   }
 
   if (currentScreen === 'reports') {
@@ -151,8 +161,16 @@ function AppContent() {
     return <DailyPlannerScreen date={selectedDate} onBack={handleBackToCalendarFromPlanner} />;
   }
 
+  if (currentScreen === 'applications') {
+    return <ApplicationsScreen onBack={handleBackToCalendar} />;
+  }
+
+  if (currentScreen === 'resumes') {
+    return <ResumeScreen onBack={handleBackToCalendar} />;
+  }
+
   // Fallback to calendar if no screen matches (should never happen)
-  return <CalendarScreen onSelectDate={handleSelectDate} onSettings={handleViewSettings} onReports={handleViewReports} refreshTrigger={calendarRefreshTrigger} />;
+  return <CalendarScreen onSelectDate={handleSelectDate} onSettings={handleViewSettings} onReports={handleViewReports} onApplications={handleViewApplications} onResumes={handleViewResumes} refreshTrigger={calendarRefreshTrigger} />;
 }
 
 export default function App() {

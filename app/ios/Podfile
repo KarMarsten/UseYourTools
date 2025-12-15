@@ -4,19 +4,12 @@ require File.join(File.dirname(`node --print "require.resolve('react-native/pack
 require 'json'
 podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
 
-def ccache_enabled?(podfile_properties)
-  # Environment variable takes precedence
-  return ENV['USE_CCACHE'] == '1' if ENV['USE_CCACHE']
-  
-  # Fall back to Podfile properties
-  podfile_properties['apple.ccacheEnabled'] == 'true'
-end
+ENV['RCT_NEW_ARCH_ENABLED'] = '0' if podfile_properties['newArchEnabled'] == 'false'
+ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] = podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
 
-ENV['RCT_NEW_ARCH_ENABLED'] ||= '0' if podfile_properties['newArchEnabled'] == 'false'
-ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] ||= podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
-ENV['RCT_USE_RN_DEP'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true' && podfile_properties['newArchEnabled'] != 'false'
-ENV['RCT_USE_PREBUILT_RNCORE'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true' && podfile_properties['newArchEnabled'] != 'false'
 platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
+install! 'cocoapods',
+  :deterministic_uuids => false
 
 prepare_react_native_project!
 
@@ -54,139 +47,18 @@ target 'UseYourTools' do
       installer,
       config[:reactNativePath],
       :mac_catalyst_enabled => false,
-      :ccache_enabled => ccache_enabled?(podfile_properties),
+      :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
-    
-    # Create React.modulemap as a copy of React-Core.modulemap so Swift can find it
-    react_headers_path = File.join(installer.sandbox.root, 'Headers/Public/React')
-    react_core_modulemap = File.join(react_headers_path, 'React-Core.modulemap')
-    react_modulemap = File.join(react_headers_path, 'React.modulemap')
-    if File.exist?(react_core_modulemap) && !File.exist?(react_modulemap)
-      FileUtils.cp(react_core_modulemap, react_modulemap)
-      puts "Created React.modulemap for Swift module resolution"
-    end
-    
-    # Fix for nullability warnings in Expo modules
-    # Apply to all Expo-related targets and all targets that might use Expo headers
-    installer.pods_project.targets.each do |target|
-      # Check if it's an Expo module or uses Expo headers
-      is_expo_target = target.name.start_with?('Expo') || 
-                       target.name.start_with?('EX') ||
-                       target.name.include?('ExpoModules')
-      
-      if is_expo_target
-        target.build_configurations.each do |config|
-          config.build_settings['CLANG_WARN_NULLABILITY'] = 'NO'
-          config.build_settings['GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS'] = 'NO'
-          # Add compiler flag to suppress nullability warnings
-          if config.build_settings['OTHER_CFLAGS']
-            config.build_settings['OTHER_CFLAGS'] << '-Wno-nullability-completeness' unless config.build_settings['OTHER_CFLAGS'].include?('-Wno-nullability-completeness')
-          else
-            config.build_settings['OTHER_CFLAGS'] = ['-Wno-nullability-completeness']
-          end
+
+    # This is necessary for Xcode 14, because it signs resource bundles by default
+    # when building for devices.
+    installer.target_installation_results.pod_target_installation_results
+      .each do |pod_name, target_installation_result|
+      target_installation_result.resource_bundle_targets.each do |resource_bundle_target|
+        resource_bundle_target.build_configurations.each do |config|
+          config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         end
       end
-      
-      # Fix for React module not found in ExpoModulesCore Swift header
-      # The generated header imports 'React' - ensure Swift can find the React module map
-      if target.name == 'ExpoModulesCore'
-        # Remove any existing fix script phases to avoid build cycles
-        target.build_phases.delete_if { |phase| phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase) && (phase.name == '[Fix] React Module Import' || phase.name&.include?('React Module')) }
-        
-        react_headers_path = File.join(installer.sandbox.root, 'Headers/Public/React')
-        react_target_support = File.join(installer.sandbox.root, 'Target Support Files/React-Core')
-        
-        target.build_configurations.each do |config|
-          # Add module map directory to SWIFT_INCLUDE_PATHS so Swift can find React-Core.modulemap
-          if Dir.exist?(react_headers_path)
-            config.build_settings['SWIFT_INCLUDE_PATHS'] ||= ['$(inherited)']
-            config.build_settings['SWIFT_INCLUDE_PATHS'] << react_headers_path unless config.build_settings['SWIFT_INCLUDE_PATHS'].include?(react_headers_path)
-          end
-          
-          # Ensure module map directory is in the path
-          if Dir.exist?(react_target_support)
-            config.build_settings['SWIFT_INCLUDE_PATHS'] ||= ['$(inherited)']
-            config.build_settings['SWIFT_INCLUDE_PATHS'] << react_target_support unless config.build_settings['SWIFT_INCLUDE_PATHS'].include?(react_target_support)
-          end
-          
-          # Add Pods Headers Public to search paths
-          pods_headers_public = File.join(installer.sandbox.root, 'Headers/Public')
-          if Dir.exist?(pods_headers_public)
-            config.build_settings['SWIFT_INCLUDE_PATHS'] ||= ['$(inherited)']
-            config.build_settings['SWIFT_INCLUDE_PATHS'] << pods_headers_public unless config.build_settings['SWIFT_INCLUDE_PATHS'].include?(pods_headers_public)
-          end
-        end
-      end
-    end
-    
-    # Also disable nullability warnings globally for ALL targets to prevent issues when using Expo headers
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        if config.build_settings['OTHER_CFLAGS']
-          config.build_settings['OTHER_CFLAGS'] << '-Wno-nullability-completeness' unless config.build_settings['OTHER_CFLAGS'].include?('-Wno-nullability-completeness')
-        else
-          config.build_settings['OTHER_CFLAGS'] = ['-Wno-nullability-completeness']
-        end
-      end
-    end
-    
-    # Fix React module import in ExpoModulesCore generated Swift header
-    # Add a script phase to the app's Xcode project to patch the file during build
-    app_project_path = File.join(installer.sandbox.root.parent, 'UseYourTools.xcodeproj')
-    if File.exist?(app_project_path)
-      require 'xcodeproj'
-      app_project = Xcodeproj::Project.open(app_project_path)
-      app_target = app_project.targets.find { |t| t.name == 'UseYourTools' }
-      
-        if app_target
-          script_phase_name = '[Fix] ExpoModulesCore React Module Import'
-          existing_phase = app_target.shell_script_build_phases.find { |phase| phase.name == script_phase_name }
-          
-          # Update or create the script phase
-          # Move it to run BEFORE Sources compilation to patch files early
-          if existing_phase
-            existing_phase.shell_script = <<~SCRIPT
-              # Fix React module import in ExpoModulesCore-Swift.h
-              # React Native 0.81 uses 'React-Core' instead of 'React'
-              # This runs before app sources compilation to patch DerivedData files
-              
-              # Patch ALL ExpoModulesCore-Swift.h files in DerivedData (pods build here first)
-              DERIVED_DATA="${HOME}/Library/Developer/Xcode/DerivedData"
-              if [ -d "$DERIVED_DATA" ]; then
-                find "$DERIVED_DATA" -name "ExpoModulesCore-Swift.h" -type f 2>/dev/null | while read header_file; do
-                  if [ -f "$header_file" ]; then
-                    sed -i '' -e 's/React-Core-Core/React-Core/g' -e 's/@import React;/@import React-Core;/g' -e 's/@import React$/@import React-Core/g' "$header_file" 2>/dev/null || true
-                  fi
-                done
-              fi
-            SCRIPT
-            # Move the phase to run before Sources
-            sources_index = app_target.build_phases.find_index { |phase| phase.is_a?(Xcodeproj::Project::Object::PBXSourcesBuildPhase) }
-            if sources_index && sources_index > 0
-              app_target.build_phases.delete(existing_phase)
-              app_target.build_phases.insert(sources_index - 1, existing_phase)
-            end
-          else
-            fix_phase = app_target.new_shell_script_build_phase(script_phase_name)
-            fix_phase.shell_script = <<~SCRIPT
-              # Fix React module import in ExpoModulesCore-Swift.h - patch ALL instances
-              # React Native 0.81 uses 'React-Core' instead of 'React'
-              # This runs as part of app build to catch files in DerivedData
-              
-              # Find and patch ALL ExpoModulesCore-Swift.h files in the build directory
-              if [ -n "${BUILD_DIR}" ]; then
-                find "${BUILD_DIR}" -name "ExpoModulesCore-Swift.h" -type f 2>/dev/null | while read header_file; do
-                  if [ -f "$header_file" ]; then
-                    # Fix double replacements first, then replace @import React with @import React-Core
-                    sed -i '' -e 's/React-Core-Core/React-Core/g' -e 's/@import React;/@import React-Core;/g' -e 's/@import React$/@import React-Core/g' "$header_file" 2>/dev/null || true
-                  fi
-                done
-              fi
-            SCRIPT
-            fix_phase.run_only_for_deployment_postprocessing = '0'
-          end
-          app_project.save
-        end
     end
   end
 end

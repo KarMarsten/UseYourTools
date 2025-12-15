@@ -12,10 +12,12 @@ interface CalendarScreenProps {
   onBack?: () => void;
   onSettings?: () => void;
   onReports?: () => void;
+  onApplications?: () => void;
+  onResumes?: () => void;
   refreshTrigger?: number; // Optional trigger to refresh entry indicators
 }
 
-export default function CalendarScreen({ onSelectDate, onBack, onSettings, onReports, refreshTrigger }: CalendarScreenProps) {
+export default function CalendarScreen({ onSelectDate, onBack, onSettings, onReports, onApplications, onResumes, refreshTrigger }: CalendarScreenProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [daysWithEntries, setDaysWithEntries] = useState<Set<string>>(new Set());
   const [daysWithEvents, setDaysWithEvents] = useState<Set<string>>(new Set());
@@ -229,6 +231,16 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, onRep
           <Text style={[styles.title, dynamicStyles.title]}>🌿 Calendar</Text>
         </View>
         <View style={styles.headerRight}>
+          {onApplications && (
+            <TouchableOpacity onPress={onApplications} style={styles.headerIconButton}>
+              <Text style={[styles.headerIcon, { color: colorScheme.colors.text }]}>💼</Text>
+            </TouchableOpacity>
+          )}
+          {onResumes && (
+            <TouchableOpacity onPress={onResumes} style={styles.headerIconButton}>
+              <Text style={[styles.headerIcon, { color: colorScheme.colors.text }]}>📄</Text>
+            </TouchableOpacity>
+          )}
           {onReports && (
             <TouchableOpacity onPress={onReports} style={styles.reportsButton}>
               <Text style={[styles.reportsIcon, { color: colorScheme.colors.text }]}>📊</Text>
@@ -514,9 +526,16 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
+  headerIconButton: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerIcon: {
+    fontSize: 24,
+  },
   reportsButton: {
     padding: 8,
-    marginRight: 8,
   },
   reportsIcon: {
     fontSize: 24,
@@ -617,10 +636,6 @@ const styles = StyleSheet.create({
   noEventsContainer: {
     padding: 20,
     alignItems: 'center',
-  },
-  noEventsText: {
-    fontSize: 14,
-    fontStyle: 'italic',
   },
   eventsContainer: {
     maxHeight: 300,
