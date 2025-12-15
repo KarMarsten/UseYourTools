@@ -18,16 +18,29 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.useyourtools.app",
-      "newArchEnabled": false
+      "newArchEnabled": false,
+      "infoPlist": {
+        "NSCalendarsUsageDescription": "This app needs access to your calendar to sync events.",
+        "NSCalendarsFullAccessUsageDescription": "This app needs full access to your calendar to sync events.",
+        "NSRemindersUsageDescription": "This app needs access to your reminders to sync events.",
+        "NSRemindersFullAccessUsageDescription": "This app needs full access to your reminders to sync events."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#f5f5dc"
       },
       "newArchEnabled": false,
-      "package": "com.useyourtools.app"
+      "package": "com.useyourtools.app",
+      "permissions": [
+        "READ_CALENDAR",
+        "WRITE_CALENDAR"
+      ]
     },
     "web": {},
-    "scheme": "useyourtools"
+    "scheme": "useyourtools",
+    "plugins": [
+      "expo-asset"
+    ]
   }
 }

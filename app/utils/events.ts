@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from './calendarSync';
 
 export interface Event {
   id: string;
@@ -8,6 +9,7 @@ export interface Event {
   endTime?: string; // Format: "HH:MM" - optional for reminders
   type: 'interview' | 'appointment' | 'reminder';
   notificationId?: string; // ID for scheduled notification
+  calendarEventId?: string; // ID for synced calendar event
   // Optional fields for appointments/interviews
   notes?: string; // General notes for any event type
   address?: string; // Address (for interviews/appointments)
@@ -22,6 +24,18 @@ const EVENTS_KEY_PREFIX = 'planner_event_';
 
 export const saveEvent = async (event: Event): Promise<void> => {
   try {
+    // Sync to calendar if enabled
+    if (event.calendarEventId) {
+      // Update existing calendar event
+      await updateCalendarEvent(event, event.calendarEventId);
+    } else {
+      // Create new calendar event
+      const calendarEventId = await createCalendarEvent(event);
+      if (calendarEventId) {
+        event.calendarEventId = calendarEventId;
+      }
+    }
+
     const key = `${EVENTS_KEY_PREFIX}${event.id}`;
     await AsyncStorage.setItem(key, JSON.stringify(event));
   } catch (error) {
@@ -62,7 +76,20 @@ export const loadEventsForDate = async (dateKey: string): Promise<Event[]> => {
 
 export const deleteEvent = async (eventId: string): Promise<void> => {
   try {
+    // Load event first to get calendarEventId
     const key = `${EVENTS_KEY_PREFIX}${eventId}`;
+    const eventData = await AsyncStorage.getItem(key);
+    
+    if (eventData) {
+      const event = JSON.parse(eventData) as Event;
+      
+      // Delete from calendar if it exists
+      if (event.calendarEventId) {
+        await deleteCalendarEvent(event.calendarEventId);
+      }
+    }
+
+    // Delete from AsyncStorage
     await AsyncStorage.removeItem(key);
   } catch (error) {
     console.error('Error deleting event:', error);

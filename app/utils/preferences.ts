@@ -10,6 +10,9 @@ export interface UserPreferences {
   use12HourClock: boolean; // Toggle between 12-hour and 24-hour clock
   colorScheme: ColorSchemeName; // Selected color scheme
   mapAppPreference: 'apple-maps' | 'google-maps'; // Preferred map app
+  timezoneMode: 'device' | 'custom'; // Whether to use device timezone or a custom one
+  timezone?: string; // IANA timezone name when timezoneMode is 'custom' (e.g., "America/New_York")
+  calendarSyncProvider: 'none' | 'apple' | 'google'; // Which calendar to sync with, if any
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -20,6 +23,9 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   use12HourClock: false, // Default to 24-hour clock
   colorScheme: 'earth-tone', // Default to Earth-Tone
   mapAppPreference: 'apple-maps', // Default to Apple Maps
+  timezoneMode: 'device',
+  timezone: '',
+  calendarSyncProvider: 'none',
 };
 
 const PREFERENCES_KEY = 'planner_preferences';

@@ -6,6 +6,8 @@ import { generateTimeBlocks, GeneratedTimeBlock } from '../utils/timeBlockGenera
 import { COLOR_SCHEMES, ColorSchemeName, getColorScheme } from '../utils/colorSchemes';
 import { formatTimeRange } from '../utils/timeFormatter';
 import { usePreferences } from '../context/PreferencesContext';
+import { syncAllEventsToCalendar } from '../utils/calendarSync';
+import { getAllEvents } from '../utils/events';
 
 interface SetupScreenProps {
   onComplete: () => void;
@@ -19,6 +21,9 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
   const [use12HourClock, setUse12HourClock] = useState(false);
   const [colorScheme, setColorScheme] = useState<ColorSchemeName>('earth-tone');
   const [mapAppPreference, setMapAppPreference] = useState<'apple-maps' | 'google-maps'>('apple-maps');
+  const [timezoneMode, setTimezoneMode] = useState<'device' | 'custom'>('device');
+  const [timezone, setTimezone] = useState('');
+  const [calendarSyncProvider, setCalendarSyncProvider] = useState<'none' | 'apple' | 'google'>('none');
   const [loading, setLoading] = useState(true);
   const { refreshPreferences } = usePreferences();
   
@@ -76,6 +81,9 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
       setUse12HourClock(prefs.use12HourClock ?? false);
       setColorScheme(prefs.colorScheme ?? 'earth-tone');
       setMapAppPreference(prefs.mapAppPreference ?? 'apple-maps');
+      setTimezoneMode(prefs.timezoneMode ?? 'device');
+      setTimezone(prefs.timezone ?? '');
+      setCalendarSyncProvider(prefs.calendarSyncProvider ?? 'none');
     } catch (error) {
       console.error('Error loading preferences:', error);
     } finally {
@@ -120,6 +128,9 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         use12HourClock: false, // Preview always uses 24-hour format
         colorScheme: 'earth-tone', // Preview uses default colors
         mapAppPreference: 'apple-maps', // Preview uses default
+        timezoneMode: 'device',
+        timezone: '',
+        calendarSyncProvider: 'none',
       };
 
       return generateTimeBlocks(tempPreferences);
@@ -156,6 +167,9 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         use12HourClock,
         colorScheme,
         mapAppPreference,
+        timezoneMode,
+        timezone: timezoneMode === 'custom' ? timezone.trim() : '',
+        calendarSyncProvider,
       };
       await savePreferences(preferences);
       await refreshPreferences(); // Refresh preferences context
@@ -358,6 +372,71 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
 
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: currentColorScheme.colors.text }]}>
+            Time Zone
+          </Text>
+          <Text style={[styles.sectionDescription, { color: currentColorScheme.colors.textSecondary }]}>
+            Use your device time zone or specify a custom one (for example, &quot;America/New_York&quot;).
+          </Text>
+          <View style={styles.mapAppContainer}>
+            <TouchableOpacity
+              style={[
+                styles.mapAppOption,
+                {
+                  backgroundColor: currentColorScheme.colors.surface,
+                  borderColor: timezoneMode === 'device' ? currentColorScheme.colors.primary : currentColorScheme.colors.border,
+                },
+                timezoneMode === 'device' && { borderWidth: 2 }
+              ]}
+              onPress={() => setTimezoneMode('device')}
+            >
+              <Text
+                style={[
+                  styles.mapAppText,
+                  { color: currentColorScheme.colors.text },
+                  timezoneMode === 'device' && { fontWeight: 'bold', color: currentColorScheme.colors.primary }
+                ]}
+              >
+                📱 Use device time zone
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.mapAppContainer, { marginTop: 8 }]}>
+            <TouchableOpacity
+              style={[
+                styles.mapAppOption,
+                {
+                  backgroundColor: currentColorScheme.colors.surface,
+                  borderColor: timezoneMode === 'custom' ? currentColorScheme.colors.primary : currentColorScheme.colors.border,
+                },
+                timezoneMode === 'custom' && { borderWidth: 2 }
+              ]}
+              onPress={() => setTimezoneMode('custom')}
+            >
+              <View style={{ width: '100%' }}>
+                <Text
+                  style={[
+                    styles.mapAppText,
+                    { color: currentColorScheme.colors.text },
+                    timezoneMode === 'custom' && { fontWeight: 'bold', color: currentColorScheme.colors.primary }
+                  ]}
+                >
+                  🌍 Specify time zone
+                </Text>
+                <TextInput
+                  style={[styles.timeInputField, { marginTop: 8 }]}
+                  value={timezone}
+                  onChangeText={setTimezone}
+                  placeholder="e.g. America/New_York"
+                  placeholderTextColor="#a0826d"
+                  editable={timezoneMode === 'custom'}
+                />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: currentColorScheme.colors.text }]}>
             Map App Preference
           </Text>
           <Text style={[styles.sectionDescription, { color: currentColorScheme.colors.textSecondary }]}>
@@ -403,6 +482,112 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
               </Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: currentColorScheme.colors.text }]}>
+            Calendar Sync
+          </Text>
+          <Text style={[styles.sectionDescription, { color: currentColorScheme.colors.textSecondary }]}>
+            Choose which calendar to sync events with (this controls your preference; syncing can be enabled later).
+          </Text>
+          <View style={styles.mapAppContainer}>
+            <TouchableOpacity
+              style={[
+                styles.mapAppOption,
+                {
+                  backgroundColor: currentColorScheme.colors.surface,
+                  borderColor: calendarSyncProvider === 'none' ? currentColorScheme.colors.primary : currentColorScheme.colors.border,
+                },
+                calendarSyncProvider === 'none' && { borderWidth: 2 }
+              ]}
+              onPress={() => setCalendarSyncProvider('none')}
+            >
+              <Text
+                style={[
+                  styles.mapAppText,
+                  { color: currentColorScheme.colors.text },
+                  calendarSyncProvider === 'none' && { fontWeight: 'bold', color: currentColorScheme.colors.primary }
+                ]}
+              >
+                🚫 No calendar sync
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.mapAppContainer, { marginTop: 8 }]}>
+            <TouchableOpacity
+              style={[
+                styles.mapAppOption,
+                {
+                  backgroundColor: currentColorScheme.colors.surface,
+                  borderColor: calendarSyncProvider === 'apple' ? currentColorScheme.colors.primary : currentColorScheme.colors.border,
+                },
+                calendarSyncProvider === 'apple' && { borderWidth: 2 }
+              ]}
+              onPress={() => setCalendarSyncProvider('apple')}
+            >
+              <Text
+                style={[
+                  styles.mapAppText,
+                  { color: currentColorScheme.colors.text },
+                  calendarSyncProvider === 'apple' && { fontWeight: 'bold', color: currentColorScheme.colors.primary }
+                ]}
+              >
+                🍎 Apple Calendar
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.mapAppContainer, { marginTop: 8 }]}>
+            <TouchableOpacity
+              style={[
+                styles.mapAppOption,
+                {
+                  backgroundColor: currentColorScheme.colors.surface,
+                  borderColor: calendarSyncProvider === 'google' ? currentColorScheme.colors.primary : currentColorScheme.colors.border,
+                },
+                calendarSyncProvider === 'google' && { borderWidth: 2 }
+              ]}
+              onPress={() => setCalendarSyncProvider('google')}
+            >
+              <Text
+                style={[
+                  styles.mapAppText,
+                  { color: currentColorScheme.colors.text },
+                  calendarSyncProvider === 'google' && { fontWeight: 'bold', color: currentColorScheme.colors.primary }
+                ]}
+              >
+                📆 Google Calendar
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {calendarSyncProvider !== 'none' && (
+            <TouchableOpacity
+              style={[
+                styles.syncButton,
+                {
+                  backgroundColor: currentColorScheme.colors.primary,
+                  borderColor: currentColorScheme.colors.primary,
+                }
+              ]}
+              onPress={async () => {
+                try {
+                  const allEvents = await getAllEvents();
+                  if (allEvents.length === 0) {
+                    Alert.alert('Calendar Sync', 'No events found to sync.');
+                    return;
+                  }
+                  await syncAllEventsToCalendar(allEvents);
+                } catch (error) {
+                  console.error('Error syncing events:', error);
+                  Alert.alert('Error', 'Failed to sync events to calendar.');
+                }
+              }}
+            >
+              <Text style={styles.syncButtonText}>
+                🔄 Sync All Existing Events to Calendar
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -682,6 +867,18 @@ const styles = StyleSheet.create({
   },
   mapAppText: {
     fontSize: 16,
+  },
+  syncButton: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 16,
+    borderWidth: 1,
+  },
+  syncButtonText: {
+    color: '#f5f5dc',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

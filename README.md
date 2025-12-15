@@ -1,160 +1,211 @@
 <p align="center"><img width="400" height="400" alt="UseYourTools App Icon" src="https://github.com/KarMarsten/UseYourTools/blob/main/app/assets/icon.png" /></p>
 
-# UseYourTools - Structured Daily Planner for Job Hunters 📅
+# UseYourTools 📅
 
-A comprehensive daily planning app designed specifically for job seekers, built with React Native and Expo.
+**Your Personal Daily Planner for Job Hunters**
+
+A beautifully designed daily planning app built specifically for job seekers. Organize your job search activities, track interviews and appointments, and keep everything in one place.
 
 ---
 
-## ✨ Features
+## 🌟 What is UseYourTools?
 
-### 📱 Calendar & Planning
-- **Interactive Calendar**: Monthly view with visual indicators for days with entries and events
-- **Daily Planner**: Customizable time blocks that adapt to your schedule
-- **Daily Themes**: Focused planning themes for each day of the week
-- **Persistent Storage**: All entries and events are saved locally
+UseYourTools is a mobile app that helps job seekers:
+- 📅 **Plan your day** with customizable time blocks
+- 📋 **Track interviews and appointments** with all the details you need
+- 📊 **Generate reports** for unemployment filing or personal tracking
+- 🔔 **Never miss an appointment** with automatic reminders
+- 🗓️ **Sync with your calendar** to keep everything connected
+
+All your data is stored locally on your device - private, secure, and always accessible.
+
+---
+
+## ✨ Key Features
+
+### 📱 Calendar View
+- Monthly calendar showing all your events and planned activities
+- Visual indicators for days with entries
+- Quick navigation to any date
+- Easy access to settings and reports
+
+### 📝 Daily Planner
+- **Customizable Time Blocks**: Arrange your day exactly how you want
+- **Flexible Scheduling**: Set your own start and end times (defaults to 9-hour workday)
+- **Daily Themes**: Each day of the week has a focused planning theme
+- **Persistent Notes**: Write notes for each time block - they're saved automatically
 
 ### 📅 Event Management
 
-Create and manage events with three types:
+Create three types of events:
 
-- **Interviews**: Full event details with start/end times, company, job title, contact info
-- **Appointments**: Similar to interviews, for any scheduled meeting
-- **Reminders**: Simple reminders that only require a start time (no end time needed)
+1. **Interviews** 📞
+   - Company name and job title
+   - Contact person details (name, email, phone)
+   - Address (tap to open in Maps)
+   - Start and end times
+   - Notes section
 
-**Event Features:**
-- **Contact Information**: Store company name, job title, contact name, email, phone, and address
-- **Smart Actions**: 
-  - 📍 Tap addresses to open in Maps (Apple Maps or Google Maps)
-  - 📞 Tap phone numbers to call or text
-  - ✉️ Tap email addresses to open your email app
-- **Time Management**: 
-  - Custom start and end times (end time optional for reminders)
-  - Supports both 12-hour and 24-hour time formats
-  - Automatic sorting by start time
-- **Notifications**: Automatic reminders 10 minutes before event start time
-- **View & Edit Modes**: 
-  - Tap an event to view details in read-only mode
-  - Tap "Edit" button in the upper right to modify
-  - Delete events directly from the event list
+2. **Appointments** 📍
+   - Same features as interviews
+   - Perfect for networking meetings, career fairs, or any scheduled activity
 
-### ⚙️ Settings & Customization
+3. **Reminders** ⏰
+   - Simple reminders with just a title and time
+   - Great for quick to-dos or deadlines
 
-**Schedule Configuration**
-- **Custom Start/End Times**: Set your workday hours (automatically calculates 9-hour blocks)
-- **Reorderable Time Blocks**: Drag and drop to arrange your daily routine order
-- **Dynamic Time Blocks**: Blocks automatically adjust based on your start/end times
+**Smart Actions:**
+- 📍 Tap addresses to open in Apple Maps or Google Maps
+- 📞 Tap phone numbers to call or send a text
+- ✉️ Tap email addresses to compose an email
+- 🔔 Get automatic notifications 10 minutes before each event
+- 👁️ View events in read-only mode (tap to view, tap "Edit" to modify)
 
-**Visual Customization**
-- **4 Color Schemes**: 
-  - 🌿 **Earth-Tone** (default): Warm browns, tans, and muted golds
-  - 🌊 **Cheerful Nature**: Greens and blues with nature-inspired tones
-  - ☀️ **Sunny Sky**: Vibrant oranges and yellows
-  - 💜 **Imagination Run Wild**: Purples and pinks with creative flair
-- All schemes use a cream background (#FFF8E7) for consistency
+### ⚙️ Customization
 
-**Preferences**
-- **Clock Format**: Toggle between 12-hour (AM/PM) and 24-hour (HH:MM) time display
-- **Map App Preference**: Choose between Apple Maps and Google Maps for address links
+**Schedule Setup:**
+- Choose your workday start time (end time automatically set to 9 hours later)
+- Reorder time blocks to match your daily routine
+- Time blocks automatically adjust to your schedule
+
+**Visual Themes:**
+Choose from four beautiful color schemes:
+- 🌿 **Earth-Tone** (default): Warm browns and tans
+- 🌊 **Cheerful Nature**: Greens and blues
+- ☀️ **Sunny Sky**: Vibrant oranges and yellows
+- 💜 **Imagination Run Wild**: Purples and pinks
+
+**Preferences:**
+- ⏰ 12-hour or 24-hour clock format
+- 🗺️ Choose Apple Maps or Google Maps for addresses
+- 🌍 Use device timezone or specify a custom timezone
+- 📅 Sync events with Apple Calendar or Google Calendar (coming soon)
 
 ### 📊 Reports
 
-Generate and export professional reports from your planner data:
+Generate professional PDF reports from your planning data:
 
-- **Weekly Schedule Report**
-  - View or export your complete weekly schedule as PDF
-  - Includes all time blocks, entries, and events for the selected week (Sunday-Saturday)
-  - Shows daily themes and formatted time ranges
-  - Perfect for reviewing your weekly planning
+**Weekly Schedule Report:**
+- Complete view of your week (Sunday through Saturday)
+- All time blocks with entries
+- All events with full details
+- Perfect for weekly reviews
 
-- **Unemployment Report**
-  - Generate formatted reports specifically for unemployment filing
-  - Includes company name, contact person, date/time, and job title
-  - Only includes interviews and appointments (excludes reminders)
-  - Filtered to show only events from the selected week
-  - Export as PDF for easy submission
-
-**Report Features:**
-- **Week Selector**: Choose any Sunday-Saturday week to generate reports
-- **In-App Viewing**: View reports using WebView before exporting
-- **PDF Export**: Share or save PDFs with `expo-sharing`
-- **Color Preservation**: PDFs respect your selected color scheme
-- **All Data Included**: Reports pull from your saved planner entries and events
+**Unemployment Report:**
+- Formatted specifically for unemployment filing
+- Includes company, contact person, date, time, and job title
+- Only shows interviews and appointments (excludes reminders)
+- Export as PDF for easy submission
 
 ---
 
 ## 🚀 Getting Started
 
-### Quick Start with Expo Go
+### For Users
 
-1. **Clone the repository**
+**Option 1: Development Build (Recommended for Calendar Sync)**
+
+If you want calendar sync features, you'll need to build the app yourself:
+
+1. Make sure you have [Node.js](https://nodejs.org/) installed
+2. Clone this repository:
    ```bash
    git clone https://github.com/KarMarsten/UseYourTools.git
    cd UseYourTools/app
    ```
-
-2. **Install dependencies**
+3. Install dependencies:
    ```bash
    npm install
    ```
+4. Build and run on iOS:
+   ```bash
+   npx expo run:ios
+   ```
+   Or on Android:
+   ```bash
+   npx expo run:android
+   ```
 
-3. **Start the development server**
+**Option 2: Expo Go (Quick Test)**
+
+For quick testing without calendar sync:
+
+1. Install [Expo Go](https://expo.dev/client) on your phone
+2. Clone the repository and install dependencies (steps 1-3 above)
+3. Start the development server:
    ```bash
    npm start
    ```
+4. Scan the QR code with Expo Go
 
-4. **Run on your device**
-   - Install [Expo Go](https://expo.dev/client) on your iOS or Android device
-   - Scan the QR code from the terminal or Expo DevTools
-   - The app will load on your device
+### First Time Setup
 
-That's it! No need for Xcode, Android Studio, or complex setup.
-
----
-
-## 📂 Project Structure
-
-```
-app/
-├── components/          # React components
-│   ├── CalendarScreen.tsx
-│   ├── DailyPlannerScreen.tsx
-│   ├── SetupScreen.tsx
-│   ├── ReportsScreen.tsx
-│   └── AddEventModal.tsx
-├── context/            # React Context providers
-├── utils/              # Utility functions (events, PDFs, preferences)
-└── assets/             # App icons and images
-```
+When you first open the app:
+1. Complete the setup wizard to configure your schedule
+2. Choose your preferred color scheme
+3. Set your time preferences (12/24 hour, timezone)
+4. Optionally enable calendar sync
+5. Start planning!
 
 ---
 
-## 🛠️ Tech Stack
+## 📱 How to Use
 
-- **React Native** 0.79.6
-- **Expo SDK** 53
-- **TypeScript**
-- **React Context API** for state management
-- **AsyncStorage** for local persistence
-- **expo-notifications** for reminders
-- **expo-print** for PDF generation
+### Creating Events
+
+1. Open the calendar and tap any date
+2. Tap **"+ Add Event"** button
+3. Choose event type (Interview, Appointment, or Reminder)
+4. Fill in the details
+5. Tap **"Save"**
+
+### Viewing and Editing Events
+
+- **View**: Tap any event to see details in read-only mode
+- **Edit**: Tap the **"Edit"** button in the upper right corner
+- **Delete**: Swipe left on an event or delete from the edit screen
+
+### Calendar Sync
+
+To sync your events with your device's calendar:
+
+1. Go to **Settings** (gear icon in calendar view)
+2. Under **"Calendar Sync"**, choose **"Apple Calendar"**
+3. Tap **"Sync All Existing Events to Calendar"** to sync events you've already created
+4. New events will automatically sync going forward
+
+### Generating Reports
+
+1. From the calendar view, tap the **"Reports"** button
+2. Choose report type (Weekly Schedule or Unemployment Report)
+3. Select the week you want to report on
+4. View the report, then tap **"Export PDF"** to save or share
 
 ---
 
-## 📱 Usage
+## 🛠️ Technical Details
 
-1. **First Launch**: Complete the setup wizard to configure your schedule and preferences
-2. **Calendar**: Tap any date to view events and open the daily planner
-3. **Add Events**: Use the "+ Add Event" button in the daily planner
-4. **View Events**: Tap an event to view details in read-only mode
-5. **Edit Events**: Tap "Edit" in the event view or edit directly from the list
-6. **Reports**: Access reports from the calendar header to view or export PDFs
+**Built with:**
+- React Native 0.79.6
+- Expo SDK 53
+- TypeScript
+- Local storage with AsyncStorage
+- Calendar integration with expo-calendar
+- PDF generation with expo-print
+
+**Platform Support:**
+- ✅ iOS (requires iOS 15.1+)
+- ✅ Android (coming soon)
 
 ---
 
-## 🤝 Contributing
+## 💡 Tips & Tricks
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+- **Quick Navigation**: Swipe between months in the calendar view
+- **Time Block Reordering**: Drag and drop time blocks in Settings to match your routine
+- **Smart Notifications**: You'll get a reminder 10 minutes before each event
+- **Map Integration**: Tap any address to get directions instantly
+- **Privacy First**: All data stays on your device - nothing is sent to servers
 
 ---
 
@@ -164,4 +215,12 @@ This project is licensed under the **MIT License**.
 
 ---
 
-**Happy Planning! 📅✨**
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to submit issues or pull requests.
+
+---
+
+**Made with ❤️ for job seekers everywhere**
+
+*Happy Planning! 📅✨*
