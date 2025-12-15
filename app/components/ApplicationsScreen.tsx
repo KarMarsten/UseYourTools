@@ -22,16 +22,18 @@ import {
   hasAppliedToPosition,
   ApplicationStats,
 } from '../utils/applications';
-import { Event, getEventById } from '../utils/events';
-import { getDateKey } from '../utils/timeFormatter';
+import { Event, getEventById, getAllEvents, saveEvent } from '../utils/events';
+import { getDateKey, formatTime12Hour } from '../utils/timeFormatter';
+import AddEventModal from './AddEventModal';
+import { addApplicationEventId } from '../utils/applications';
+import { scheduleEventNotification } from '../utils/eventNotifications';
 
 interface ApplicationsScreenProps {
   onBack: () => void;
-  onNavigateToCalendar?: () => void;
-  onSelectDate?: (date: Date) => void;
+  onSelectDate?: (date: Date, applicationId?: string) => void;
 }
 
-export default function ApplicationsScreen({ onBack, onNavigateToCalendar, onSelectDate }: ApplicationsScreenProps) {
+export default function ApplicationsScreen({ onBack, onSelectDate }: ApplicationsScreenProps) {
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [stats, setStats] = useState<ApplicationStats>({
@@ -43,6 +45,9 @@ export default function ApplicationsScreen({ onBack, onNavigateToCalendar, onSel
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingApplication, setEditingApplication] = useState<JobApplication | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'applied' | 'rejected' | 'interview'>('all');
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [creatingEventForApplication, setCreatingEventForApplication] = useState<JobApplication | null>(null);
+  const [allEvents, setAllEvents] = useState<Event[]>([]);
 
   // Form state
   const [positionTitle, setPositionTitle] = useState('');
@@ -58,7 +63,48 @@ export default function ApplicationsScreen({ onBack, onNavigateToCalendar, onSel
   useEffect(() => {
     loadApplications();
     loadStats();
+    loadAllEvents();
   }, []);
+
+  const loadAllEvents = async () => {
+    try {
+      const events = await getAllEvents();
+      setAllEvents(events);
+    } catch (error) {
+      console.error('Error loading events:', error);
+    }
+  };
+
+  const handleSaveEvent = async (event: Event) => {
+    try {
+      // Schedule notification 10 minutes before event
+      const notificationId = await scheduleEventNotification(event);
+      if (notificationId) {
+        event.notificationId = notificationId;
+      }
+
+      // Link event to application if creating from application
+      if (creatingEventForApplication && event.type === 'interview') {
+        event.applicationId = creatingEventForApplication.id;
+      }
+
+      await saveEvent(event);
+
+      // Add eventId to application's eventIds array
+      if (creatingEventForApplication && event.type === 'interview') {
+        await addApplicationEventId(creatingEventForApplication.id, event.id);
+        await loadApplications(); // Reload to show the new event
+        await loadAllEvents(); // Reload events list
+      }
+
+      setShowEventModal(false);
+      setCreatingEventForApplication(null);
+      Alert.alert('Success', 'Interview event created successfully');
+    } catch (error) {
+      console.error('Error saving event:', error);
+      Alert.alert('Error', 'Failed to save interview event');
+    }
+  };
 
   useEffect(() => {
     if (searchTerm.trim()) {
@@ -242,7 +288,7 @@ export default function ApplicationsScreen({ onBack, onNavigateToCalendar, onSel
         appliedDate: isoDate,
         status,
         notes: notes.trim() || undefined,
-        eventId: editingApplication?.eventId, // Preserve existing eventId
+        eventIds: editingApplication?.eventIds || ((editingApplication as any)?.eventId ? [(editingApplication as any).eventId] : []), // Preserve existing eventIds (migrate from eventId if needed)
       };
 
       await saveApplication(application);
@@ -647,46 +693,54 @@ export default function ApplicationsScreen({ onBack, onNavigateToCalendar, onSel
                     Notes: {app.notes}
                   </Text>
                 )}
-                {app.status === 'interview' && app.eventId && (
-                  <TouchableOpacity
-                    onPress={async () => {
-                      try {
-                        const event = await getEventById(app.eventId!);
-                        if (event && onSelectDate) {
-                          // Parse the dateKey to create a Date object
-                          const [year, month, day] = event.dateKey.split('-').map(Number);
-                          const eventDate = new Date(year, month - 1, day);
-                          onSelectDate(eventDate);
-                          // Navigation happens automatically via onSelectDate -> dailyPlanner
-                        } else {
-                          Alert.alert('Error', 'Interview event not found');
-                        }
-                      } catch (error) {
-                        console.error('Error loading event:', error);
-                        Alert.alert('Error', 'Failed to load interview event');
-                      }
-                    }}
-                  >
-                    <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
-                      📅 View Interview Event
+                {app.status === 'interview' && ((app.eventIds && app.eventIds.length > 0) || (app as any).eventId) && (
+                  <View style={styles.interviewEventsContainer}>
+                    <Text style={[styles.interviewEventsLabel, { color: colorScheme.colors.text }]}>
+                      Interview Events:
                     </Text>
-                  </TouchableOpacity>
+                    {((app.eventIds || ((app as any).eventId ? [(app as any).eventId] : [])) as string[]).map((eventId) => {
+                      const event = allEvents.find(e => e.id === eventId);
+                      if (!event) return null;
+                      const [year, month, day] = event.dateKey.split('-').map(Number);
+                      const eventDate = new Date(year, month - 1, day);
+                      const formattedDate = eventDate.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      });
+                      const timeDisplay = event.startTime 
+                        ? (preferences?.use12HourClock 
+                            ? formatTime12Hour(event.startTime)
+                            : event.startTime)
+                        : '';
+                      return (
+                        <TouchableOpacity
+                          key={eventId}
+                          onPress={async () => {
+                            if (onSelectDate) {
+                              onSelectDate(eventDate);
+                            }
+                          }}
+                          style={styles.interviewEventItem}
+                        >
+                          <Text style={[styles.interviewEventText, { color: colorScheme.colors.text }]}>
+                            📅 {formattedDate} {timeDisplay && `at ${timeDisplay}`}
+                            {event.contactName && ` - ${event.contactName}`}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 )}
-                {app.status === 'interview' && !app.eventId && (
+                {app.status === 'interview' && (
                   <TouchableOpacity
-                    onPress={async () => {
-                      if (onNavigateToCalendar) {
-                        Alert.alert(
-                          'Create Interview Event',
-                          'To create an interview event, go to the Calendar, select the interview date, and create a new Interview event. The event can be linked to this application.',
-                          [{ text: 'OK' }]
-                        );
-                        onNavigateToCalendar();
-                      }
+                    onPress={() => {
+                      setCreatingEventForApplication(app);
+                      setShowEventModal(true);
                     }}
                   >
                     <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
-                      ➕ Create Interview Event
+                      ➕ Add Interview Event
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -710,6 +764,27 @@ export default function ApplicationsScreen({ onBack, onNavigateToCalendar, onSel
           ))
         )}
       </ScrollView>
+
+      {/* Event Modal for creating interview events */}
+      {creatingEventForApplication && (
+        <AddEventModal
+          visible={showEventModal}
+          initialDate={new Date()}
+          onClose={() => {
+            setShowEventModal(false);
+            setCreatingEventForApplication(null);
+          }}
+          onSave={handleSaveEvent}
+          colorScheme={colorScheme.colors}
+          use12Hour={preferences?.use12HourClock ?? false}
+          initialApplicationData={{
+            id: creatingEventForApplication.id,
+            company: creatingEventForApplication.company,
+            positionTitle: creatingEventForApplication.positionTitle,
+          }}
+          allowDateSelection={true}
+        />
+      )}
     </View>
   );
 }
@@ -933,6 +1008,22 @@ const styles = StyleSheet.create({
     borderColor: '#C9A66B',
     minHeight: 100,
     textAlignVertical: 'top',
+  },
+  interviewEventsContainer: {
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  interviewEventsLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  interviewEventItem: {
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  interviewEventText: {
+    fontSize: 14,
   },
   hint: {
     fontSize: 12,

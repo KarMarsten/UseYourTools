@@ -94,29 +94,4 @@ export const cancelEventNotification = async (notificationId: string): Promise<v
 /**
  * Cancel all notifications (useful for cleanup)
  */
-export const cancelAllNotifications = async (): Promise<void> => {
-  try {
-    await Notifications.cancelAllScheduledNotificationsAsync();
-  } catch (error) {
-    console.error('Error canceling all notifications:', error);
-  }
-};
-
-/**
- * Reschedule notification for an updated event
- */
-export const rescheduleEventNotification = async (event: Event): Promise<string | null> => {
-  try {
-    // Cancel old notification if it exists
-    if (event.notificationId) {
-      await cancelEventNotification(event.notificationId);
-    }
-    
-    // Schedule new notification
-    return await scheduleEventNotification(event);
-  } catch (error) {
-    console.error('Error rescheduling notification:', error);
-    return null;
-  }
-};
 

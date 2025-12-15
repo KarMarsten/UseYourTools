@@ -75,6 +75,7 @@ type Screen = 'home' | 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'view
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedApplicationId, setSelectedApplicationId] = useState<string | undefined>(undefined);
   const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
   const [reportHtml, setReportHtml] = useState<string>('');
   const [reportTitle, setReportTitle] = useState<string>('');
@@ -94,11 +95,12 @@ function AppContent() {
     }
   };
 
-  const handleSelectDate = (date: Date) => {
+  const handleSelectDate = (date: Date, applicationId?: string) => {
     // Normalize date to start of day
     const normalizedDate = new Date(date);
     normalizedDate.setHours(0, 0, 0, 0);
     setSelectedDate(normalizedDate);
+    setSelectedApplicationId(applicationId);
     setCurrentScreen('dailyPlanner');
   };
 
@@ -175,14 +177,13 @@ function AppContent() {
   }
 
   if (currentScreen === 'dailyPlanner' && selectedDate) {
-    return <DailyPlannerScreen date={selectedDate} onBack={handleBackToCalendarFromPlanner} />;
+    return <DailyPlannerScreen date={selectedDate} onBack={handleBackToCalendarFromPlanner} initialApplicationId={selectedApplicationId} />;
   }
 
   if (currentScreen === 'applications') {
     return (
       <ApplicationsScreen
         onBack={handleBackToHome}
-        onNavigateToCalendar={() => setCurrentScreen('calendar')}
         onSelectDate={handleSelectDate}
       />
     );

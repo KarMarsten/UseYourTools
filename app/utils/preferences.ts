@@ -54,11 +54,3 @@ export const loadPreferences = async (): Promise<UserPreferences> => {
   }
 };
 
-export const resetPreferences = async (): Promise<void> => {
-  try {
-    await AsyncStorage.removeItem(PREFERENCES_KEY);
-  } catch (error) {
-    console.error('Error resetting preferences:', error);
-  }
-};
-

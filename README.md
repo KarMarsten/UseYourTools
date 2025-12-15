@@ -54,18 +54,22 @@ Create three types of events:
    - Company name and job title
    - Contact person details (name, email, phone)
    - Address (tap to open in Maps)
-   - Start and end times
+   - Start and end times (end time defaults to 30 minutes after start time)
+   - Date selection - choose the interview date directly in the event form
    - Notes section
+   - Can be linked to job applications for easy tracking
 
 2. **Appointments** 📍
    - Same features as interviews
    - Perfect for networking meetings, career fairs, or any scheduled activity
+   - End time defaults to 30 minutes after start time (fully editable)
 
 3. **Reminders** ⏰
    - Simple reminders with just a title and time
    - Great for quick to-dos or deadlines
 
 **Smart Actions:**
+- ⏱️ **Auto-end time**: End time automatically sets to 30 minutes after start time (you can change it anytime)
 - 📍 Tap addresses to open in Apple Maps or Google Maps
 - 📞 Tap phone numbers to call or send a text
 - ✉️ Tap email addresses to compose an email
@@ -85,15 +89,18 @@ Keep track of every job you apply to with a comprehensive tracking system:
 - **Status**: Track your application status:
   - Applied (newly submitted)
   - Rejected (received a "no thank you")
-  - No Response (haven't heard back)
+  - Interview (application has progressed to interview stage)
 - **Notes**: Add any additional details or follow-up notes
 
 **Smart Features:**
 - 🔍 **Search**: Quickly find applications by company, position, or source
-- 📊 **Statistics**: See your application stats at a glance (total, applied, rejected, no response)
+- 📊 **Statistics**: See your application stats at a glance (total, applied, rejected, interviews)
 - ⚠️ **Duplicate Detection**: Warns you if you try to apply to the same position twice
 - 🔗 **Quick Links**: Tap to open the original job posting
-- 🗂️ **Filter**: View applications by status (all, applied, rejected, no response)
+- 🗂️ **Filter**: View applications by status (all, applied, rejected, interview)
+- ➕ **Create Interview Events**: When an application status is "Interview", easily create interview events directly from the application
+- 📅 **Multiple Interview Events**: Link multiple interview events to a single application (first round, second round, etc.)
+- 👀 **View Interview Schedule**: See all interview events for an application with date, time, and contact name
 
 Never lose track of where you've applied, and make sure you don't accidentally apply to the same position twice!
 
@@ -106,10 +113,13 @@ Keep all your resume versions organized and accessible:
 - **File Support**: Works with PDF, DOC, and DOCX files
 - **Easy Access**: All your resumes in one place, sorted by most recent
 - **File Information**: See file size, type, and when you saved it
+- **Active Status**: Mark resumes as active or inactive to keep your list organized
 
 **Actions:**
+- 👁️ **Preview**: View PDF resumes directly in the app
 - 📤 **Share**: Easily share your resume via email, messages, or any app
 - ✏️ **Rename**: Give your resumes descriptive names for easy identification
+- ✅ **Toggle Active/Inactive**: Mark resumes as active or inactive with a click
 - 🗑️ **Delete**: Remove old versions you no longer need
 
 Perfect for managing different resume versions tailored to different job types or industries!
@@ -214,12 +224,23 @@ Start at the **Home Screen** - your central hub for all tools. From here, tap an
 
 ### Creating Events
 
+**From Calendar:**
 1. From the home screen, tap **Calendar**
 2. Tap any date on the calendar
 3. Tap **"+ Add Event"** button
 4. Choose event type (Interview, Appointment, or Reminder)
 5. Fill in the details
-6. Tap **"Save"**
+6. End time automatically defaults to 30 minutes after start time (you can change it)
+7. Tap **"Save"**
+
+**From Job Application:**
+1. From the home screen, tap **Job Applications**
+2. Find an application with status "Interview"
+3. Tap **"+ Add Interview Event"**
+4. The event form opens with company and position pre-filled
+5. Select the interview date using the date picker
+6. Fill in time, contact details, and other information
+7. Tap **"Save"** - the event is automatically linked to the application
 
 ### Viewing and Editing Events
 
@@ -229,13 +250,21 @@ Start at the **Home Screen** - your central hub for all tools. From here, tap an
 
 ### Tracking Job Applications
 
+**Adding Applications:**
 1. From the home screen, tap **Job Applications**
 2. Tap **"+ Add"** to add a new application
 3. Fill in the position title, company, source, and optional job posting URL
 4. The applied date/time defaults to now, but you can edit it if you're backfilling
-5. Choose the application status
+5. Choose the application status (Applied, Rejected, or Interview)
 6. Add any notes if needed
 7. Tap **"Save Application"**
+
+**Managing Interview Applications:**
+- When an application progresses to "Interview" status, you can create interview events directly from the application
+- Each application can have multiple interview events linked (for multiple rounds)
+- View all interview events for an application with date, time, and contact name
+- Tap any interview event to view it in your calendar
+- Change application status quickly by tapping the status badge
 
 Use the search bar to find specific applications, or filter by status to see your progress!
 
@@ -256,6 +285,8 @@ To sync your events with your device's calendar:
 2. Under **"Calendar Sync"**, choose **"Apple Calendar"** or **"Google Calendar"**
 3. Tap **"Sync All Existing Events to Calendar"** to sync events you've already created
 4. New events will automatically sync going forward
+
+**Note:** The app automatically selects a writable calendar (one that allows modifications). If you have read-only calendars (like subscribed calendars), the app will use or create a writable calendar for your events.
 
 ### Generating Reports
 
@@ -287,7 +318,10 @@ To sync your events with your device's calendar:
 
 - **Home Screen Hub**: Always return to the home screen to access any tool - it's your central command center!
 - **Application Search**: Use the search feature in Job Applications to quickly find if you've already applied somewhere
-- **Resume Organization**: Name your resumes descriptively (e.g., "Software Engineer - Tech Focus") to easily find the right version
+- **Multiple Interview Events**: Track all rounds of interviews for a single application - create as many interview events as needed
+- **Quick Status Changes**: Tap the status badge on any application to quickly change its status
+- **Auto End Time**: When creating events, the end time automatically sets to 30 minutes later - but you can always change it
+- **Resume Organization**: Name your resumes descriptively (e.g., "Software Engineer - Tech Focus") and mark active ones for easy identification
 - **Smart Notifications**: You'll get a reminder 10 minutes before each event
 - **Map Integration**: Tap any address to get directions instantly
 - **Privacy First**: All data stays on your device - nothing is sent to servers

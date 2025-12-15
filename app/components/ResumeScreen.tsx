@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as FileSystem from 'expo-file-system';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { usePreferences } from '../context/PreferencesContext';
 import {
   ResumeInfo,
@@ -32,7 +34,7 @@ export default function ResumeScreen({ onBack }: ResumeScreenProps) {
   const [editingName, setEditingName] = useState<ResumeInfo | null>(null);
   const [newName, setNewName] = useState('');
   const [previewResume, setPreviewResume] = useState<ResumeInfo | null>(null);
-  const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [previewUri, setPreviewUri] = useState<string>('');
   const { colorScheme } = usePreferences();
 
   useEffect(() => {
@@ -130,13 +132,40 @@ export default function ResumeScreen({ onBack }: ResumeScreenProps) {
       // For PDF files, we can preview with WebView
       if (resume.mimeType === 'application/pdf') {
         setPreviewResume(resume);
-        // WebView can handle file:// URIs on both iOS and Android
-        // Ensure the URI format is correct
-        let previewUrl = resume.fileUri;
-        if (Platform.OS === 'android' && !resume.fileUri.startsWith('file://')) {
-          previewUrl = `file://${resume.fileUri}`;
+        // Read file as base64 and embed in HTML for WebView
+        try {
+          const base64Content = await FileSystem.readAsStringAsync(resume.fileUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          
+          // Create HTML with embedded PDF using data URI
+          const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+                <style>
+                  body {
+                    margin: 0;
+                    padding: 0;
+                    overflow: hidden;
+                  }
+                  embed {
+                    width: 100%;
+                    height: 100vh;
+                  }
+                </style>
+              </head>
+              <body>
+                <embed src="data:application/pdf;base64,${base64Content}" type="application/pdf" />
+              </body>
+            </html>
+          `;
+          setPreviewUri(htmlContent);
+        } catch (readError) {
+          console.error('Error reading file:', readError);
+          Alert.alert('Error', 'Failed to read resume file for preview');
         }
-        setPreviewUri(previewUrl);
       } else {
         // For non-PDF files, suggest sharing or opening in another app
         Alert.alert(
@@ -148,6 +177,38 @@ export default function ResumeScreen({ onBack }: ResumeScreenProps) {
     } catch (error) {
       console.error('Error previewing resume:', error);
       Alert.alert('Error', 'Failed to preview resume');
+    }
+  };
+
+  const handlePrint = async (resume: ResumeInfo) => {
+    try {
+      if (!resume) return;
+      
+      // Print the PDF file directly
+      await Print.printAsync({
+        uri: resume.fileUri,
+      });
+    } catch (error) {
+      console.error('Error printing resume:', error);
+      Alert.alert('Error', 'Failed to print resume');
+    }
+  };
+
+  const handleShareFromPreview = async (resume: ResumeInfo) => {
+    try {
+      if (!resume) return;
+      // Share opens the share sheet for sharing with other apps/people
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(resume.fileUri, {
+          mimeType: resume.mimeType || 'application/pdf',
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        Alert.alert('Error', 'Sharing is not available on this device');
+      }
+    } catch (error) {
+      console.error('Error sharing resume:', error);
+      Alert.alert('Error', 'Failed to share resume');
     }
   };
 
@@ -217,9 +278,13 @@ export default function ResumeScreen({ onBack }: ResumeScreenProps) {
                         backgroundColor: (resume.isActive ?? true) 
                           ? colorScheme.colors.primary + '20' 
                           : colorScheme.colors.textSecondary + '20',
+                        borderColor: (resume.isActive ?? true)
+                          ? colorScheme.colors.primary
+                          : colorScheme.colors.textSecondary,
                       },
                     ]}
                     onPress={() => handleToggleActive(resume)}
+                    activeOpacity={0.7}
                   >
                     <Text
                       style={[
@@ -301,7 +366,7 @@ export default function ResumeScreen({ onBack }: ResumeScreenProps) {
         animationType="slide"
         onRequestClose={() => {
           setPreviewResume(null);
-          setPreviewUri(null);
+          setPreviewUri('');
         }}
       >
         <View style={styles.previewContainer}>
@@ -309,24 +374,45 @@ export default function ResumeScreen({ onBack }: ResumeScreenProps) {
             <TouchableOpacity
               onPress={() => {
                 setPreviewResume(null);
-                setPreviewUri(null);
+                setPreviewUri('');
               }}
               style={styles.previewCloseButton}
             >
               <Text style={[styles.previewCloseText, { color: colorScheme.colors.primary }]}>← Close</Text>
             </TouchableOpacity>
-            <Text style={[styles.previewTitle, { color: colorScheme.colors.text }]}>
+            <Text style={[styles.previewTitle, { color: colorScheme.colors.text }]} numberOfLines={1}>
               {previewResume?.name || 'Preview'}
             </Text>
-            <View style={{ width: 60 }} />
+            {previewResume && (
+              <View style={styles.previewActions}>
+                <TouchableOpacity
+                  onPress={() => handlePrint(previewResume)}
+                  style={[styles.previewActionButton, { backgroundColor: colorScheme.colors.primary }]}
+                >
+                  <Text style={styles.previewActionText}>🖨️</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleShareFromPreview(previewResume)}
+                  style={[styles.previewActionButton, { backgroundColor: colorScheme.colors.primary }]}
+                >
+                  <Text style={styles.previewActionText}>📤</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
-          {previewUri && (
+          {previewUri ? (
             <WebView
-              source={{ uri: previewUri }}
+              source={{ html: previewUri }}
               style={styles.previewWebView}
               startInLoadingState
               scalesPageToFit
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
             />
+          ) : (
+            <View style={styles.previewLoadingContainer}>
+              <Text style={{ color: colorScheme.colors.text }}>Loading preview...</Text>
+            </View>
           )}
         </View>
       </Modal>
@@ -460,9 +546,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   activeBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1.5,
   },
   activeBadgeText: {
     fontSize: 12,
@@ -566,6 +653,7 @@ const styles = StyleSheet.create({
   },
   previewCloseButton: {
     padding: 8,
+    minWidth: 60,
   },
   previewCloseText: {
     fontSize: 16,
@@ -578,9 +666,31 @@ const styles = StyleSheet.create({
     color: '#4A3A2A',
     flex: 1,
     textAlign: 'center',
+    marginHorizontal: 8,
   },
   previewWebView: {
     flex: 1,
+  },
+  previewLoadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewActions: {
+    flexDirection: 'row',
+    gap: 8,
+    minWidth: 120,
+    justifyContent: 'flex-end',
+  },
+  previewActionButton: {
+    padding: 8,
+    borderRadius: 8,
+    minWidth: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewActionText: {
+    fontSize: 18,
   },
 });
 

@@ -7,6 +7,7 @@ import { generateTimeBlocks, GeneratedTimeBlock } from '../utils/timeBlockGenera
 import { usePreferences } from '../context/PreferencesContext';
 import { formatTimeRange, formatTime12Hour } from '../utils/timeFormatter';
 import { Event, loadEventsForDate, saveEvent, deleteEvent } from '../utils/events';
+import { getApplicationById, addApplicationEventId } from '../utils/applications';
 import { scheduleEventNotification, cancelEventNotification } from '../utils/eventNotifications';
 import { openAddressInMaps, openPhoneNumber, openEmail } from '../utils/eventActions';
 import { getDateKey } from '../utils/timeFormatter';
@@ -15,13 +16,14 @@ import AddEventModal from './AddEventModal';
 interface DailyPlannerScreenProps {
   date: Date;
   onBack: () => void;
+  initialApplicationId?: string;
 }
 
 interface DayEntries {
   [timeBlockId: string]: string;
 }
 
-export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenProps) {
+export default function DailyPlannerScreen({ date, onBack, initialApplicationId }: DailyPlannerScreenProps) {
   const [entries, setEntries] = useState<DayEntries>({});
   const [timeBlocks, setTimeBlocks] = useState<GeneratedTimeBlock[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
@@ -29,6 +31,7 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
   const [editingEvent, setEditingEvent] = useState<Event | undefined>(undefined);
   const [viewingEvent, setViewingEvent] = useState<Event | undefined>(undefined);
   const [isViewMode, setIsViewMode] = useState(false);
+  const [initialApplicationData, setInitialApplicationData] = useState<{ id: string; company?: string; positionTitle?: string; } | undefined>(undefined);
   const { preferences, colorScheme } = usePreferences();
   // Normalize date to ensure consistent dateKey calculation (avoid timezone issues)
   const normalizedDate = new Date(date);
@@ -43,8 +46,28 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
     loadEntries();
     loadCustomTimeBlocks();
     loadEvents();
+    // If we have an initialApplicationId, load the application and open the event modal
+    if (initialApplicationId) {
+      loadApplicationForEvent(initialApplicationId);
+      setShowAddEventModal(true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateKey, preferences]); // Use dateKey instead of date to avoid re-running on date object reference changes
+  }, [dateKey, preferences, initialApplicationId]); // Use dateKey instead of date to avoid re-running on date object reference changes
+
+  const loadApplicationForEvent = async (applicationId: string) => {
+    try {
+      const application = await getApplicationById(applicationId);
+      if (application) {
+        setInitialApplicationData({
+          id: application.id,
+          company: application.company,
+          positionTitle: application.positionTitle,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading application for event:', error);
+    }
+  };
 
   const loadCustomTimeBlocks = async () => {
     try {
@@ -96,12 +119,24 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
         event.notificationId = notificationId;
       }
 
+      // If we have initialApplicationData, link the event and application
+      if (initialApplicationData && event.type === 'interview') {
+        event.applicationId = initialApplicationData.id;
+      }
+
       await saveEvent(event);
+
+      // If we have initialApplicationData, add the eventId to the application's eventIds array
+      if (initialApplicationData && event.type === 'interview') {
+        await addApplicationEventId(initialApplicationData.id, event.id);
+      }
+
       await loadEvents(); // Reload events to update UI
       setEditingEvent(undefined);
       setViewingEvent(undefined);
       setIsViewMode(false);
       setShowAddEventModal(false);
+      setInitialApplicationData(undefined); // Clear the initial application data
       // Note: Calendar refresh will happen when user navigates back
     } catch (error) {
       console.error('Error saving event:', error);
@@ -134,6 +169,7 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
     setEditingEvent(undefined);
     setViewingEvent(undefined);
     setIsViewMode(false);
+    setInitialApplicationData(undefined); // Clear initial application data when closing
   };
 
   const handleDeleteEvent = async (event: Event) => {
@@ -382,6 +418,7 @@ export default function DailyPlannerScreen({ date, onBack }: DailyPlannerScreenP
         event={isViewMode ? viewingEvent : editingEvent}
         viewMode={isViewMode}
         onEdit={handleSwitchToEdit}
+        initialApplicationData={initialApplicationData}
       />
     </View>
   );
