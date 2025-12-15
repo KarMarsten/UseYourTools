@@ -11,13 +11,10 @@ interface CalendarScreenProps {
   onSelectDate: (date: Date) => void;
   onBack?: () => void;
   onSettings?: () => void;
-  onReports?: () => void;
-  onApplications?: () => void;
-  onResumes?: () => void;
   refreshTrigger?: number; // Optional trigger to refresh entry indicators
 }
 
-export default function CalendarScreen({ onSelectDate, onBack, onSettings, onReports, onApplications, onResumes, refreshTrigger }: CalendarScreenProps) {
+export default function CalendarScreen({ onSelectDate, onBack, onSettings, refreshTrigger }: CalendarScreenProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [daysWithEntries, setDaysWithEntries] = useState<Set<string>>(new Set());
   const [daysWithEvents, setDaysWithEvents] = useState<Set<string>>(new Set());
@@ -224,28 +221,13 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, onRep
       <View style={[styles.header, dynamicStyles.header]}>
         {onBack && (
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Text style={[styles.backButtonText, dynamicStyles.backButtonText]}>← Home</Text>
+            <Text style={[styles.backButtonText, dynamicStyles.backButtonText]}>← Back</Text>
           </TouchableOpacity>
         )}
         <View style={styles.headerContent}>
           <Text style={[styles.title, dynamicStyles.title]}>🌿 Calendar</Text>
         </View>
         <View style={styles.headerRight}>
-          {onApplications && (
-            <TouchableOpacity onPress={onApplications} style={styles.headerIconButton}>
-              <Text style={[styles.headerIcon, { color: colorScheme.colors.text }]}>💼</Text>
-            </TouchableOpacity>
-          )}
-          {onResumes && (
-            <TouchableOpacity onPress={onResumes} style={styles.headerIconButton}>
-              <Text style={[styles.headerIcon, { color: colorScheme.colors.text }]}>📄</Text>
-            </TouchableOpacity>
-          )}
-          {onReports && (
-            <TouchableOpacity onPress={onReports} style={styles.reportsButton}>
-              <Text style={[styles.reportsIcon, { color: colorScheme.colors.text }]}>📊</Text>
-            </TouchableOpacity>
-          )}
           {onSettings && (
             <TouchableOpacity onPress={onSettings} style={styles.settingsButton}>
               <Text style={[styles.settingsIcon, { color: colorScheme.colors.text }]}>⚙️</Text>
@@ -525,20 +507,6 @@ const styles = StyleSheet.create({
   exitIcon: {
     fontSize: 20,
     fontWeight: 'bold',
-  },
-  headerIconButton: {
-    padding: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerIcon: {
-    fontSize: 24,
-  },
-  reportsButton: {
-    padding: 8,
-  },
-  reportsIcon: {
-    fontSize: 24,
   },
   calendarHeader: {
     flexDirection: 'row',

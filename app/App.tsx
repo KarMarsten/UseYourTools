@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, LogBox } from 'react-native';
 import { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
+import HomeScreen from './components/HomeScreen';
 import CalendarScreen from './components/CalendarScreen';
 import DailyPlannerScreen from './components/DailyPlannerScreen';
 import SetupScreen from './components/SetupScreen';
@@ -69,10 +70,10 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-type Screen = 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport' | 'applications' | 'resumes';
+type Screen = 'home' | 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport' | 'applications' | 'resumes';
 
 function AppContent() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('calendar');
+  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
   const [reportHtml, setReportHtml] = useState<string>('');
@@ -108,11 +109,15 @@ function AppContent() {
   };
 
   const handleSetupComplete = () => {
-    setCurrentScreen('calendar');
+    setCurrentScreen('home');
   };
 
   const handleViewSettings = () => {
     setCurrentScreen('setup');
+  };
+
+  const handleBackToHome = () => {
+    setCurrentScreen('home');
   };
 
   const handleBackToCalendar = () => {
@@ -142,15 +147,27 @@ function AppContent() {
   };
 
   if (currentScreen === 'setup') {
-    return <SetupScreen onComplete={handleSetupComplete} onBack={handleBackToCalendar} />;
+    return <SetupScreen onComplete={handleSetupComplete} onBack={handleBackToHome} />;
+  }
+
+  if (currentScreen === 'home') {
+    return (
+      <HomeScreen
+        onNavigateToCalendar={() => setCurrentScreen('calendar')}
+        onNavigateToApplications={handleViewApplications}
+        onNavigateToResumes={handleViewResumes}
+        onNavigateToReports={handleViewReports}
+        onNavigateToSettings={handleViewSettings}
+      />
+    );
   }
 
   if (currentScreen === 'calendar') {
-    return <CalendarScreen onSelectDate={handleSelectDate} onSettings={handleViewSettings} onReports={handleViewReports} onApplications={handleViewApplications} onResumes={handleViewResumes} refreshTrigger={calendarRefreshTrigger} />;
+    return <CalendarScreen onSelectDate={handleSelectDate} onBack={handleBackToHome} onSettings={handleViewSettings} refreshTrigger={calendarRefreshTrigger} />;
   }
 
   if (currentScreen === 'reports') {
-    return <ReportsScreen onBack={handleBackToCalendar} onViewReport={handleViewReport} />;
+    return <ReportsScreen onBack={handleBackToHome} onViewReport={handleViewReport} />;
   }
 
   if (currentScreen === 'viewReport') {
@@ -162,15 +179,23 @@ function AppContent() {
   }
 
   if (currentScreen === 'applications') {
-    return <ApplicationsScreen onBack={handleBackToCalendar} />;
+    return <ApplicationsScreen onBack={handleBackToHome} />;
   }
 
   if (currentScreen === 'resumes') {
-    return <ResumeScreen onBack={handleBackToCalendar} />;
+    return <ResumeScreen onBack={handleBackToHome} />;
   }
 
-  // Fallback to calendar if no screen matches (should never happen)
-  return <CalendarScreen onSelectDate={handleSelectDate} onSettings={handleViewSettings} onReports={handleViewReports} onApplications={handleViewApplications} onResumes={handleViewResumes} refreshTrigger={calendarRefreshTrigger} />;
+  // Fallback to home if no screen matches (should never happen)
+  return (
+    <HomeScreen
+      onNavigateToCalendar={() => setCurrentScreen('calendar')}
+      onNavigateToApplications={handleViewApplications}
+      onNavigateToResumes={handleViewResumes}
+      onNavigateToReports={handleViewReports}
+      onNavigateToSettings={handleViewSettings}
+    />
+  );
 }
 
 export default function App() {
