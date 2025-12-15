@@ -1,5 +1,0 @@
-module React {
-    umbrella header "../Pods/Headers/Public/React-Core/React-Core-umbrella.h"
-    export *
-    module * { export * }
-}

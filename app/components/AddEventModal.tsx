@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,11 +12,12 @@ import {
   Platform,
 } from 'react-native';
 import { Event } from '../utils/events';
-import { formatTimeRange, formatTime12Hour } from '../utils/timeFormatter';
+import { formatTimeRange, formatTime12Hour, getDateKey } from '../utils/timeFormatter';
 
 interface AddEventModalProps {
   visible: boolean;
-  dateKey: string;
+  dateKey?: string; // Optional - if not provided, will use selectedDate state
+  initialDate?: Date; // Initial date for the event (allows date selection)
   onClose: () => void;
   onSave: (event: Event) => void;
   colorScheme: {
@@ -31,11 +32,14 @@ interface AddEventModalProps {
   event?: Event; // Optional event for editing
   viewMode?: boolean; // If true, show in read-only view mode with edit button
   onEdit?: () => void; // Callback when edit button is pressed in view mode
+  initialApplicationData?: { id: string; company?: string; positionTitle?: string; }; // Initial data from job application
+  allowDateSelection?: boolean; // If true, show date picker field
 }
 
 export default function AddEventModal({
   visible,
   dateKey,
+  initialDate,
   onClose,
   onSave,
   colorScheme,
@@ -43,22 +47,98 @@ export default function AddEventModal({
   event,
   viewMode = false,
   onEdit,
+  initialApplicationData,
+  allowDateSelection = false,
 }: AddEventModalProps) {
-  const [title, setTitle] = useState(event?.title || '');
-  const [startTime, setStartTime] = useState(event?.startTime || '');
-  const [endTime, setEndTime] = useState(event?.endTime || '');
-  const [type, setType] = useState<'interview' | 'appointment' | 'reminder'>(event?.type || 'reminder');
-  const [notes, setNotes] = useState(event?.notes || '');
-  const [address, setAddress] = useState(event?.address || '');
-  const [contactName, setContactName] = useState(event?.contactName || '');
-  const [email, setEmail] = useState(event?.email || '');
-  const [phone, setPhone] = useState(event?.phone || '');
-  const [company, setCompany] = useState(event?.company || '');
-  const [jobTitle, setJobTitle] = useState(event?.jobTitle || '');
+  // Initialize form fields - will be populated by useEffect
+  const [title, setTitle] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [type, setType] = useState<'interview' | 'appointment' | 'reminder'>('reminder');
+  const [notes, setNotes] = useState('');
+  const [address, setAddress] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [company, setCompany] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
+  
+  // Date selection state (used when allowDateSelection is true)
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    if (initialDate) {
+      const d = new Date(initialDate);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    if (event) {
+      const [year, month, day] = event.dateKey.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+    if (dateKey) {
+      const [year, month, day] = dateKey.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+    return new Date(); // Default to today
+  });
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [dateInputText, setDateInputText] = useState('');
+  const isAutoUpdatingEndTime = useRef(false); // Track if we're auto-updating end time to prevent loops
 
   // Time picker states
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+
+  // Reset form fields when modal opens with new initialApplicationData or when event changes
+  useEffect(() => {
+    if (visible) {
+      if (event) {
+        // If editing/viewing an event, populate from event
+        setTitle(event.title || '');
+        setStartTime(event.startTime || '');
+        setEndTime(event.endTime || '');
+        setType(event.type || 'reminder');
+        setNotes(event.notes || '');
+        setAddress(event.address || '');
+        setContactName(event.contactName || '');
+        setEmail(event.email || '');
+        setPhone(event.phone || '');
+        setCompany(event.company || '');
+        setJobTitle(event.jobTitle || '');
+      } else if (initialApplicationData) {
+        // If creating from application, populate from application data
+        setTitle(initialApplicationData.positionTitle || '');
+        setCompany(initialApplicationData.company || '');
+        setJobTitle(initialApplicationData.positionTitle || '');
+        setType('interview');
+        setStartTime('');
+        setEndTime('');
+        setNotes('');
+        setAddress('');
+        setContactName('');
+        setEmail('');
+        setPhone('');
+        // Set date to today by default, but allow user to change it
+        if (allowDateSelection) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          setSelectedDate(today);
+        }
+      } else {
+        // Reset to defaults
+        setTitle('');
+        setStartTime('');
+        setEndTime('');
+        setType('reminder');
+        setNotes('');
+        setAddress('');
+        setContactName('');
+        setEmail('');
+        setPhone('');
+        setCompany('');
+        setJobTitle('');
+      }
+    }
+  }, [visible, event, initialApplicationData]);
   
   // Parse time to components (for 12-hour or 24-hour display)
   const parseTimeForDisplay = (time24: string): { hour: number; minute: number; period: 'AM' | 'PM' | null } => {
@@ -112,12 +192,35 @@ export default function AddEventModal({
       setStartHour(parsed.hour);
       setStartMinute(parsed.minute);
       setStartPeriod(parsed.period);
+      
+      // Auto-update end time to 30 minutes after start time
+      // Only for interviews/appointments and only if end time is empty or creating new event
+      // Don't auto-update if we're currently in the middle of auto-updating (prevents loops)
+      if (type !== 'reminder' && !isAutoUpdatingEndTime.current && (!endTime || !event)) {
+        isAutoUpdatingEndTime.current = true;
+        const [startH, startM] = startTime.split(':').map(Number);
+        let endH = startH;
+        let endM = startM + 30;
+        if (endM >= 60) {
+          endH += Math.floor(endM / 60);
+          endM = endM % 60;
+        }
+        if (endH >= 24) {
+          endH = endH % 24;
+        }
+        const endTime24 = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+        setEndTime(endTime24);
+        // Reset the flag after a brief delay to allow state updates to complete
+        setTimeout(() => {
+          isAutoUpdatingEndTime.current = false;
+        }, 100);
+      }
     } else {
       setStartHour(use12Hour ? 12 : 9);
       setStartMinute(0);
       setStartPeriod(use12Hour ? 'AM' : null);
     }
-  }, [startTime, use12Hour]);
+  }, [startTime, use12Hour, type, event]); // Removed endTime from dependencies to prevent loops
 
   useEffect(() => {
     if (endTime) {
@@ -136,56 +239,39 @@ export default function AddEventModal({
   const updateStartTime = (hour: number, minute: number, period: 'AM' | 'PM' | null) => {
     const time24 = convertTo24Hour(hour, minute, period);
     setStartTime(time24);
+    
+    // Auto-update end time to 30 minutes after start time (only if end time is empty or for new events)
+    // Only auto-update for interviews and appointments (not reminders)
+    // The useEffect hook will handle the auto-update, but we also do it here for immediate feedback
+    // when user selects time via picker
+    if (type !== 'reminder' && !isAutoUpdatingEndTime.current && (!endTime || !event)) {
+      isAutoUpdatingEndTime.current = true;
+      // Parse the new start time
+      const [startH, startM] = time24.split(':').map(Number);
+      
+      // Calculate 30 minutes later
+      let endH = startH;
+      let endM = startM + 30;
+      if (endM >= 60) {
+        endH += Math.floor(endM / 60);
+        endM = endM % 60;
+      }
+      if (endH >= 24) {
+        endH = endH % 24;
+      }
+      
+      const endTime24 = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+      setEndTime(endTime24);
+      setTimeout(() => {
+        isAutoUpdatingEndTime.current = false;
+      }, 100);
+    }
   };
 
   const updateEndTime = (hour: number, minute: number, period: 'AM' | 'PM' | null) => {
     const time24 = convertTo24Hour(hour, minute, period);
     setEndTime(time24);
   };
-
-  // Reset form when modal opens/closes
-  useEffect(() => {
-    if (visible && event) {
-      // Populate form with event data when editing
-      setTitle(event.title || '');
-      setStartTime(event.startTime || '');
-      setEndTime(event.endTime || '');
-      setType(event.type || 'reminder');
-      setNotes(event.notes || '');
-      setAddress(event.address || '');
-      setContactName(event.contactName || '');
-      setEmail(event.email || '');
-      setPhone(event.phone || '');
-      setCompany(event.company || '');
-      setJobTitle(event.jobTitle || '');
-    } else if (visible && !event) {
-      // Reset to empty values when opening to add new event
-      setTitle('');
-      setStartTime('');
-      setEndTime('');
-      setType('reminder');
-      setNotes('');
-      setAddress('');
-      setContactName('');
-      setEmail('');
-      setPhone('');
-      setCompany('');
-      setJobTitle('');
-    } else if (!visible) {
-      // Reset when closing
-      setTitle('');
-      setStartTime('');
-      setEndTime('');
-      setType('reminder');
-      setNotes('');
-      setAddress('');
-      setContactName('');
-      setEmail('');
-      setPhone('');
-      setCompany('');
-      setJobTitle('');
-    }
-  }, [visible, event]);
 
   const handleSave = () => {
     // Validate inputs
@@ -219,9 +305,12 @@ export default function AddEventModal({
       }
     }
 
+    // Determine the dateKey to use
+    const eventDateKey = allowDateSelection ? getDateKey(selectedDate) : (dateKey || getDateKey(selectedDate));
+    
     const savedEvent: Event = {
       id: event?.id || `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      dateKey,
+      dateKey: eventDateKey,
       title: title.trim(),
       startTime,
       endTime: type !== 'reminder' ? endTime : undefined,
@@ -265,7 +354,7 @@ export default function AddEventModal({
                 onPress={onEdit}
                 style={styles.editButton}
               >
-                <Text style={[styles.editButtonText, { color: colorScheme.primary }]}>Edit</Text>
+                <Text style={[styles.editButtonText, { color: colorScheme.primary }]} numberOfLines={1}>Edit</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -330,6 +419,7 @@ export default function AddEventModal({
                           color: type === eventType ? colorScheme.background : colorScheme.text,
                         },
                       ]}
+                      numberOfLines={1}
                     >
                       {eventType.charAt(0).toUpperCase() + eventType.slice(1)}
                     </Text>
@@ -338,6 +428,35 @@ export default function AddEventModal({
               </View>
             )}
           </View>
+
+          {allowDateSelection && !viewMode && (
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colorScheme.text }]}>Date</Text>
+              <TouchableOpacity
+                style={[
+                  styles.timePickerButton,
+                  {
+                    backgroundColor: colorScheme.background,
+                    borderColor: colorScheme.border,
+                  },
+                ]}
+                onPress={() => {
+                  // Initialize dateInputText with current date when opening picker
+                  setDateInputText(selectedDate.toISOString().split('T')[0]);
+                  setShowDatePicker(true);
+                }}
+              >
+                <Text style={[styles.timePickerText, { color: colorScheme.text }]}>
+                  {selectedDate.toLocaleDateString('en-US', { 
+                    weekday: 'short', 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric' 
+                  })}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={styles.timeRow}>
             <View style={styles.timeInput}>
@@ -584,7 +703,7 @@ export default function AddEventModal({
                 style={[styles.button, styles.saveButton, { backgroundColor: colorScheme.primary }]}
                 onPress={handleCancel}
               >
-                <Text style={[styles.buttonText, { color: colorScheme.background }]}>Close</Text>
+                <Text style={[styles.buttonText, { color: colorScheme.background }]} numberOfLines={1}>Close</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -593,13 +712,13 @@ export default function AddEventModal({
                 style={[styles.button, styles.cancelButton, { borderColor: colorScheme.border }]}
                 onPress={handleCancel}
               >
-                <Text style={[styles.buttonText, { color: colorScheme.text }]}>Cancel</Text>
+                <Text style={[styles.buttonText, { color: colorScheme.text }]} numberOfLines={1}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button, styles.saveButton, { backgroundColor: colorScheme.primary }]}
                 onPress={handleSave}
               >
-                <Text style={[styles.buttonText, { color: colorScheme.background }]}>Save</Text>
+                <Text style={[styles.buttonText, { color: colorScheme.background }]} numberOfLines={1}>Save</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -639,6 +758,88 @@ export default function AddEventModal({
               }}
               onClose={() => setShowEndTimePicker(false)}
             />
+          )}
+
+          {/* Date picker - simple input for now */}
+          {showDatePicker && allowDateSelection && (
+            <View style={styles.dropdownOverlay}>
+              <TouchableOpacity style={styles.dropdownBackdrop} onPress={() => setShowDatePicker(false)} />
+              <View style={[styles.dropdownContainer, { backgroundColor: colorScheme.surface, borderColor: colorScheme.border }]}>
+                <Text style={[styles.dropdownLabel, { color: colorScheme.text }]}>Select Date</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colorScheme.background,
+                      borderColor: colorScheme.border,
+                      color: colorScheme.text,
+                      marginBottom: 8,
+                    },
+                  ]}
+                  value={dateInputText}
+                  onChangeText={(text) => {
+                    // Allow free typing - just update the text state
+                    setDateInputText(text);
+                  }}
+                  placeholder="YYYY-MM-DD or MM/DD/YYYY"
+                  placeholderTextColor={colorScheme.textSecondary}
+                  keyboardType="numbers-and-punctuation"
+                  autoFocus={true}
+                />
+                <Text style={[styles.hint, { color: colorScheme.textSecondary }]}>
+                  Tip: You can type either 2025-12-20 or 12/20/2025.
+                </Text>
+                <View style={styles.dropdownButtons}>
+                  <TouchableOpacity
+                    style={[styles.dropdownButton, { borderColor: colorScheme.border }]}
+                    onPress={() => {
+                      setShowDatePicker(false);
+                      setDateInputText(''); // Clear input text
+                    }}
+                  >
+                    <Text style={[styles.dropdownButtonText, { color: colorScheme.text }]} numberOfLines={1}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.dropdownButton, { backgroundColor: colorScheme.primary }]}
+                    onPress={() => {
+                      // Parse the date input text when OK is pressed
+                      let year: number | undefined;
+                      let month: number | undefined;
+                      let day: number | undefined;
+
+                      const isoMatch = dateInputText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                      const usMatch = dateInputText.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+
+                      if (isoMatch) {
+                        year = Number(isoMatch[1]);
+                        month = Number(isoMatch[2]);
+                        day = Number(isoMatch[3]);
+                      } else if (usMatch) {
+                        month = Number(usMatch[1]);
+                        day = Number(usMatch[2]);
+                        year = Number(usMatch[3]);
+                      }
+
+                      if (year && month && day) {
+                        const newDate = new Date(year, month - 1, day);
+                        if (!isNaN(newDate.getTime())) {
+                          newDate.setHours(0, 0, 0, 0);
+                          setSelectedDate(newDate);
+                          setShowDatePicker(false);
+                          setDateInputText(''); // Clear input text
+                        } else {
+                          Alert.alert('Invalid Date', 'Please enter a valid date');
+                        }
+                      } else {
+                        Alert.alert('Invalid Format', 'Please enter the date as YYYY-MM-DD or MM/DD/YYYY');
+                      }
+                    }}
+                  >
+                    <Text style={[styles.dropdownButtonText, { color: colorScheme.background }]} numberOfLines={1}>OK</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
           )}
         </View>
       </KeyboardAvoidingView>
@@ -775,13 +976,13 @@ const TimePickerDropdown = ({
             style={[styles.dropdownButton, { borderColor: colorScheme.border }]}
             onPress={onClose}
           >
-            <Text style={[styles.dropdownButtonText, { color: colorScheme.text }]}>Cancel</Text>
+            <Text style={[styles.dropdownButtonText, { color: colorScheme.text }]} numberOfLines={1}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.dropdownButton, { backgroundColor: colorScheme.primary }]}
             onPress={handleConfirm}
           >
-            <Text style={[styles.dropdownButtonText, { color: colorScheme.background }]}>OK</Text>
+            <Text style={[styles.dropdownButtonText, { color: colorScheme.background }]} numberOfLines={1}>OK</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -828,6 +1029,7 @@ const styles = StyleSheet.create({
   editButtonText: {
     fontSize: 16,
     fontWeight: '600',
+    textAlign: 'center',
   },
   viewText: {
     fontSize: 16,
@@ -859,6 +1061,7 @@ const styles = StyleSheet.create({
   typeContainer: {
     flexDirection: 'row',
     gap: 10,
+    flexWrap: 'nowrap',
   },
   typeButton: {
     flex: 1,
@@ -866,10 +1069,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 0,
   },
   typeButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
+    textAlign: 'center',
   },
   timeRow: {
     flexDirection: 'row',
@@ -954,6 +1160,7 @@ const styles = StyleSheet.create({
   dropdownButtonText: {
     fontSize: 16,
     fontWeight: '600',
+    textAlign: 'center',
   },
   hint: {
     fontSize: 12,
@@ -982,6 +1189,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

@@ -8,8 +8,9 @@ export interface JobApplication {
   source: string; // e.g., "LinkedIn", "Indeed", "Company Website", etc.
   sourceUrl?: string; // Hyperlink to the job posting
   appliedDate: string; // ISO 8601 date string (YYYY-MM-DDTHH:mm:ss.sssZ)
-  status: 'applied' | 'rejected' | 'no-response'; // Status of the application
+  status: 'applied' | 'rejected' | 'no-response' | 'interview'; // Status of the application
   notes?: string; // Optional notes about the application
+  eventIds?: string[]; // IDs of linked interview events (if status is 'interview') - can have multiple
 }
 
 const APPLICATIONS_KEY_PREFIX = 'application_';
@@ -166,8 +167,56 @@ export interface ApplicationStats {
   total: number;
   applied: number;
   rejected: number;
-  noResponse: number;
+  interview: number;
 }
+
+/**
+ * Get an application by ID
+ */
+export const getApplicationById = async (id: string): Promise<JobApplication | null> => {
+  try {
+    const key = `${APPLICATIONS_KEY_PREFIX}${id}`;
+    const applicationData = await AsyncStorage.getItem(key);
+    if (applicationData) {
+      const application = JSON.parse(applicationData) as JobApplication;
+      // Migrate old eventId to eventIds array if needed
+      if ('eventId' in application && (application as any).eventId && !application.eventIds) {
+        application.eventIds = [(application as any).eventId];
+        delete (application as any).eventId;
+        await AsyncStorage.setItem(key, JSON.stringify(application));
+      }
+      return application;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting application:', error);
+    return null;
+  }
+};
+
+/**
+ * Add an eventId to a job application's eventIds array
+ */
+export const addApplicationEventId = async (applicationId: string, eventId: string): Promise<void> => {
+  try {
+    const key = `${APPLICATIONS_KEY_PREFIX}${applicationId}`;
+    const applicationData = await AsyncStorage.getItem(key);
+    if (applicationData) {
+      const application = JSON.parse(applicationData) as JobApplication;
+      if (!application.eventIds) {
+        application.eventIds = [];
+      }
+      if (!application.eventIds.includes(eventId)) {
+        application.eventIds.push(eventId);
+        await AsyncStorage.setItem(key, JSON.stringify(application));
+      }
+    }
+  } catch (error) {
+    console.error('Error adding application eventId:', error);
+    throw error;
+  }
+};
+
 
 export const getApplicationStats = async (): Promise<ApplicationStats> => {
   try {
@@ -176,19 +225,20 @@ export const getApplicationStats = async (): Promise<ApplicationStats> => {
       total: allApplications.length,
       applied: 0,
       rejected: 0,
-      noResponse: 0,
+      interview: 0,
     };
 
     allApplications.forEach(app => {
       if (app.status === 'applied') stats.applied++;
       else if (app.status === 'rejected') stats.rejected++;
-      else if (app.status === 'no-response') stats.noResponse++;
+      else if (app.status === 'interview') stats.interview++;
+      // Note: 'no-response' status is still available but not shown in stats
     });
 
     return stats;
   } catch (error) {
     console.error('Error getting application stats:', error);
-    return { total: 0, applied: 0, rejected: 0, noResponse: 0 };
+    return { total: 0, applied: 0, rejected: 0, interview: 0 };
   }
 };
 

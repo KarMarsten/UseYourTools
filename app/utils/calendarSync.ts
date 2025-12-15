@@ -25,28 +25,40 @@ export const ensureCalendarAccess = async (): Promise<string | null> => {
       }
     }
 
-    // Get the default calendar source
+    // Get all calendars and filter for writable ones
     const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
     
-    // For iOS, prefer the default calendar
-    // For Android, prefer the primary calendar
-    const defaultCalendar = calendars.find(cal => 
+    // Filter to only writable calendars (calendars that allow modifications)
+    const writableCalendars = calendars.filter(cal => cal.allowsModifications !== false);
+    
+    if (writableCalendars.length === 0) {
+      console.warn('No writable calendars found');
+      return null;
+    }
+    
+    // For iOS, prefer the default calendar that's writable
+    // For Android, prefer the primary calendar that's writable
+    const defaultCalendar = writableCalendars.find(cal => 
       Platform.OS === 'ios' 
         ? cal.isPrimary || cal.source?.name === 'Default' 
         : cal.isPrimary || cal.source?.isLocalAccount
-    ) || calendars[0];
+    ) || writableCalendars[0];
 
     if (defaultCalendar) {
       calendarId = defaultCalendar.id;
       return calendarId;
     }
 
-    // If no calendar found, create one (Android)
-    if (Platform.OS === 'android') {
+    // If no writable calendar found, try to create one
+    // For iOS, try to create a calendar on the default source
+    // For Android, create a calendar on the local source
+    try {
       const sources = await Calendar.getSourcesAsync();
-      const defaultSource = sources.find(s => s.isLocalAccount) || sources[0];
+      const defaultSource = Platform.OS === 'ios'
+        ? sources.find(s => s.name === 'Default' || s.isLocalAccount) || sources[0]
+        : sources.find(s => s.isLocalAccount) || sources[0];
       
-      if (defaultSource) {
+      if (defaultSource && defaultSource.type !== 'readonly') {
         const newCalendarId = await Calendar.createCalendarAsync({
           title: 'UseYourTools',
           color: '#8C6A4A',
@@ -55,10 +67,17 @@ export const ensureCalendarAccess = async (): Promise<string | null> => {
           source: defaultSource,
           name: 'UseYourTools',
           ownerAccount: 'personal',
-          timeZone: 'UTC',
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
           allowsModifications: true,
         });
         calendarId = newCalendarId;
+        return calendarId;
+      }
+    } catch (createError) {
+      console.error('Error creating calendar:', createError);
+      // If we can't create a calendar, try to use the first writable calendar we found
+      if (writableCalendars.length > 0) {
+        calendarId = writableCalendars[0].id;
         return calendarId;
       }
     }
@@ -73,7 +92,7 @@ export const ensureCalendarAccess = async (): Promise<string | null> => {
 /**
  * Convert app event to calendar event format
  */
-const eventToCalendarEvent = async (event: Event): Promise<Calendar.EventInput> => {
+const eventToCalendarEvent = async (event: Event): Promise<any> => {
   const preferences = await loadPreferences();
   
   // Parse date from dateKey (YYYY-MM-DD)

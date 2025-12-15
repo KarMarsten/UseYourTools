@@ -10,6 +10,7 @@ export interface Event {
   type: 'interview' | 'appointment' | 'reminder';
   notificationId?: string; // ID for scheduled notification
   calendarEventId?: string; // ID for synced calendar event
+  applicationId?: string; // ID of the linked job application (if type is 'interview')
   // Optional fields for appointments/interviews
   notes?: string; // General notes for any event type
   address?: string; // Address (for interviews/appointments)
@@ -94,6 +95,20 @@ export const deleteEvent = async (eventId: string): Promise<void> => {
   } catch (error) {
     console.error('Error deleting event:', error);
     throw error;
+  }
+};
+
+export const getEventById = async (eventId: string): Promise<Event | null> => {
+  try {
+    const key = `${EVENTS_KEY_PREFIX}${eventId}`;
+    const eventData = await AsyncStorage.getItem(key);
+    if (eventData) {
+      return JSON.parse(eventData) as Event;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting event:', error);
+    return null;
   }
 };
 
