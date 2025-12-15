@@ -13,6 +13,7 @@ export interface ResumeInfo {
   size?: number; // File size in bytes
   createdAt: string; // ISO 8601 date string
   updatedAt?: string; // ISO 8601 date string
+  isActive?: boolean; // Whether this resume is currently active/being used
 }
 
 const RESUMES_DIR = `${FileSystem.documentDirectory}resumes/`;
@@ -120,6 +121,7 @@ export const saveResume = async (
       size: fileSize,
       createdAt: now,
       updatedAt: now,
+      isActive: true, // New resumes default to active
     };
 
     // Update index
@@ -271,6 +273,25 @@ export const updateResumeName = async (id: string, newName: string): Promise<voi
     }
   } catch (error) {
     console.error('Error updating resume name:', error);
+    throw error;
+  }
+};
+
+/**
+ * Toggle active status of a resume
+ */
+export const toggleResumeActive = async (id: string): Promise<void> => {
+  try {
+    const index = await getResumesIndex();
+    const resume = index.find(r => r.id === id);
+    
+    if (resume) {
+      resume.isActive = !(resume.isActive ?? true); // Default to true if undefined
+      resume.updatedAt = new Date().toISOString();
+      await updateResumesIndex(index);
+    }
+  } catch (error) {
+    console.error('Error toggling resume active status:', error);
     throw error;
   }
 };

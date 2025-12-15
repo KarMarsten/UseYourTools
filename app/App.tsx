@@ -179,7 +179,13 @@ function AppContent() {
   }
 
   if (currentScreen === 'applications') {
-    return <ApplicationsScreen onBack={handleBackToHome} />;
+    return (
+      <ApplicationsScreen
+        onBack={handleBackToHome}
+        onNavigateToCalendar={() => setCurrentScreen('calendar')}
+        onSelectDate={handleSelectDate}
+      />
+    );
   }
 
   if (currentScreen === 'resumes') {

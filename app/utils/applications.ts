@@ -8,8 +8,9 @@ export interface JobApplication {
   source: string; // e.g., "LinkedIn", "Indeed", "Company Website", etc.
   sourceUrl?: string; // Hyperlink to the job posting
   appliedDate: string; // ISO 8601 date string (YYYY-MM-DDTHH:mm:ss.sssZ)
-  status: 'applied' | 'rejected' | 'no-response'; // Status of the application
+  status: 'applied' | 'rejected' | 'no-response' | 'interview'; // Status of the application
   notes?: string; // Optional notes about the application
+  eventId?: string; // ID of the linked interview event (if status is 'interview')
 }
 
 const APPLICATIONS_KEY_PREFIX = 'application_';
@@ -166,7 +167,7 @@ export interface ApplicationStats {
   total: number;
   applied: number;
   rejected: number;
-  noResponse: number;
+  interview: number;
 }
 
 export const getApplicationStats = async (): Promise<ApplicationStats> => {
@@ -176,19 +177,20 @@ export const getApplicationStats = async (): Promise<ApplicationStats> => {
       total: allApplications.length,
       applied: 0,
       rejected: 0,
-      noResponse: 0,
+      interview: 0,
     };
 
     allApplications.forEach(app => {
       if (app.status === 'applied') stats.applied++;
       else if (app.status === 'rejected') stats.rejected++;
-      else if (app.status === 'no-response') stats.noResponse++;
+      else if (app.status === 'interview') stats.interview++;
+      // Note: 'no-response' status is still available but not shown in stats
     });
 
     return stats;
   } catch (error) {
     console.error('Error getting application stats:', error);
-    return { total: 0, applied: 0, rejected: 0, noResponse: 0 };
+    return { total: 0, applied: 0, rejected: 0, interview: 0 };
   }
 };
 

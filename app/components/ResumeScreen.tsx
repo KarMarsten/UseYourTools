@@ -8,7 +8,10 @@ import {
   Alert,
   TextInput,
   Modal,
+  Platform,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
+import * as FileSystem from 'expo-file-system';
 import { usePreferences } from '../context/PreferencesContext';
 import {
   ResumeInfo,
@@ -17,6 +20,7 @@ import {
   deleteResume,
   shareResume,
   updateResumeName,
+  toggleResumeActive,
 } from '../utils/resumes';
 
 interface ResumeScreenProps {
@@ -27,6 +31,8 @@ export default function ResumeScreen({ onBack }: ResumeScreenProps) {
   const [resumes, setResumes] = useState<ResumeInfo[]>([]);
   const [editingName, setEditingName] = useState<ResumeInfo | null>(null);
   const [newName, setNewName] = useState('');
+  const [previewResume, setPreviewResume] = useState<ResumeInfo | null>(null);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
   const { colorScheme } = usePreferences();
 
   useEffect(() => {
@@ -112,6 +118,49 @@ export default function ResumeScreen({ onBack }: ResumeScreenProps) {
     }
   };
 
+  const handlePreview = async (resume: ResumeInfo) => {
+    try {
+      // Check if file exists
+      const fileInfo = await FileSystem.getInfoAsync(resume.fileUri);
+      if (!fileInfo.exists) {
+        Alert.alert('Error', 'Resume file not found');
+        return;
+      }
+
+      // For PDF files, we can preview with WebView
+      if (resume.mimeType === 'application/pdf') {
+        setPreviewResume(resume);
+        // WebView can handle file:// URIs on both iOS and Android
+        // Ensure the URI format is correct
+        let previewUrl = resume.fileUri;
+        if (Platform.OS === 'android' && !resume.fileUri.startsWith('file://')) {
+          previewUrl = `file://${resume.fileUri}`;
+        }
+        setPreviewUri(previewUrl);
+      } else {
+        // For non-PDF files, suggest sharing or opening in another app
+        Alert.alert(
+          'Preview Not Available',
+          'PDF preview is available. For other file types, please use the Share button to open in another app.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Error previewing resume:', error);
+      Alert.alert('Error', 'Failed to preview resume');
+    }
+  };
+
+  const handleToggleActive = async (resume: ResumeInfo) => {
+    try {
+      await toggleResumeActive(resume.id);
+      await loadResumes();
+    } catch (error) {
+      console.error('Error toggling resume active status:', error);
+      Alert.alert('Error', 'Failed to update resume status');
+    }
+  };
+
   const formatFileSize = (bytes?: number): string => {
     if (!bytes) return 'Unknown size';
     if (bytes < 1024) return `${bytes} B`;
@@ -157,9 +206,35 @@ export default function ResumeScreen({ onBack }: ResumeScreenProps) {
               style={[styles.resumeCard, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}
             >
               <View style={styles.resumeHeader}>
-                <Text style={[styles.resumeName, { color: colorScheme.colors.text }]}>
-                  {resume.name}
-                </Text>
+                <View style={styles.resumeHeaderTop}>
+                  <Text style={[styles.resumeName, { color: colorScheme.colors.text }]}>
+                    {resume.name}
+                  </Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.activeBadge,
+                      {
+                        backgroundColor: (resume.isActive ?? true) 
+                          ? colorScheme.colors.primary + '20' 
+                          : colorScheme.colors.textSecondary + '20',
+                      },
+                    ]}
+                    onPress={() => handleToggleActive(resume)}
+                  >
+                    <Text
+                      style={[
+                        styles.activeBadgeText,
+                        {
+                          color: (resume.isActive ?? true)
+                            ? colorScheme.colors.primary
+                            : colorScheme.colors.textSecondary,
+                        },
+                      ]}
+                    >
+                      {(resume.isActive ?? true) ? '✓ Active' : '○ Inactive'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
                 <Text style={[styles.resumeFileName, { color: colorScheme.colors.textSecondary }]}>
                   {resume.fileName}
                 </Text>
@@ -180,29 +255,81 @@ export default function ResumeScreen({ onBack }: ResumeScreenProps) {
               </View>
 
               <View style={styles.resumeActions}>
+                {resume.mimeType === 'application/pdf' && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: colorScheme.colors.primary }]}
+                    onPress={() => handlePreview(resume)}
+                  >
+                    <Text style={styles.actionButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                      Preview
+                    </Text>
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: colorScheme.colors.primary }]}
+                  style={[styles.actionButton, { backgroundColor: colorScheme.colors.secondary || '#6b5b4f' }]}
                   onPress={() => handleShare(resume)}
                 >
-                  <Text style={styles.actionButtonText}>Share</Text>
+                  <Text style={styles.actionButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                    Share
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: colorScheme.colors.secondary || colorScheme.colors.primary }]}
+                  style={[styles.actionButton, { backgroundColor: colorScheme.colors.secondary || '#6b5b4f' }]}
                   onPress={() => handleRename(resume)}
                 >
-                  <Text style={styles.actionButtonText}>Rename</Text>
+                  <Text style={styles.actionButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                    Rename
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionButton, styles.deleteButton]}
                   onPress={() => handleDelete(resume)}
                 >
-                  <Text style={[styles.actionButtonText, styles.deleteButtonText]}>Delete</Text>
+                  <Text style={[styles.actionButtonText, styles.deleteButtonText]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                    Delete
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
           ))
         )}
       </ScrollView>
+
+      {/* Preview Modal */}
+      <Modal
+        visible={previewResume !== null}
+        animationType="slide"
+        onRequestClose={() => {
+          setPreviewResume(null);
+          setPreviewUri(null);
+        }}
+      >
+        <View style={styles.previewContainer}>
+          <View style={[styles.previewHeader, { backgroundColor: colorScheme.colors.surface, borderBottomColor: colorScheme.colors.border }]}>
+            <TouchableOpacity
+              onPress={() => {
+                setPreviewResume(null);
+                setPreviewUri(null);
+              }}
+              style={styles.previewCloseButton}
+            >
+              <Text style={[styles.previewCloseText, { color: colorScheme.colors.primary }]}>← Close</Text>
+            </TouchableOpacity>
+            <Text style={[styles.previewTitle, { color: colorScheme.colors.text }]}>
+              {previewResume?.name || 'Preview'}
+            </Text>
+            <View style={{ width: 60 }} />
+          </View>
+          {previewUri && (
+            <WebView
+              source={{ uri: previewUri }}
+              style={styles.previewWebView}
+              startInLoadingState
+              scalesPageToFit
+            />
+          )}
+        </View>
+      </Modal>
 
       {/* Rename Modal */}
       <Modal
@@ -319,11 +446,27 @@ const styles = StyleSheet.create({
   resumeHeader: {
     marginBottom: 12,
   },
+  resumeHeaderTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   resumeName: {
     fontSize: 18,
     fontWeight: '600',
     color: '#4A3A2A',
-    marginBottom: 4,
+    flex: 1,
+    marginRight: 8,
+  },
+  activeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  activeBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   resumeFileName: {
     fontSize: 14,
@@ -339,19 +482,23 @@ const styles = StyleSheet.create({
   },
   resumeActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   actionButton: {
     flex: 1,
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#8C6A4A',
+    minWidth: 0,
   },
   actionButtonText: {
     color: '#f5f5dc',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
+    textAlign: 'center',
   },
   deleteButton: {
     backgroundColor: 'transparent',
@@ -404,6 +551,36 @@ const styles = StyleSheet.create({
   modalButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  previewContainer: {
+    flex: 1,
+    backgroundColor: '#f5f5dc',
+  },
+  previewHeader: {
+    padding: 16,
+    paddingTop: 50,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  previewCloseButton: {
+    padding: 8,
+  },
+  previewCloseText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8C6A4A',
+  },
+  previewTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#4A3A2A',
+    flex: 1,
+    textAlign: 'center',
+  },
+  previewWebView: {
+    flex: 1,
   },
 });
 

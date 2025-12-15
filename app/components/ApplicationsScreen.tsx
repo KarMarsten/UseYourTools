@@ -9,6 +9,7 @@ import {
   Alert,
   Linking,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { usePreferences } from '../context/PreferencesContext';
 import {
@@ -21,23 +22,27 @@ import {
   hasAppliedToPosition,
   ApplicationStats,
 } from '../utils/applications';
+import { Event, getEventById } from '../utils/events';
+import { getDateKey } from '../utils/timeFormatter';
 
 interface ApplicationsScreenProps {
   onBack: () => void;
+  onNavigateToCalendar?: () => void;
+  onSelectDate?: (date: Date) => void;
 }
 
-export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) {
+export default function ApplicationsScreen({ onBack, onNavigateToCalendar, onSelectDate }: ApplicationsScreenProps) {
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [stats, setStats] = useState<ApplicationStats>({
     total: 0,
     applied: 0,
     rejected: 0,
-    noResponse: 0,
+    interview: 0,
   });
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingApplication, setEditingApplication] = useState<JobApplication | null>(null);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'applied' | 'rejected' | 'no-response'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'applied' | 'rejected' | 'interview'>('all');
 
   // Form state
   const [positionTitle, setPositionTitle] = useState('');
@@ -45,10 +50,10 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
   const [source, setSource] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [appliedDate, setAppliedDate] = useState(new Date().toISOString().slice(0, 16)); // YYYY-MM-DDTHH:mm format
-  const [status, setStatus] = useState<'applied' | 'rejected' | 'no-response'>('applied');
+  const [status, setStatus] = useState<'applied' | 'rejected' | 'no-response' | 'interview'>('applied');
   const [notes, setNotes] = useState('');
 
-  const { colorScheme } = usePreferences();
+  const { colorScheme, preferences } = usePreferences();
 
   useEffect(() => {
     loadApplications();
@@ -108,7 +113,40 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
     setCompany('');
     setSource('');
     setSourceUrl('');
-    setAppliedDate(new Date().toISOString().slice(0, 16));
+    // Set default date to current date/time in user's preferred timezone
+    const now = new Date();
+    const timezone = preferences?.timezoneMode === 'custom' && preferences?.timezone
+      ? preferences.timezone
+      : undefined;
+    
+    let formattedDate: string;
+    if (timezone) {
+      const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+      const parts = formatter.formatToParts(now);
+      const year = parts.find(p => p.type === 'year')?.value || '';
+      const month = parts.find(p => p.type === 'month')?.value || '';
+      const day = parts.find(p => p.type === 'day')?.value || '';
+      const hour = parts.find(p => p.type === 'hour')?.value || '';
+      const minute = parts.find(p => p.type === 'minute')?.value || '';
+      formattedDate = `${year}-${month}-${day}T${hour}:${minute}`;
+    } else {
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+    
+    setAppliedDate(formattedDate);
     setStatus('applied');
     setNotes('');
     setEditingApplication(null);
@@ -121,10 +159,43 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
     setCompany(app.company);
     setSource(app.source);
     setSourceUrl(app.sourceUrl || '');
-    // Convert ISO date to local datetime format for input
+    // Convert ISO date to local datetime format for input, respecting user's timezone preference
     const date = new Date(app.appliedDate);
-    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-    setAppliedDate(localDate.toISOString().slice(0, 16));
+    const timezone = preferences?.timezoneMode === 'custom' && preferences?.timezone
+      ? preferences.timezone
+      : undefined;
+    
+    // Format the date in the user's preferred timezone for the input field
+    let formattedDate: string;
+    if (timezone) {
+      // Use Intl.DateTimeFormat to format in the specified timezone
+      const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+      const parts = formatter.formatToParts(date);
+      const year = parts.find(p => p.type === 'year')?.value || '';
+      const month = parts.find(p => p.type === 'month')?.value || '';
+      const day = parts.find(p => p.type === 'day')?.value || '';
+      const hour = parts.find(p => p.type === 'hour')?.value || '';
+      const minute = parts.find(p => p.type === 'minute')?.value || '';
+      formattedDate = `${year}-${month}-${day}T${hour}:${minute}`;
+    } else {
+      // Use device timezone
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+    
+    setAppliedDate(formattedDate);
     setStatus(app.status);
     setNotes(app.notes || '');
     setShowAddForm(true);
@@ -158,6 +229,7 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
   const saveApplicationData = async () => {
     try {
       // Convert local datetime to ISO string
+      // The input format (YYYY-MM-DDTHH:mm) is interpreted as local time by Date constructor
       const dateObj = new Date(appliedDate);
       const isoDate = dateObj.toISOString();
 
@@ -170,6 +242,7 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
         appliedDate: isoDate,
         status,
         notes: notes.trim() || undefined,
+        eventId: editingApplication?.eventId, // Preserve existing eventId
       };
 
       await saveApplication(application);
@@ -180,6 +253,22 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
     } catch (error) {
       console.error('Error saving application:', error);
       Alert.alert('Error', 'Failed to save application');
+    }
+  };
+
+  const handleStatusChange = async (app: JobApplication, newStatus: 'applied' | 'rejected' | 'interview') => {
+    try {
+      const updatedApp: JobApplication = {
+        ...app,
+        status: newStatus,
+      };
+      await saveApplication(updatedApp);
+      await loadApplications();
+      await loadStats();
+      Alert.alert('Success', `Status changed to ${getStatusLabel(newStatus)}`);
+    } catch (error) {
+      console.error('Error changing status:', error);
+      Alert.alert('Error', 'Failed to change status');
     }
   };
 
@@ -224,12 +313,20 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
 
   const formatDate = (isoDate: string): string => {
     const date = new Date(isoDate);
-    return date.toLocaleDateString('en-US', {
+    const timezone = preferences?.timezoneMode === 'custom' && preferences?.timezone
+      ? preferences.timezone
+      : undefined; // undefined means use device timezone
+    
+    const use12Hour = preferences?.use12HourClock ?? false;
+    
+    return date.toLocaleString('en-US', {
+      timeZone: timezone,
       month: 'short',
       day: 'numeric',
       year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
+      hour12: use12Hour,
     });
   };
 
@@ -241,6 +338,8 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
         return '#d32f2f';
       case 'no-response':
         return '#f57c00';
+      case 'interview':
+        return '#1976d2'; // Blue color for interviews
       default:
         return colorScheme.colors.textSecondary;
     }
@@ -254,6 +353,8 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
         return 'Rejected';
       case 'no-response':
         return 'No Response';
+      case 'interview':
+        return 'Interview';
       default:
         return status;
     }
@@ -261,7 +362,11 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
 
   if (showAddForm) {
     return (
-      <View style={[styles.container, { backgroundColor: colorScheme.colors.background }]}>
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: colorScheme.colors.background }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
         <View style={[styles.header, { backgroundColor: colorScheme.colors.surface, borderBottomColor: colorScheme.colors.border }]}>
           <TouchableOpacity onPress={resetForm} style={styles.backButton}>
             <Text style={[styles.backButtonText, { color: colorScheme.colors.primary }]}>← Cancel</Text>
@@ -271,7 +376,12 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
           </Text>
         </View>
 
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.formContent}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.formContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
           <View style={styles.formGroup}>
             <Text style={[styles.label, { color: colorScheme.colors.text }]}>Position Title *</Text>
             <TextInput
@@ -335,7 +445,7 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
           <View style={styles.formGroup}>
             <Text style={[styles.label, { color: colorScheme.colors.text }]}>Status</Text>
             <View style={styles.statusButtons}>
-              {(['applied', 'rejected', 'no-response'] as const).map((stat) => (
+              {(['applied', 'rejected', 'no-response', 'interview'] as const).map((stat) => (
                 <TouchableOpacity
                   key={stat}
                   style={[
@@ -373,6 +483,7 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
               placeholderTextColor={colorScheme.colors.textSecondary}
               multiline
               numberOfLines={4}
+              textAlignVertical="top"
             />
           </View>
 
@@ -382,8 +493,9 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
           >
             <Text style={styles.saveButtonText}>Save Application</Text>
           </TouchableOpacity>
+          <View style={{ height: 100 }} />
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
     );
   }
 
@@ -420,8 +532,8 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
           <Text style={[styles.statLabel, { color: colorScheme.colors.textSecondary }]}>Rejected</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: '#f57c00' }]}>{stats.noResponse}</Text>
-          <Text style={[styles.statLabel, { color: colorScheme.colors.textSecondary }]}>No Response</Text>
+          <Text style={[styles.statValue, { color: '#1976d2' }]}>{stats.interview}</Text>
+          <Text style={[styles.statLabel, { color: colorScheme.colors.textSecondary }]}>Interview</Text>
         </View>
       </View>
 
@@ -435,7 +547,7 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
           placeholderTextColor={colorScheme.colors.textSecondary}
         />
         <View style={styles.filterButtons}>
-          {(['all', 'applied', 'rejected', 'no-response'] as const).map((filter) => (
+          {(['all', 'applied', 'rejected', 'interview'] as const).map((filter) => (
             <TouchableOpacity
               key={filter}
               style={[
@@ -452,6 +564,9 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
                   styles.filterButtonText,
                   { color: filterStatus === filter ? '#fff' : colorScheme.colors.text },
                 ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
               >
                 {filter === 'all' ? 'All' : getStatusLabel(filter)}
               </Text>
@@ -479,16 +594,34 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
                   <Text style={[styles.positionTitle, { color: colorScheme.colors.text }]}>
                     {app.positionTitle}
                   </Text>
-                  <View
+                  <TouchableOpacity
                     style={[
                       styles.statusBadge,
                       { backgroundColor: getStatusColor(app.status) + '20' },
                     ]}
+                    onPress={() => {
+                      // Get available status options (excluding current status and no-response)
+                      const availableStatuses = (['applied', 'rejected', 'interview'] as const).filter(
+                        s => s !== app.status
+                      );
+                      
+                      Alert.alert(
+                        'Change Status',
+                        `Change status for ${app.company}?`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          ...availableStatuses.map((newStatus) => ({
+                            text: getStatusLabel(newStatus),
+                            onPress: () => handleStatusChange(app, newStatus),
+                          })),
+                        ]
+                      );
+                    }}
                   >
                     <Text style={[styles.statusBadgeText, { color: getStatusColor(app.status) }]}>
                       {getStatusLabel(app.status)}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
                 <Text style={[styles.companyName, { color: colorScheme.colors.primary }]}>
                   {app.company}
@@ -513,6 +646,49 @@ export default function ApplicationsScreen({ onBack }: ApplicationsScreenProps) 
                   <Text style={[styles.notesText, { color: colorScheme.colors.textSecondary }]}>
                     Notes: {app.notes}
                   </Text>
+                )}
+                {app.status === 'interview' && app.eventId && (
+                  <TouchableOpacity
+                    onPress={async () => {
+                      try {
+                        const event = await getEventById(app.eventId!);
+                        if (event && onSelectDate) {
+                          // Parse the dateKey to create a Date object
+                          const [year, month, day] = event.dateKey.split('-').map(Number);
+                          const eventDate = new Date(year, month - 1, day);
+                          onSelectDate(eventDate);
+                          // Navigation happens automatically via onSelectDate -> dailyPlanner
+                        } else {
+                          Alert.alert('Error', 'Interview event not found');
+                        }
+                      } catch (error) {
+                        console.error('Error loading event:', error);
+                        Alert.alert('Error', 'Failed to load interview event');
+                      }
+                    }}
+                  >
+                    <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
+                      📅 View Interview Event
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                {app.status === 'interview' && !app.eventId && (
+                  <TouchableOpacity
+                    onPress={async () => {
+                      if (onNavigateToCalendar) {
+                        Alert.alert(
+                          'Create Interview Event',
+                          'To create an interview event, go to the Calendar, select the interview date, and create a new Interview event. The event can be linked to this application.',
+                          [{ text: 'OK' }]
+                        );
+                        onNavigateToCalendar();
+                      }
+                    }}
+                  >
+                    <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
+                      ➕ Create Interview Event
+                    </Text>
+                  </TouchableOpacity>
                 )}
               </View>
 
@@ -610,18 +786,24 @@ const styles = StyleSheet.create({
   },
   filterButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 4,
+    flexWrap: 'nowrap',
   },
   filterButton: {
-    flex: 1,
-    padding: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 8,
     borderRadius: 6,
     borderWidth: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    minWidth: 65,
   },
   filterButtonText: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '500',
+    textAlign: 'center',
+    flexShrink: 1,
   },
   scrollView: {
     flex: 1,
@@ -631,7 +813,7 @@ const styles = StyleSheet.create({
   },
   formContent: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 150,
   },
   applicationCard: {
     backgroundColor: '#E7D7C1',
@@ -682,7 +864,6 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: 14,
     color: '#8C6A4A',
-    textDecorationLine: 'underline',
     marginTop: 4,
   },
   notesText: {
