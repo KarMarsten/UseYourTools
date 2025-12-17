@@ -9,6 +9,7 @@ import { DAY_THEMES } from './plannerData';
 import { getDayThemeForDate } from './plannerData';
 import { formatTime12Hour, getDateKey } from './timeFormatter';
 import { ColorScheme } from './colorSchemes';
+import { JobApplication } from './applications';
 
 /**
  * Generate HTML for weekly schedule PDF
@@ -259,13 +260,16 @@ export const generateWeeklyScheduleHTML = (
 /**
  * Generate HTML for unemployment report PDF
  */
-export const generateUnemploymentReportHTML = (weekStart: Date, events: Event[], colorScheme: ColorScheme): string => {
-  const days = [];
+export const generateUnemploymentReportHTML = (weekStart: Date, events: Event[], applications: JobApplication[], colorScheme: ColorScheme): string => {
+  const days: Date[] = [];
   for (let i = 0; i < 7; i++) {
     const date = new Date(weekStart);
     date.setDate(weekStart.getDate() + i);
     days.push(date);
   }
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
 
   // Filter to only interviews and appointments
   const relevantEvents = events.filter(e => 
@@ -277,6 +281,20 @@ export const generateUnemploymentReportHTML = (weekStart: Date, events: Event[],
     const [aH, aM] = a.startTime.split(':').map(Number);
     const [bH, bM] = b.startTime.split(':').map(Number);
     return (aH * 60 + aM) - (bH * 60 + bM);
+  });
+
+  // Filter to rejected applications within the week
+  const rejectedApplications = applications.filter(app => {
+    if (app.status !== 'rejected') return false;
+    const appliedDate = new Date(app.appliedDate);
+    appliedDate.setHours(0, 0, 0, 0);
+    const weekStartNormalized = new Date(weekStart);
+    weekStartNormalized.setHours(0, 0, 0, 0);
+    const weekEndNormalized = new Date(weekEnd);
+    weekEndNormalized.setHours(0, 0, 0, 0);
+    return appliedDate >= weekStartNormalized && appliedDate <= weekEndNormalized;
+  }).sort((a, b) => {
+    return new Date(a.appliedDate).getTime() - new Date(b.appliedDate).getTime();
   });
 
   let html = `
@@ -354,18 +372,20 @@ export const generateUnemploymentReportHTML = (weekStart: Date, events: Event[],
             <th>Contact Person</th>
             <th>Phone</th>
             <th>Email</th>
+            <th>Rejection Reason</th>
           </tr>
         </thead>
         <tbody>
   `;
 
-  if (relevantEvents.length === 0) {
+  if (relevantEvents.length === 0 && rejectedApplications.length === 0) {
     html += `
       <tr>
-        <td colspan="8" class="no-events">No interviews or appointments scheduled for this week</td>
+        <td colspan="9" class="no-events">No interviews, appointments, or rejected applications for this week</td>
       </tr>
     `;
   } else {
+    // Add events first
     relevantEvents.forEach(event => {
       // Parse dateKey as local date components to avoid timezone issues
       // dateKey is in format "YYYY-MM-DD"
@@ -386,6 +406,28 @@ export const generateUnemploymentReportHTML = (weekStart: Date, events: Event[],
           <td>${event.contactName || '-'}</td>
           <td>${event.phone || '-'}</td>
           <td>${event.email || '-'}</td>
+          <td>-</td>
+        </tr>
+      `;
+    });
+
+    // Add rejected applications
+    rejectedApplications.forEach(app => {
+      const appliedDate = new Date(app.appliedDate);
+      const dateStr = appliedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const timeStr = appliedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+      html += `
+        <tr>
+          <td>${dateStr}</td>
+          <td>${timeStr}</td>
+          <td>Application Rejected</td>
+          <td>${app.company || '-'}</td>
+          <td>${app.positionTitle || '-'}</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td>${app.rejectedReason || '-'}</td>
         </tr>
       `;
     });
@@ -435,9 +477,9 @@ export const exportWeeklySchedulePDF = async (
 /**
  * Export unemployment report as PDF
  */
-export const exportUnemploymentReportPDF = async (weekStart: Date, events: Event[], colorScheme: ColorScheme): Promise<void> => {
+export const exportUnemploymentReportPDF = async (weekStart: Date, events: Event[], applications: JobApplication[], colorScheme: ColorScheme): Promise<void> => {
   try {
-    const html = generateUnemploymentReportHTML(weekStart, events, colorScheme);
+    const html = generateUnemploymentReportHTML(weekStart, events, applications, colorScheme);
 
     // printToFileAsync creates a file in a shareable location, we can use it directly
     const { uri } = await Print.printToFileAsync({ html, base64: false });

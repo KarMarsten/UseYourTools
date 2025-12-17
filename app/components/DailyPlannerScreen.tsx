@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, Text, View, ScrollView, TextInput, TouchableOpacity, Alert, PanResponder } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDayThemeForDate, getDayName } from '../utils/plannerData';
 import { loadPreferences } from '../utils/preferences';
@@ -16,6 +16,7 @@ import AddEventModal from './AddEventModal';
 interface DailyPlannerScreenProps {
   date: Date;
   onBack: () => void;
+  onDateChange?: (newDate: Date) => void;
   initialApplicationId?: string;
 }
 
@@ -23,7 +24,7 @@ interface DayEntries {
   [timeBlockId: string]: string;
 }
 
-export default function DailyPlannerScreen({ date, onBack, initialApplicationId }: DailyPlannerScreenProps) {
+export default function DailyPlannerScreen({ date, onBack, onDateChange, initialApplicationId }: DailyPlannerScreenProps) {
   const [entries, setEntries] = useState<DayEntries>({});
   const [timeBlocks, setTimeBlocks] = useState<GeneratedTimeBlock[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
@@ -41,6 +42,43 @@ export default function DailyPlannerScreen({ date, onBack, initialApplicationId 
   const dayName = getDayName(normalizedDate);
   
   const use12Hour = preferences?.use12HourClock ?? false;
+
+  // PanResponder for swipe gestures - use useRef to memoize but update date reference
+  const dateRef = useRef(date);
+  useEffect(() => {
+    dateRef.current = date;
+  }, [date]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Only respond to horizontal swipes (more horizontal than vertical)
+        // Don't interfere with scrolling
+        return Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 20;
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        const SWIPE_THRESHOLD = 50; // Minimum distance for a swipe
+        
+        if (Math.abs(gestureState.dx) > SWIPE_THRESHOLD && onDateChange) {
+          const currentDate = dateRef.current;
+          if (gestureState.dx > 0) {
+            // Swipe right - go to previous day
+            const prevDate = new Date(currentDate);
+            prevDate.setDate(prevDate.getDate() - 1);
+            prevDate.setHours(0, 0, 0, 0);
+            onDateChange(prevDate);
+          } else {
+            // Swipe left - go to next day
+            const nextDate = new Date(currentDate);
+            nextDate.setDate(nextDate.getDate() + 1);
+            nextDate.setHours(0, 0, 0, 0);
+            onDateChange(nextDate);
+          }
+        }
+      },
+    })
+  ).current;
 
   useEffect(() => {
     loadEntries();
@@ -215,7 +253,7 @@ export default function DailyPlannerScreen({ date, onBack, initialApplicationId 
   };
 
   return (
-    <View style={[styles.container, dynamicStyles.container]}>
+    <View style={[styles.container, dynamicStyles.container]} {...panResponder.panHandlers}>
       <View style={[styles.header, dynamicStyles.header]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Text style={[styles.backButtonText, dynamicStyles.backButtonText]}>← Calendar</Text>
@@ -275,11 +313,22 @@ export default function DailyPlannerScreen({ date, onBack, initialApplicationId 
                       <Text style={[styles.deleteButtonText, { color: colorScheme.colors.textSecondary }]}>×</Text>
                     </TouchableOpacity>
                   </View>
-                  <Text style={[styles.eventTime, { color: colorScheme.colors.primary }]}>
-                    {event.endTime 
-                      ? formatTimeRange(`${event.startTime}–${event.endTime}`, use12Hour)
-                      : use12Hour ? formatTime12Hour(event.startTime) : event.startTime}
-                  </Text>
+                  <View>
+                    <Text style={[styles.eventTime, { color: colorScheme.colors.primary }]}>
+                      {(() => {
+                        // Parse dateKey to create a Date object
+                        const [year, month, day] = event.dateKey.split('-').map(Number);
+                        const eventDate = new Date(year, month - 1, day);
+                        const formattedDate = formatDate(eventDate);
+                        return formattedDate;
+                      })()}
+                    </Text>
+                    <Text style={[styles.eventTime, { color: colorScheme.colors.primary }]}>
+                      {event.endTime 
+                        ? formatTimeRange(`${event.startTime}–${event.endTime}`, use12Hour)
+                        : use12Hour ? formatTime12Hour(event.startTime) : event.startTime}
+                    </Text>
+                  </View>
                   <Text style={[styles.eventType, { color: colorScheme.colors.textSecondary }]}>
                     {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
                   </Text>
@@ -385,7 +434,7 @@ export default function DailyPlannerScreen({ date, onBack, initialApplicationId 
                 </Text>
                 {block.description && (
                   <Text style={[styles.timeBlockDescription, { color: colorScheme.colors.textSecondary }]}>
-                    • {block.description}
+                    {block.description}
                   </Text>
                 )}
               </View>
@@ -399,10 +448,6 @@ export default function DailyPlannerScreen({ date, onBack, initialApplicationId 
                 value={entries[block.id] || ''}
                 onChangeText={(text) => saveEntry(block.id, text)}
               />
-              <View style={styles.handwritingLines}>
-                <View style={[styles.line, { backgroundColor: colorScheme.colors.border }]} />
-                <View style={[styles.line, { backgroundColor: colorScheme.colors.border }]} />
-              </View>
             </View>
           </View>
         ))}
@@ -509,15 +554,13 @@ const styles = StyleSheet.create({
   },
   timeBlockTitleContainer: {
     flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
   },
   timeBlockTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#4A3A2A',
-    marginRight: 8,
   },
   timeBlockDescription: {
     fontSize: 14,
@@ -538,14 +581,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#C9A66B',
     marginBottom: 8,
-  },
-  handwritingLines: {
-    marginTop: 4,
-  },
-  line: {
-    height: 1,
-    marginBottom: 8,
-    opacity: 0.5,
   },
   dayHeaderTop: {
     flexDirection: 'row',

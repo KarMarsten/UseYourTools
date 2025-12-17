@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { usePreferences } from '../context/PreferencesContext';
 import { getAllEvents } from '../utils/events';
+import { getAllApplications } from '../utils/applications';
 import { exportWeeklySchedulePDF, exportUnemploymentReportPDF, generateWeeklyScheduleHTML, generateUnemploymentReportHTML } from '../utils/pdfExports';
 import { getDateKey } from '../utils/timeFormatter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -97,8 +98,9 @@ export default function ReportsScreen({ onBack, onViewReport }: ReportsScreenPro
     try {
       const weekStart = getWeekStart(selectedWeekDate);
       const allEvents = await getAllEvents();
+      const allApplications = await getAllApplications();
       
-      await exportUnemploymentReportPDF(weekStart, allEvents, colorScheme);
+      await exportUnemploymentReportPDF(weekStart, allEvents, allApplications, colorScheme);
       // Success message is handled by the sharing dialog
     } catch (error) {
       console.error('Error exporting unemployment report:', error);
@@ -128,8 +130,9 @@ export default function ReportsScreen({ onBack, onViewReport }: ReportsScreenPro
     try {
       const weekStart = getWeekStart(selectedWeekDate);
       const allEvents = await getAllEvents();
+      const allApplications = await getAllApplications();
       
-      const html = generateUnemploymentReportHTML(weekStart, allEvents, colorScheme);
+      const html = generateUnemploymentReportHTML(weekStart, allEvents, allApplications, colorScheme);
       onViewReport(html, `Unemployment Report - ${formatWeekRange(selectedWeekDate)}`);
     } catch (error) {
       console.error('Error generating unemployment report:', error);

@@ -13,6 +13,8 @@ export interface UserPreferences {
   timezoneMode: 'device' | 'custom'; // Whether to use device timezone or a custom one
   timezone?: string; // IANA timezone name when timezoneMode is 'custom' (e.g., "America/New_York")
   calendarSyncProvider: 'none' | 'apple' | 'google'; // Which calendar to sync with, if any
+  followUpDaysAfterApplication: number; // Number of days after application to schedule follow-up reminder (default: 7)
+  followUpDaysAfterInterview: number; // Number of days after interview to schedule follow-up reminder (default: 2)
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -26,6 +28,8 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   timezoneMode: 'device',
   timezone: '',
   calendarSyncProvider: 'none',
+  followUpDaysAfterApplication: 7, // Default: 7 days after application
+  followUpDaysAfterInterview: 2, // Default: 2 days after interview
 };
 
 const PREFERENCES_KEY = 'planner_preferences';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,6 +11,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   Modal,
+  Keyboard,
 } from 'react-native';
 import { usePreferences } from '../context/PreferencesContext';
 import {
@@ -23,7 +24,7 @@ import {
   hasAppliedToPosition,
   ApplicationStats,
 } from '../utils/applications';
-import { Event, getEventById, getAllEvents, saveEvent } from '../utils/events';
+import { Event, getAllEvents, saveEvent } from '../utils/events';
 import { getDateKey, formatTime12Hour } from '../utils/timeFormatter';
 import AddEventModal from './AddEventModal';
 import { addApplicationEventId } from '../utils/applications';
@@ -63,9 +64,10 @@ import { WebView } from 'react-native-webview';
 interface ApplicationsScreenProps {
   onBack: () => void;
   onSelectDate?: (date: Date, applicationId?: string) => void;
+  onCreateOffer?: (applicationId: string) => void;
 }
 
-export default function ApplicationsScreen({ onBack, onSelectDate }: ApplicationsScreenProps) {
+export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer }: ApplicationsScreenProps) {
   const [activeTab, setActiveTab] = useState<'applications' | 'resumes' | 'coverLetters'>('applications');
   
   const [applications, setApplications] = useState<JobApplication[]>([]);
@@ -100,6 +102,7 @@ export default function ApplicationsScreen({ onBack, onSelectDate }: Application
   const [dateInputText, setDateInputText] = useState('');
   const [status, setStatus] = useState<'applied' | 'rejected' | 'interview'>('applied');
   const [notes, setNotes] = useState('');
+  const [rejectedReason, setRejectedReason] = useState('');
   const [selectedResumeId, setSelectedResumeId] = useState<string | undefined>(undefined);
   const [selectedCoverLetterId, setSelectedCoverLetterId] = useState<string | undefined>(undefined);
   
@@ -596,6 +599,7 @@ export default function ApplicationsScreen({ onBack, onSelectDate }: Application
     // This code is no longer needed - using selectedDate/selectedHour/selectedMinute instead
     setStatus('applied');
     setNotes('');
+    setRejectedReason('');
     setSelectedResumeId(undefined);
     setSelectedCoverLetterId(undefined);
     setEditingApplication(null);
@@ -631,6 +635,7 @@ export default function ApplicationsScreen({ onBack, onSelectDate }: Application
     // Map 'no-response' to 'applied' since 'no-response' is no longer available as an option
     setStatus(app.status === 'no-response' ? 'applied' : app.status);
     setNotes(app.notes || '');
+    setRejectedReason(app.rejectedReason || '');
     setSelectedResumeId(app.resumeId);
     setSelectedCoverLetterId(app.coverLetterId);
     setShowAddForm(true);
@@ -687,6 +692,7 @@ export default function ApplicationsScreen({ onBack, onSelectDate }: Application
         appliedDate: isoDate,
         status,
         notes: notes.trim() || undefined,
+        rejectedReason: status === 'rejected' ? rejectedReason.trim() || undefined : undefined,
         eventIds: editingApplication?.eventIds || ((editingApplication as any)?.eventId ? [(editingApplication as any).eventId] : []), // Preserve existing eventIds (migrate from eventId if needed)
         resumeId: selectedResumeId || undefined,
         coverLetterId: selectedCoverLetterId || undefined,
@@ -993,41 +999,39 @@ export default function ApplicationsScreen({ onBack, onSelectDate }: Application
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={[styles.label, { color: colorScheme.colors.text }]}>Applied Date & Time</Text>
-            <View style={styles.timeRow}>
-              <TouchableOpacity
-                style={[
-                  styles.timePickerButton,
-                  {
-                    backgroundColor: colorScheme.colors.surface,
-                    borderColor: colorScheme.colors.border,
-                    flex: 1,
-                    marginRight: 6,
-                  },
-                ]}
-                onPress={() => setShowDatePicker(true)}
-              >
-                <Text style={[styles.timePickerText, { color: colorScheme.colors.text }]}>
-                  {formatDateDisplay(selectedDate)}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.timePickerButton,
-                  {
-                    backgroundColor: colorScheme.colors.surface,
-                    borderColor: colorScheme.colors.border,
-                    flex: 1,
-                    marginLeft: 6,
-                  },
-                ]}
-                onPress={() => setShowTimePicker(true)}
-              >
-                <Text style={[styles.timePickerText, { color: colorScheme.colors.text }]}>
-                  {formatTimeDisplay(selectedHour, selectedMinute, selectedPeriod)}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <Text style={[styles.label, { color: colorScheme.colors.text }]}>Applied Date</Text>
+            <TouchableOpacity
+              style={[
+                styles.datePickerButton,
+                {
+                  backgroundColor: colorScheme.colors.surface,
+                  borderColor: colorScheme.colors.border,
+                },
+              ]}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={[styles.datePickerText, { color: colorScheme.colors.text }]}>
+                {formatDateDisplay(selectedDate)}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={[styles.label, { color: colorScheme.colors.text }]}>Applied Time</Text>
+            <TouchableOpacity
+              style={[
+                styles.datePickerButton,
+                {
+                  backgroundColor: colorScheme.colors.surface,
+                  borderColor: colorScheme.colors.border,
+                },
+              ]}
+              onPress={() => setShowTimePicker(true)}
+            >
+              <Text style={[styles.datePickerText, { color: colorScheme.colors.text }]}>
+                {formatTimeDisplay(selectedHour, selectedMinute, selectedPeriod)}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.formGroup}>
@@ -1058,6 +1062,25 @@ export default function ApplicationsScreen({ onBack, onSelectDate }: Application
             </View>
           </View>
 
+          {status === 'rejected' && (
+            <View style={styles.formGroup}>
+              <Text style={[styles.label, { color: colorScheme.colors.text }]}>Rejection Reason (Optional)</Text>
+              <TextInput
+                style={[
+                  styles.textArea,
+                  { backgroundColor: colorScheme.colors.surface, color: colorScheme.colors.text, borderColor: colorScheme.colors.border },
+                ]}
+                value={rejectedReason}
+                onChangeText={setRejectedReason}
+                placeholder="e.g., Not a good fit, Overqualified, etc."
+                placeholderTextColor={colorScheme.colors.textSecondary}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+            </View>
+          )}
+
           <View style={styles.formGroup}>
             <Text style={[styles.label, { color: colorScheme.colors.text }]}>Notes (Optional)</Text>
             <TextInput
@@ -1074,6 +1097,15 @@ export default function ApplicationsScreen({ onBack, onSelectDate }: Application
               textAlignVertical="top"
             />
           </View>
+
+          {editingApplication && onCreateOffer && (
+            <TouchableOpacity
+              style={[styles.createOfferButton, { backgroundColor: colorScheme.colors.accent, marginBottom: 12 }]}
+              onPress={() => onCreateOffer(editingApplication.id)}
+            >
+              <Text style={styles.createOfferButtonText}>🎁 Create Offer</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[styles.saveButton, { backgroundColor: colorScheme.colors.primary }]}
@@ -1094,17 +1126,23 @@ export default function ApplicationsScreen({ onBack, onSelectDate }: Application
             setShowDatePicker(false);
             setDateInputText('');
           }}
+          onShow={() => Keyboard.dismiss()}
         >
           <View style={styles.modalOverlay}>
             <TouchableOpacity 
-              style={{ flex: 1 }} 
+              style={{ flex: 1, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} 
               onPress={() => {
                 setShowDatePicker(false);
                 setDateInputText('');
               }} 
               activeOpacity={1} 
             />
-            <View style={[styles.modalContent, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+              style={{ width: '100%', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <View style={[styles.modalContent, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}>
               <Text style={[styles.modalTitle, { color: colorScheme.colors.text }]}>Select Date</Text>
               <Text style={[styles.hint, { color: colorScheme.colors.textSecondary, marginBottom: 8 }]}>
                 Current: {formatDateDisplay(selectedDate)}
@@ -1192,6 +1230,7 @@ export default function ApplicationsScreen({ onBack, onSelectDate }: Application
                 </TouchableOpacity>
               </View>
             </View>
+            </KeyboardAvoidingView>
           </View>
         </Modal>
       )}
@@ -1289,15 +1328,15 @@ export default function ApplicationsScreen({ onBack, onSelectDate }: Application
               <Text style={[styles.statLabel, { color: colorScheme.colors.textSecondary }]}>Total</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colorScheme.colors.primary }]}>{stats.applied}</Text>
+              <Text style={[styles.statValue, { color: colorScheme.colors.text }]}>{stats.applied}</Text>
               <Text style={[styles.statLabel, { color: colorScheme.colors.textSecondary }]}>Applied</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: '#d32f2f' }]}>{stats.rejected}</Text>
+              <Text style={[styles.statValue, { color: colorScheme.colors.text }]}>{stats.rejected}</Text>
               <Text style={[styles.statLabel, { color: colorScheme.colors.textSecondary }]}>Rejected</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: '#1976d2' }]}>{stats.interview}</Text>
+              <Text style={[styles.statValue, { color: colorScheme.colors.text }]}>{stats.interview}</Text>
               <Text style={[styles.statLabel, { color: colorScheme.colors.textSecondary }]}>Interview</Text>
             </View>
           </View>
@@ -1398,8 +1437,32 @@ export default function ApplicationsScreen({ onBack, onSelectDate }: Application
                   📍 Source: {app.source}
                 </Text>
                 <Text style={[styles.detailText, { color: colorScheme.colors.textSecondary }]}>
-                  📅 Applied: {formatDate(app.appliedDate)}
+                  📅 Applied: {(() => {
+                    const date = new Date(app.appliedDate);
+                    const timezone = preferences?.timezoneMode === 'custom' && preferences?.timezone
+                      ? preferences.timezone
+                      : undefined;
+                    const use12Hour = preferences?.use12HourClock ?? false;
+                    const dateStr = date.toLocaleDateString('en-US', {
+                      timeZone: timezone,
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    });
+                    const timeStr = date.toLocaleTimeString('en-US', {
+                      timeZone: timezone,
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: use12Hour,
+                    });
+                    return `${dateStr}, ${timeStr}`;
+                  })()}
                 </Text>
+                {app.status === 'rejected' && app.rejectedReason && (
+                  <Text style={[styles.detailText, { color: colorScheme.colors.textSecondary }]}>
+                    ❌ Rejection Reason: {app.rejectedReason}
+                  </Text>
+                )}
                 {app.sourceUrl && (
                   <TouchableOpacity onPress={() => handleOpenLink(app.sourceUrl!)}>
                     <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
@@ -1522,6 +1585,15 @@ export default function ApplicationsScreen({ onBack, onSelectDate }: Application
                   >
                     <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
                       ➕ Add Interview Event
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                {onCreateOffer && (
+                  <TouchableOpacity
+                    onPress={() => onCreateOffer(app.id)}
+                  >
+                    <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
+                      🎁 Create Offer
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -2247,9 +2319,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    minHeight: 80,
   },
   backButton: {
-    marginRight: 10,
+    width: 80,
+    alignItems: 'flex-start',
   },
   backButtonText: {
     fontSize: 16,
@@ -2261,9 +2335,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#8b7355',
     flex: 1,
+    textAlign: 'center',
   },
   addButton: {
-    marginLeft: 10,
+    width: 80,
+    alignItems: 'flex-end',
   },
   addButtonText: {
     fontSize: 16,
@@ -2272,22 +2348,29 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    justifyContent: 'space-around',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
   },
   statItem: {
     alignItems: 'center',
+    justifyContent: 'flex-start',
+    flex: 1,
   },
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#8b7355',
+    textAlign: 'center',
+    lineHeight: 28,
+    includeFontPadding: false,
   },
   statLabel: {
     fontSize: 12,
-    color: '#6b5b4f',
     marginTop: 4,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   searchContainer: {
     padding: 16,
@@ -2501,6 +2584,21 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
+  createOfferButton: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  createOfferButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   pickerButton: {
     backgroundColor: '#E7D7C1',
     borderRadius: 8,
@@ -2514,6 +2612,15 @@ const styles = StyleSheet.create({
   timeRow: {
     flexDirection: 'row',
     gap: 12,
+  },
+  datePickerButton: {
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  datePickerText: {
+    fontSize: 16,
   },
   timePickerButton: {
     borderRadius: 8,
@@ -2781,6 +2888,220 @@ const styles = StyleSheet.create({
   followUpReminderText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  // Interview Prep Styles
+  interviewPrepMenu: {
+    padding: 16,
+  },
+  interviewPrepTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  interviewPrepSubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  interviewPrepMenuItem: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  interviewPrepMenuItemTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  interviewPrepMenuItemDesc: {
+    fontSize: 14,
+  },
+  interviewPrepHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  interviewPrepSectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'center',
+  },
+  categoryFilter: {
+    flexDirection: 'row',
+    padding: 16,
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  categoryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  categoryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  questionsList: {
+    padding: 16,
+  },
+  questionCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  questionText: {
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  questionMeta: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  questionCategory: {
+    fontSize: 12,
+  },
+  starCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    marginHorizontal: 16,
+    borderWidth: 1,
+  },
+  starQuestion: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  starSections: {
+    gap: 8,
+  },
+  starLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 8,
+  },
+  starValue: {
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  researchCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    marginHorizontal: 16,
+    borderWidth: 1,
+  },
+  researchCompany: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  researchPosition: {
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  researchNotes: {
+    fontSize: 15,
+    marginBottom: 12,
+    lineHeight: 22,
+  },
+  researchLinks: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 8,
+  },
+  researchLink: {
+    fontSize: 14,
+    textDecorationLine: 'underline',
+  },
+  feedbackCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    marginHorizontal: 16,
+    borderWidth: 1,
+  },
+  feedbackCompany: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  feedbackPosition: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  feedbackDate: {
+    fontSize: 12,
+    marginBottom: 12,
+  },
+  feedbackText: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  feedbackLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 8,
+  },
+  feedbackValue: {
+    fontSize: 14,
+    marginLeft: 8,
+    marginBottom: 8,
+  },
+  practiceSetup: {
+    padding: 16,
+  },
+  practiceInstructions: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  practiceActive: {
+    padding: 16,
+  },
+  timerContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  timerText: {
+    fontSize: 48,
+    fontWeight: 'bold',
+  },
+  practiceQuestionCard: {
+    padding: 24,
+    borderRadius: 12,
+    marginBottom: 24,
+    borderWidth: 1,
+    minHeight: 150,
+    justifyContent: 'center',
+  },
+  practiceQuestionText: {
+    fontSize: 20,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  practiceActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  practiceButton: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  practiceButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

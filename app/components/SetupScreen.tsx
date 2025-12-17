@@ -24,6 +24,8 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
   const [timezoneMode, setTimezoneMode] = useState<'device' | 'custom'>('device');
   const [timezone, setTimezone] = useState('');
   const [calendarSyncProvider, setCalendarSyncProvider] = useState<'none' | 'apple' | 'google'>('none');
+  const [followUpDaysAfterApplication, setFollowUpDaysAfterApplication] = useState('7');
+  const [followUpDaysAfterInterview, setFollowUpDaysAfterInterview] = useState('2');
   const [loading, setLoading] = useState(true);
   const { refreshPreferences } = usePreferences();
   
@@ -131,6 +133,8 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         timezoneMode: 'device',
         timezone: '',
         calendarSyncProvider: 'none',
+        followUpDaysAfterApplication: 7,
+        followUpDaysAfterInterview: 2,
       };
 
       return generateTimeBlocks(tempPreferences);
@@ -170,6 +174,8 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         timezoneMode,
         timezone: timezoneMode === 'custom' ? timezone.trim() : '',
         calendarSyncProvider,
+        followUpDaysAfterApplication: parseInt(followUpDaysAfterApplication, 10) || 7,
+        followUpDaysAfterInterview: parseInt(followUpDaysAfterInterview, 10) || 2,
       };
       await savePreferences(preferences);
       await refreshPreferences(); // Refresh preferences context
@@ -592,6 +598,73 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
 
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: currentColorScheme.colors.text }]}>
+            Follow-Up Reminders
+          </Text>
+          <Text style={[styles.sectionDescription, { color: currentColorScheme.colors.textSecondary }]}>
+            Configure when follow-up reminders should be scheduled for job applications and interviews
+          </Text>
+          <View style={[styles.settingRow, {
+            backgroundColor: currentColorScheme.colors.surface,
+            borderColor: currentColorScheme.colors.border,
+            marginTop: 12,
+          }]}>
+            <View style={styles.settingContent}>
+              <Text style={[styles.settingLabel, { color: currentColorScheme.colors.text }]}>
+                Days After Application
+              </Text>
+              <Text style={[styles.settingDescription, { color: currentColorScheme.colors.textSecondary }]}>
+                Days after submitting an application to remind you to follow up
+              </Text>
+            </View>
+            <TextInput
+              style={[
+                styles.followUpInput,
+                {
+                  backgroundColor: currentColorScheme.colors.background,
+                  borderColor: currentColorScheme.colors.border,
+                  color: currentColorScheme.colors.text,
+                }
+              ]}
+              value={followUpDaysAfterApplication}
+              onChangeText={setFollowUpDaysAfterApplication}
+              placeholder="7"
+              placeholderTextColor={currentColorScheme.colors.textSecondary}
+              keyboardType="numeric"
+            />
+          </View>
+          <View style={[styles.settingRow, {
+            backgroundColor: currentColorScheme.colors.surface,
+            borderColor: currentColorScheme.colors.border,
+            marginTop: 12,
+          }]}>
+            <View style={styles.settingContent}>
+              <Text style={[styles.settingLabel, { color: currentColorScheme.colors.text }]}>
+                Days After Interview
+              </Text>
+              <Text style={[styles.settingDescription, { color: currentColorScheme.colors.textSecondary }]}>
+                Days after an interview to remind you to follow up
+              </Text>
+            </View>
+            <TextInput
+              style={[
+                styles.followUpInput,
+                {
+                  backgroundColor: currentColorScheme.colors.background,
+                  borderColor: currentColorScheme.colors.border,
+                  color: currentColorScheme.colors.text,
+                }
+              ]}
+              value={followUpDaysAfterInterview}
+              onChangeText={setFollowUpDaysAfterInterview}
+              placeholder="2"
+              placeholderTextColor={currentColorScheme.colors.textSecondary}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: currentColorScheme.colors.text }]}>
             Color Scheme
           </Text>
           <Text style={[styles.sectionDescription, { color: currentColorScheme.colors.textSecondary }]}>
@@ -694,17 +767,13 @@ const styles = StyleSheet.create({
   timeLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#4A3A2A',
     marginBottom: 8,
   },
   timeInputField: {
-    backgroundColor: '#E7D7C1',
     borderRadius: 8,
     padding: 12,
     fontSize: 18,
-    color: '#4A3A2A',
     borderWidth: 1,
-    borderColor: '#C9A66B',
     textAlign: 'center',
   },
   timeInputFieldReadOnly: {
@@ -713,7 +782,6 @@ const styles = StyleSheet.create({
   },
   timeHint: {
     fontSize: 12,
-    color: '#6b5b4f',
     marginTop: 4,
     textAlign: 'center',
   },
@@ -826,6 +894,15 @@ const styles = StyleSheet.create({
   settingDescription: {
     fontSize: 14,
     color: '#6b5b4f',
+  },
+  followUpInput: {
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+    borderWidth: 1,
+    textAlign: 'center',
+    width: 80,
+    minWidth: 80,
   },
   colorSchemeOption: {
     flexDirection: 'row',

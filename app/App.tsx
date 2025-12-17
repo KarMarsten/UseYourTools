@@ -7,8 +7,9 @@ import SetupScreen from './components/SetupScreen';
 import ReportsScreen from './components/ReportsScreen';
 import ViewReportScreen from './components/ViewReportScreen';
 import ApplicationsScreen from './components/ApplicationsScreen';
-import ResumeScreen from './components/ResumeScreen';
+import OffersScreen from './components/OffersScreen';
 import AboutScreen from './components/AboutScreen';
+import InterviewPrepScreen from './components/InterviewPrepScreen';
 import { PreferencesProvider } from './context/PreferencesContext';
 import { loadPreferences } from './utils/preferences';
 
@@ -71,7 +72,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-type Screen = 'home' | 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport' | 'applications' | 'resumes' | 'about';
+type Screen = 'home' | 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport' | 'applications' | 'offers' | 'about' | 'interviewPrep';
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
@@ -140,15 +141,16 @@ function AppContent() {
     setCurrentScreen('applications');
   };
 
-  const handleViewResumes = () => {
-    setCurrentScreen('resumes');
+  const handleViewOffers = () => {
+    setCurrentScreen('offers');
   };
 
-  const handleNavigateToDailyPlanner = () => {
-    // Set to today's date and navigate to daily planner
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    setSelectedDate(today);
+
+  const handleNavigateToDailyPlanner = (date?: Date) => {
+    // Set to provided date or today's date and navigate to daily planner
+    const targetDate = date || new Date();
+    targetDate.setHours(0, 0, 0, 0);
+    setSelectedDate(targetDate);
     setCurrentScreen('dailyPlanner');
   };
 
@@ -158,15 +160,16 @@ function AppContent() {
 
   if (currentScreen === 'home') {
     return (
-      <HomeScreen
-        onNavigateToCalendar={() => setCurrentScreen('calendar')}
-        onNavigateToDailyPlanner={handleNavigateToDailyPlanner}
+    <HomeScreen
+      onNavigateToCalendar={() => setCurrentScreen('calendar')}
+      onNavigateToDailyPlanner={handleNavigateToDailyPlanner}
         onNavigateToApplications={handleViewApplications}
-        onNavigateToResumes={handleViewResumes}
+        onNavigateToOffers={handleViewOffers}
         onNavigateToReports={handleViewReports}
-        onNavigateToSettings={handleViewSettings}
-        onNavigateToAbout={() => setCurrentScreen('about')}
-      />
+      onNavigateToInterviewPrep={() => setCurrentScreen('interviewPrep')}
+      onNavigateToSettings={handleViewSettings}
+      onNavigateToAbout={() => setCurrentScreen('about')}
+    />
     );
   }
 
@@ -203,6 +206,9 @@ function AppContent() {
           }
           setSelectedApplicationId(undefined); // Clear application context
         }}
+        onDateChange={(newDate) => {
+          setSelectedDate(newDate);
+        }}
         initialApplicationId={selectedApplicationId}
       />
     );
@@ -213,16 +219,36 @@ function AppContent() {
       <ApplicationsScreen
         onBack={handleBackToHome}
         onSelectDate={handleSelectDate}
+        onCreateOffer={(applicationId: string) => {
+          setSelectedApplicationId(applicationId);
+          setCurrentScreen('offers');
+        }}
       />
     );
   }
 
-  if (currentScreen === 'resumes') {
-    return <ResumeScreen onBack={handleBackToHome} />;
+  if (currentScreen === 'offers') {
+    return (
+      <OffersScreen
+        onBack={() => {
+          setSelectedApplicationId(undefined);
+          handleBackToHome();
+        }}
+        onViewApplication={(applicationId: string) => {
+          setSelectedApplicationId(applicationId);
+          setCurrentScreen('applications');
+        }}
+        initialApplicationId={selectedApplicationId}
+      />
+    );
   }
 
   if (currentScreen === 'about') {
     return <AboutScreen onBack={handleBackToHome} />;
+  }
+
+  if (currentScreen === 'interviewPrep') {
+    return <InterviewPrepScreen onBack={handleBackToHome} />;
   }
 
   // Fallback to home if no screen matches (should never happen)
@@ -230,9 +256,10 @@ function AppContent() {
     <HomeScreen
       onNavigateToCalendar={() => setCurrentScreen('calendar')}
       onNavigateToDailyPlanner={handleNavigateToDailyPlanner}
-      onNavigateToApplications={handleViewApplications}
-      onNavigateToResumes={handleViewResumes}
-      onNavigateToReports={handleViewReports}
+        onNavigateToApplications={handleViewApplications}
+        onNavigateToOffers={handleViewOffers}
+        onNavigateToReports={handleViewReports}
+      onNavigateToInterviewPrep={() => setCurrentScreen('interviewPrep')}
       onNavigateToSettings={handleViewSettings}
       onNavigateToAbout={() => setCurrentScreen('about')}
     />

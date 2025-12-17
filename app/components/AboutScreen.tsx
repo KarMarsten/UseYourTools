@@ -39,113 +39,107 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
             Tools for Job Hunters
           </Text>
           <Text style={[styles.description, { color: colorScheme.colors.text }]}>
-            A comprehensive mobile app built specifically for job seekers. Organize your job search activities, track applications, manage resumes, and keep everything in one place.
+            A comprehensive mobile app to help you organize your job search. Track applications, manage resumes and cover letters, compare job offers, and keep everything in one place.
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colorScheme.colors.text }]}>✨ Features</Text>
+          <Text style={[styles.sectionTitle, { color: colorScheme.colors.text }]}>✨ What's Inside</Text>
           
-          <View style={styles.subsection}>
-            <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>🏠 Home Screen</Text>
-            <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              The central hub providing quick access to all tools:
-            </Text>
-            <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
-              • Job Sites sidebar: Quick links to popular job search platforms
-            </Text>
-            <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
-              • Tools section: Access to Daily Planner, Calendar, Job Applications, Resumes, and Reports
-            </Text>
-            <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
-              • Clean, modern interface that adapts to your chosen color theme
-            </Text>
-          </View>
-
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>📅 Calendar & Daily Planner</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Monthly calendar showing all events and planned activities. Customizable time blocks that adapt to your schedule. Daily themes for focused planning. Persistent notes saved automatically. Swipe left/right to navigate between days. View events with clickable email, phone, and address fields.
+              Plan your week with customizable time blocks and daily themes. Create interviews, appointments, and reminders. Swipe between days to navigate quickly. All events sync with your device calendar.
             </Text>
           </View>
 
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>💼 Job Applications</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Comprehensive tracking system with search, statistics, duplicate detection, quick links, filtering, and interview event creation. Human-readable date and time pickers for applied dates. Track application status (Applied, Rejected, Interview) with easy status updates.
+              Track every application with position details, status, and notes. Add rejection reasons for unemployment reporting. Search and filter to stay organized. Create interview events directly from applications.
             </Text>
           </View>
 
           <View style={styles.subsection}>
-            <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>📄 Resumes</Text>
+            <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>🎁 Job Offers</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Organize all your resume versions. Preview, share, save, rename, and manage active/inactive status. Support for PDF, DOC, and DOCX files.
+              Compare offers side-by-side. Track salary, benefits, and work location (remote, hybrid, or onsite). Create offers directly from your job applications.
             </Text>
           </View>
 
           <View style={styles.subsection}>
-            <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>⚙️ Settings & Customization</Text>
+            <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>🎤 Interview Preparation</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Choose from four beautiful color themes. Customize your schedule, time preferences, map app, timezone, and calendar sync.
+              Prepare for interviews with a question bank, STAR method templates (select questions from the bank or type your own), company research notes, interview feedback tracking, and practice mode with timer.
+            </Text>
+          </View>
+
+          <View style={styles.subsection}>
+            <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>📄 Resumes & Cover Letters</Text>
+            <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
+              Keep all your documents organized. Preview, share, and manage multiple versions. Mark them as active or inactive for easy organization.
             </Text>
           </View>
 
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>📊 Reports</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Generate professional PDF reports including weekly schedules and unemployment reports formatted for filing.
+              Generate PDF reports for your weekly schedule or unemployment filing. Weekly reports include all your time blocks and events. Unemployment reports include interviews and rejected applications.
             </Text>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colorScheme.colors.text }]}>💡 Tips & Tricks</Text>
-          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
-            • Always return to home to access any tool
+          <Text style={[styles.sectionTitle, { color: colorScheme.colors.text }]}>🎨 Make It Yours</Text>
+          <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
+            Choose your favorite color theme:
           </Text>
           <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
-            • Use search to quickly find if you've already applied somewhere
+            🌿 Earth-Tone (warm browns and tans)
           </Text>
           <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
-            • Track all rounds of interviews for a single application
+            🌊 Cheerful Nature (greens and blues)
           </Text>
           <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
-            • Tap the status badge on any application to quickly change status
+            ☀️ Sunny Sky (vibrant oranges and yellows)
           </Text>
           <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
-            • End time automatically sets to 30 minutes later - but you can always change it
+            💜 Imagination Run Wild (purples and pinks)
           </Text>
-          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
-            • Name resumes descriptively and mark active ones for easy identification
-          </Text>
-          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
-            • Get reminders 10 minutes before each event
-          </Text>
-          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
-            • Tap any address to get directions instantly
-          </Text>
-          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
-            • In event view mode, tap email, phone, or address to interact with them
-          </Text>
-          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
-            • Long-press the About (ℹ️) or Settings (⚙️) icons for tooltips
-          </Text>
-          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
-            • All data stays on your device - nothing is sent to servers
+          <Text style={[styles.text, { color: colorScheme.colors.textSecondary, marginTop: 12 }]}>
+            Customize your schedule, time format, and preferences to fit your workflow.
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colorScheme.colors.text }]}>🛠️ Technical Details</Text>
-          <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-            Built with React Native 0.79.6, Expo SDK 53, and TypeScript. All data stored locally on device (privacy-first). No external servers or cloud storage required. Platform support for iOS (15.1+) and Android.
+          <Text style={[styles.sectionTitle, { color: colorScheme.colors.text }]}>💡 Quick Tips</Text>
+          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
+            • Swipe left/right in the daily planner to move between days
+          </Text>
+          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
+            • Tap addresses, phone numbers, and emails in events to interact with them
+          </Text>
+          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
+            • Use the Job Offers screen to compare multiple offers at once
+          </Text>
+          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
+            • Add rejection reasons to help with unemployment reporting
+          </Text>
+          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
+            • Use Interview Prep tools to prepare STAR responses with questions from the bank
+          </Text>
+          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
+            • Practice answering questions with the timer in Practice Mode
+          </Text>
+          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
+            • Long-press the About or Settings icons for helpful tooltips
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colorScheme.colors.text }]}>📝 License</Text>
+          <Text style={[styles.sectionTitle, { color: colorScheme.colors.text }]}>🔒 Your Privacy</Text>
           <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-            This project is licensed under the MIT License.
+            All your data stays on your device. We don't use servers or cloud storage. Your job search information is yours alone.
           </Text>
         </View>
 
@@ -195,7 +189,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 28,
   },
   appTitle: {
     fontSize: 32,
@@ -215,15 +209,15 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: '600',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   subsection: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   subsectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   text: {
     fontSize: 15,
@@ -247,4 +241,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-

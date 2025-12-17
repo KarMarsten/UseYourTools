@@ -31,7 +31,7 @@ export const TIME_BLOCKS: TimeBlock[] = [
     id: 'high-focus',
     time: '9:00–11:00',
     title: 'High-focus work',
-    description: 'Applications/learning/networking',
+    description: 'Applications, Learning, Networking',
   },
   {
     id: 'research',
@@ -66,13 +66,13 @@ export const TIME_BLOCKS: TimeBlock[] = [
     id: 'exercise',
     time: '16:00–17:00',
     title: 'Exercise',
-    description: 'Walk • Recharge',
+    description: 'Walk, Recharge',
   },
   {
     id: 'evening',
     time: 'Evening',
     title: 'Creativity',
-    description: 'Reading • Reflection',
+    description: 'Reading, Reflection',
   },
 ];
 

@@ -10,7 +10,10 @@ export interface JobApplication {
   appliedDate: string; // ISO 8601 date string (YYYY-MM-DDTHH:mm:ss.sssZ)
   status: 'applied' | 'rejected' | 'no-response' | 'interview'; // Status of the application
   notes?: string; // Optional notes about the application
+  rejectedReason?: string; // Reason for rejection (only when status is 'rejected')
   eventIds?: string[]; // IDs of linked interview events (if status is 'interview') - can have multiple
+  resumeId?: string; // ID of the resume used for this application
+  coverLetterId?: string; // ID of the cover letter used for this application
 }
 
 const APPLICATIONS_KEY_PREFIX = 'application_';

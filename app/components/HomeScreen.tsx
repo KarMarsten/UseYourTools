@@ -18,7 +18,9 @@ interface HomeScreenProps {
   onNavigateToCalendar: () => void;
   onNavigateToDailyPlanner: (date?: Date) => void;
   onNavigateToApplications: () => void;
+  onNavigateToOffers: () => void;
   onNavigateToReports: () => void;
+  onNavigateToInterviewPrep: () => void;
   onNavigateToSettings: () => void;
   onNavigateToAbout: () => void;
   onViewReport?: (html: string, title: string) => void;
@@ -28,7 +30,9 @@ export default function HomeScreen({
   onNavigateToCalendar,
   onNavigateToDailyPlanner,
   onNavigateToApplications,
+  onNavigateToOffers,
   onNavigateToReports,
+  onNavigateToInterviewPrep,
   onNavigateToSettings,
   onNavigateToAbout,
 }: HomeScreenProps) {
@@ -131,6 +135,13 @@ export default function HomeScreen({
       description: 'Track your job applications and search history',
       icon: '💼',
       onPress: onNavigateToApplications,
+    },
+    {
+      id: 'offers',
+      title: 'Job Offers',
+      description: 'Compare and contrast job offers',
+      icon: '🎁',
+      onPress: onNavigateToOffers,
     },
   ];
 
@@ -259,11 +270,6 @@ export default function HomeScreen({
             }}
           >
             <Text style={[styles.settingsIcon, { color: colorScheme.colors.text }]}>ℹ️</Text>
-            {showAboutTooltip && (
-              <View style={[styles.tooltip, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}>
-                <Text style={[styles.tooltipText, { color: colorScheme.colors.text }]}>About</Text>
-              </View>
-            )}
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.settingsButton}
@@ -274,14 +280,24 @@ export default function HomeScreen({
             }}
           >
             <Text style={[styles.settingsIcon, { color: colorScheme.colors.text }]}>⚙️</Text>
-            {showSettingsTooltip && (
-              <View style={[styles.tooltip, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}>
-                <Text style={[styles.tooltipText, { color: colorScheme.colors.text }]}>Settings</Text>
-              </View>
-            )}
           </TouchableOpacity>
         </View>
       </View>
+      {/* Tooltips rendered at container level to ensure they appear above all content */}
+      {(showAboutTooltip || showSettingsTooltip) && (
+        <View style={styles.tooltipContainer} pointerEvents="none">
+          {showAboutTooltip && (
+            <View style={[styles.tooltip, styles.aboutTooltip, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}>
+              <Text style={[styles.tooltipText, { color: colorScheme.colors.text }]} numberOfLines={1} ellipsizeMode="clip">About</Text>
+            </View>
+          )}
+          {showSettingsTooltip && (
+            <View style={[styles.tooltip, styles.settingsTooltip, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}>
+              <Text style={[styles.tooltipText, { color: colorScheme.colors.text }]} numberOfLines={1} ellipsizeMode="clip">Settings</Text>
+            </View>
+          )}
+        </View>
+      )}
 
       <ScrollView
         style={styles.scrollView}
@@ -378,6 +394,16 @@ export default function HomeScreen({
                 Reports
               </Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.reportsButton, { backgroundColor: colorScheme.colors.surface }]}
+              onPress={onNavigateToInterviewPrep}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.reportsIcon}>🎤</Text>
+              <Text style={[styles.reportsName, { color: colorScheme.colors.text }]}>
+                Interview Prep
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.menuSection}>
@@ -421,6 +447,16 @@ export default function HomeScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'visible',
+  },
+  tooltipContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9999,
+    pointerEvents: 'none',
   },
   header: {
     padding: 12,
@@ -429,6 +465,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    overflow: 'visible',
+    zIndex: 100,
   },
   headerContent: {
     flex: 1,
@@ -447,23 +485,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    overflow: 'visible',
   },
   settingsButton: {
     padding: 8,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
+    overflow: 'visible',
   },
   settingsIcon: {
     fontSize: 24,
   },
   tooltip: {
     position: 'absolute',
-    bottom: -35,
-    left: '50%',
-    marginLeft: -35,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 6,
     borderWidth: 1,
     shadowColor: '#000',
@@ -473,12 +510,22 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    elevation: 5,
-    zIndex: 1000,
+    elevation: 10,
+    width: 100,
+  },
+  aboutTooltip: {
+    top: 70,
+    right: 60,
+  },
+  settingsTooltip: {
+    top: 70,
+    right: 8,
   },
   tooltipText: {
     fontSize: 14,
     fontWeight: '600',
+    includeFontPadding: false,
+    textAlign: 'center',
   },
   scrollView: {
     flex: 1,
