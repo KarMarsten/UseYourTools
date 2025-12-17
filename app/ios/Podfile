@@ -74,7 +74,7 @@ target 'UseYourTools' do
       target.build_phases.each do |phase|
         if phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase)
           if phase.name && phase.name.include?('Hermes')
-            phase.always_out_of_date = true
+            phase.always_out_of_date = '1'
           end
         end
       end
