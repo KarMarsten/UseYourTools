@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { Event } from '../utils/events';
 import { formatTimeRange, formatTime12Hour, getDateKey } from '../utils/timeFormatter';
+import { openAddressInMaps, openPhoneNumber, openEmail } from '../utils/eventActions';
+import { usePreferences } from '../context/PreferencesContext';
 
 interface AddEventModalProps {
   visible: boolean;
@@ -50,6 +52,7 @@ export default function AddEventModal({
   initialApplicationData,
   allowDateSelection = false,
 }: AddEventModalProps) {
+  const { preferences } = usePreferences();
   // Initialize form fields - will be populated by useEffect
   const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState('');
@@ -347,7 +350,7 @@ export default function AddEventModal({
         <View style={[styles.modalContent, { backgroundColor: colorScheme.surface }]}>
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: colorScheme.text }]}>
-              {viewMode ? event?.title || 'Event' : event ? 'Edit Event' : 'Add Event'}
+              {viewMode ? (event?.title || 'Event') : event ? 'Edit Event' : 'Add Event'}
             </Text>
             {viewMode && onEdit && (
               <TouchableOpacity
@@ -368,37 +371,42 @@ export default function AddEventModal({
           >
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colorScheme.text }]}>Title</Text>
             {viewMode ? (
-              <Text style={[styles.viewText, { color: colorScheme.text }]}>
-                {event?.title || 'No title'}
-              </Text>
+              <View style={styles.viewModeRow}>
+                <Text style={[styles.viewLabel, { color: colorScheme.text }]}>Title:</Text>
+                <Text style={[styles.viewValue, { color: colorScheme.text }]}>{event?.title || 'No title'}</Text>
+              </View>
             ) : (
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colorScheme.background,
-                    borderColor: colorScheme.border,
-                    color: colorScheme.text,
-                  },
-                ]}
-                value={title}
-                onChangeText={setTitle}
-                placeholder="e.g., Interview with Company X"
-                placeholderTextColor={colorScheme.textSecondary}
-              />
+              <>
+                <Text style={[styles.label, { color: colorScheme.text }]}>Title</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colorScheme.background,
+                      borderColor: colorScheme.border,
+                      color: colorScheme.text,
+                    },
+                  ]}
+                  value={title}
+                  onChangeText={setTitle}
+                  placeholder="e.g., Interview with Company X"
+                  placeholderTextColor={colorScheme.textSecondary}
+                />
+              </>
             )}
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colorScheme.text }]}>Type</Text>
             {viewMode ? (
-              <Text style={[styles.viewText, { color: colorScheme.text }]}>
-                {event?.type ? event.type.charAt(0).toUpperCase() + event.type.slice(1) : 'N/A'}
-              </Text>
+              <View style={styles.viewModeRow}>
+                <Text style={[styles.viewLabel, { color: colorScheme.text }]}>Type:</Text>
+                <Text style={[styles.viewValue, { color: colorScheme.text }]}>{event?.type ? event.type.charAt(0).toUpperCase() + event.type.slice(1) : 'N/A'}</Text>
+              </View>
             ) : (
-              <View style={styles.typeContainer}>
+              <>
+                <Text style={[styles.label, { color: colorScheme.text }]}>Type</Text>
+                <View style={styles.typeContainer}>
                 {(['interview', 'appointment', 'reminder'] as const).map((eventType) => (
                   <TouchableOpacity
                     key={eventType}
@@ -425,7 +433,8 @@ export default function AddEventModal({
                     </Text>
                   </TouchableOpacity>
                 ))}
-              </View>
+                </View>
+              </>
             )}
           </View>
 
@@ -458,14 +467,32 @@ export default function AddEventModal({
             </View>
           )}
 
-          <View style={styles.timeRow}>
-            <View style={styles.timeInput}>
-              <Text style={[styles.label, { color: colorScheme.text }]}>Start Time</Text>
-              {viewMode ? (
-                <Text style={[styles.viewText, { color: colorScheme.text }]}>
-                  {event?.startTime ? getDisplayTime(event.startTime) : 'N/A'}
-                </Text>
-              ) : (
+          {viewMode && event?.dateKey && (
+            <View style={styles.inputGroup}>
+              <View style={styles.viewModeRow}>
+                <Text style={[styles.viewLabel, { color: colorScheme.text }]}>Date:</Text>
+                <Text style={[styles.viewValue, { color: colorScheme.text }]}>{(() => {
+                  const [year, month, day] = event.dateKey.split('-').map(Number);
+                  const eventDate = new Date(year, month - 1, day);
+                  return eventDate.toLocaleDateString('en-US', { 
+                    month: 'numeric', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                  });
+                })()}</Text>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.inputGroup}>
+            {viewMode ? (
+              <View style={styles.viewModeRow}>
+                <Text style={[styles.viewLabel, { color: colorScheme.text }]}>Start Time:</Text>
+                <Text style={[styles.viewValue, { color: colorScheme.text }]}>{event?.startTime ? getDisplayTime(event.startTime) : 'N/A'}</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={[styles.label, { color: colorScheme.text }]}>Start Time</Text>
                 <TouchableOpacity
                   style={[
                     styles.timePickerButton,
@@ -483,17 +510,20 @@ export default function AddEventModal({
                     {startTime ? getDisplayTime(startTime) : 'Select time'}
                   </Text>
                 </TouchableOpacity>
-              )}
-            </View>
+              </>
+            )}
+          </View>
 
-            {(viewMode ? event?.type !== 'reminder' : type !== 'reminder') && (
-              <View style={styles.timeInput}>
-                <Text style={[styles.label, { color: colorScheme.text }]}>End Time</Text>
-                {viewMode ? (
-                  <Text style={[styles.viewText, { color: colorScheme.text }]}>
-                    {event?.endTime ? getDisplayTime(event.endTime) : 'N/A'}
-                  </Text>
-                ) : (
+          {(viewMode ? event?.type !== 'reminder' : type !== 'reminder') && (
+            <View style={styles.inputGroup}>
+              {viewMode ? (
+                <View style={styles.viewModeRow}>
+                  <Text style={[styles.viewLabel, { color: colorScheme.text }]}>End Time:</Text>
+                  <Text style={[styles.viewValue, { color: colorScheme.text }]}>{event?.endTime ? getDisplayTime(event.endTime) : 'N/A'}</Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={[styles.label, { color: colorScheme.text }]}>End Time</Text>
                   <TouchableOpacity
                     style={[
                       styles.timePickerButton,
@@ -511,48 +541,23 @@ export default function AddEventModal({
                       {endTime ? getDisplayTime(endTime) : 'Select time'}
                     </Text>
                   </TouchableOpacity>
-                )}
-              </View>
-            )}
-          </View>
-
-          {/* Notes field for all event types */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colorScheme.text }]}>Notes</Text>
-            {viewMode ? (
-              <Text style={[styles.viewText, { color: colorScheme.text }]}>
-                {event?.notes || 'No notes'}
-              </Text>
-            ) : (
-              <TextInput
-                style={[
-                  styles.textArea,
-                  {
-                    backgroundColor: colorScheme.background,
-                    borderColor: colorScheme.border,
-                    color: colorScheme.text,
-                  },
-                ]}
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="Additional notes..."
-                placeholderTextColor={colorScheme.textSecondary}
-                multiline
-                numberOfLines={3}
-              />
-            )}
-          </View>
+                </>
+              )}
+            </View>
+          )}
 
           {/* Additional fields for interviews and appointments */}
           {(viewMode ? event?.type !== 'reminder' : type !== 'reminder') && (
             <>
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colorScheme.text }]}>Company</Text>
                 {viewMode ? (
-                  <Text style={[styles.viewText, { color: colorScheme.text }]}>
-                    {event?.company || 'N/A'}
-                  </Text>
+                  <View style={styles.viewModeRow}>
+                    <Text style={[styles.viewLabel, { color: colorScheme.text }]}>Company:</Text>
+                    <Text style={[styles.viewValue, { color: colorScheme.text }]}>{event?.company || 'N/A'}</Text>
+                  </View>
                 ) : (
+                  <>
+                    <Text style={[styles.label, { color: colorScheme.text }]}>Company</Text>
                   <TextInput
                     style={[
                       styles.input,
@@ -567,16 +572,19 @@ export default function AddEventModal({
                     placeholder="Company Name"
                     placeholderTextColor={colorScheme.textSecondary}
                   />
+                  </>
                 )}
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colorScheme.text }]}>Job Title</Text>
                 {viewMode ? (
-                  <Text style={[styles.viewText, { color: colorScheme.text }]}>
-                    {event?.jobTitle || 'N/A'}
-                  </Text>
+                  <View style={styles.viewModeRow}>
+                    <Text style={[styles.viewLabel, { color: colorScheme.text }]}>Job Title:</Text>
+                    <Text style={[styles.viewValue, { color: colorScheme.text }]}>{event?.jobTitle || 'N/A'}</Text>
+                  </View>
                 ) : (
+                  <>
+                    <Text style={[styles.label, { color: colorScheme.text }]}>Job Title</Text>
                   <TextInput
                     style={[
                       styles.input,
@@ -591,16 +599,19 @@ export default function AddEventModal({
                     placeholder="Software Engineer"
                     placeholderTextColor={colorScheme.textSecondary}
                   />
+                  </>
                 )}
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colorScheme.text }]}>Contact Name</Text>
                 {viewMode ? (
-                  <Text style={[styles.viewText, { color: colorScheme.text }]}>
-                    {event?.contactName || 'N/A'}
-                  </Text>
+                  <View style={styles.viewModeRow}>
+                    <Text style={[styles.viewLabel, { color: colorScheme.text }]}>Contact:</Text>
+                    <Text style={[styles.viewValue, { color: colorScheme.text }]}>{event?.contactName || 'N/A'}</Text>
+                  </View>
                 ) : (
+                  <>
+                    <Text style={[styles.label, { color: colorScheme.text }]}>Contact</Text>
                   <TextInput
                     style={[
                       styles.input,
@@ -615,16 +626,30 @@ export default function AddEventModal({
                     placeholder="John Doe"
                     placeholderTextColor={colorScheme.textSecondary}
                   />
+                  </>
                 )}
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colorScheme.text }]}>Address</Text>
                 {viewMode ? (
-                  <Text style={[styles.viewText, { color: colorScheme.text }]}>
-                    {event?.address || 'N/A'}
-                  </Text>
+                  <View style={styles.viewModeRow}>
+                    <Text style={[styles.viewLabel, { color: colorScheme.text }]}>Address:</Text>
+                    {event?.address ? (
+                      <TouchableOpacity
+                        onPress={() => openAddressInMaps(event.address!, preferences?.mapAppPreference || 'apple-maps')}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.viewValue, { color: colorScheme.primary, textDecorationLine: 'underline' }]}>
+                          {event.address}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <Text style={[styles.viewValue, { color: colorScheme.text }]}>N/A</Text>
+                    )}
+                  </View>
                 ) : (
+                  <>
+                    <Text style={[styles.label, { color: colorScheme.text }]}>Address</Text>
                   <TextInput
                     style={[
                       styles.input,
@@ -639,16 +664,30 @@ export default function AddEventModal({
                     placeholder="123 Main St, City, State"
                     placeholderTextColor={colorScheme.textSecondary}
                   />
+                  </>
                 )}
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colorScheme.text }]}>Email</Text>
                 {viewMode ? (
-                  <Text style={[styles.viewText, { color: colorScheme.text }]}>
-                    {event?.email || 'N/A'}
-                  </Text>
+                  <View style={styles.viewModeRow}>
+                    <Text style={[styles.viewLabel, { color: colorScheme.text }]}>Email:</Text>
+                    {event?.email ? (
+                      <TouchableOpacity
+                        onPress={() => openEmail(event.email!)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.viewValue, { color: colorScheme.primary, textDecorationLine: 'underline' }]}>
+                          {event.email}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <Text style={[styles.viewValue, { color: colorScheme.text }]}>N/A</Text>
+                    )}
+                  </View>
                 ) : (
+                  <>
+                    <Text style={[styles.label, { color: colorScheme.text }]}>Email</Text>
                   <TextInput
                     style={[
                       styles.input,
@@ -665,35 +704,80 @@ export default function AddEventModal({
                     keyboardType="email-address"
                     autoCapitalize="none"
                   />
+                  </>
                 )}
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colorScheme.text }]}>Phone</Text>
                 {viewMode ? (
-                  <Text style={[styles.viewText, { color: colorScheme.text }]}>
-                    {event?.phone || 'N/A'}
-                  </Text>
+                  <View style={styles.viewModeRow}>
+                    <Text style={[styles.viewLabel, { color: colorScheme.text }]}>Phone:</Text>
+                    {event?.phone ? (
+                      <TouchableOpacity
+                        onPress={() => openPhoneNumber(event.phone!)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.viewValue, { color: colorScheme.primary, textDecorationLine: 'underline' }]}>
+                          {event.phone}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <Text style={[styles.viewValue, { color: colorScheme.text }]}>N/A</Text>
+                    )}
+                  </View>
                 ) : (
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        backgroundColor: colorScheme.background,
-                        borderColor: colorScheme.border,
-                        color: colorScheme.text,
-                      },
-                    ]}
-                    value={phone}
-                    onChangeText={setPhone}
-                    placeholder="(555) 123-4567"
-                    placeholderTextColor={colorScheme.textSecondary}
-                    keyboardType="phone-pad"
-                  />
+                  <>
+                    <Text style={[styles.label, { color: colorScheme.text }]}>Phone</Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: colorScheme.background,
+                          borderColor: colorScheme.border,
+                          color: colorScheme.text,
+                        },
+                      ]}
+                      value={phone}
+                      onChangeText={setPhone}
+                      placeholder="(555) 123-4567"
+                      placeholderTextColor={colorScheme.textSecondary}
+                      keyboardType="phone-pad"
+                    />
+                  </>
                 )}
               </View>
             </>
           )}
+
+          {/* Notes field for all event types */}
+          <View style={styles.inputGroup}>
+            {viewMode ? (
+              <View style={styles.viewModeRow}>
+                <Text style={[styles.viewLabel, { color: colorScheme.text }]}>Notes:</Text>
+                <Text style={[styles.viewValue, { color: colorScheme.text }]}>{event?.notes || 'No notes'}</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={[styles.label, { color: colorScheme.text }]}>Notes</Text>
+                <TextInput
+                  style={[
+                    styles.textArea,
+                    {
+                      backgroundColor: colorScheme.background,
+                      borderColor: colorScheme.border,
+                      color: colorScheme.text,
+                    },
+                  ]}
+                  value={notes}
+                  onChangeText={setNotes}
+                  placeholder="Additional notes..."
+                  placeholderTextColor={colorScheme.textSecondary}
+                  multiline
+                  numberOfLines={3}
+                />
+              </>
+            )}
+          </View>
           </ScrollView>
 
           {/* Buttons always visible at bottom */}
@@ -1036,8 +1120,24 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 4,
   },
+  viewModeRow: {
+    flexDirection: 'row',
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+  },
+  viewLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    width: 110,
+    flexShrink: 0,
+  },
+  viewValue: {
+    fontSize: 16,
+    flex: 1,
+    flexShrink: 1,
+  },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 4,
   },
   label: {
     fontSize: 16,
