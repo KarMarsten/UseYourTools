@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,28 +10,105 @@ import {
   StatusBar,
 } from 'react-native';
 import { usePreferences } from '../context/PreferencesContext';
+import { getAllEvents, Event } from '../utils/events';
+import { getActiveFollowUpReminders, FollowUpReminder } from '../utils/followUpReminders';
+import { getDateKey } from '../utils/timeFormatter';
 
 interface HomeScreenProps {
   onNavigateToCalendar: () => void;
-  onNavigateToDailyPlanner: () => void;
+  onNavigateToDailyPlanner: (date?: Date) => void;
   onNavigateToApplications: () => void;
-  onNavigateToResumes: () => void;
   onNavigateToReports: () => void;
   onNavigateToSettings: () => void;
   onNavigateToAbout: () => void;
+  onViewReport?: (html: string, title: string) => void;
 }
 
 export default function HomeScreen({
   onNavigateToCalendar,
   onNavigateToDailyPlanner,
   onNavigateToApplications,
-  onNavigateToResumes,
   onNavigateToReports,
   onNavigateToSettings,
   onNavigateToAbout,
 }: HomeScreenProps) {
-  const { colorScheme } = usePreferences();
+  const { colorScheme, preferences } = usePreferences();
   const statusBarHeight = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0;
+  const [upcomingItems, setUpcomingItems] = useState<Array<{ type: 'event' | 'followup'; data: Event | FollowUpReminder; dateTime: Date }>>([]);
+  const [showAboutTooltip, setShowAboutTooltip] = useState(false);
+  const [showSettingsTooltip, setShowSettingsTooltip] = useState(false);
+
+  useEffect(() => {
+    loadUpcomingItems();
+    // Refresh every minute to update the banner
+    const interval = setInterval(loadUpcomingItems, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadUpcomingItems = async () => {
+    try {
+      const now = new Date();
+      const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      
+      const items: Array<{ type: 'event' | 'followup'; data: Event | FollowUpReminder; dateTime: Date }> = [];
+      
+      // Load events
+      const allEvents = await getAllEvents();
+      for (const event of allEvents) {
+        const [year, month, day] = event.dateKey.split('-').map(Number);
+        const [hours, minutes] = event.startTime.split(':').map(Number);
+        const eventDateTime = new Date(year, month - 1, day, hours, minutes);
+        
+        // Only include events in the next 24 hours that haven't passed
+        if (eventDateTime > now && eventDateTime <= in24Hours) {
+          items.push({ type: 'event', data: event, dateTime: eventDateTime });
+        }
+      }
+      
+      // Load follow-up reminders
+      const activeReminders = await getActiveFollowUpReminders();
+      for (const reminder of activeReminders) {
+        const reminderDateTime = new Date(reminder.dueDate);
+        
+        // Only include reminders in the next 24 hours that haven't passed
+        if (reminderDateTime > now && reminderDateTime <= in24Hours) {
+          items.push({ type: 'followup', data: reminder, dateTime: reminderDateTime });
+        }
+      }
+      
+      // Sort by date/time (earliest first)
+      items.sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
+      
+      setUpcomingItems(items);
+    } catch (error) {
+      console.error('Error loading upcoming items:', error);
+    }
+  };
+
+  const formatTimeUntil = (dateTime: Date): string => {
+    const now = new Date();
+    const diffMs = dateTime.getTime() - now.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (diffHours > 0) {
+      return `in ${diffHours}h ${diffMinutes}m`;
+    } else {
+      return `in ${diffMinutes}m`;
+    }
+  };
+
+  const handleUpcomingItemPress = (item: { type: 'event' | 'followup'; data: Event | FollowUpReminder }) => {
+    if (item.type === 'event') {
+      const event = item.data as Event;
+      const [year, month, day] = event.dateKey.split('-').map(Number);
+      const eventDate = new Date(year, month - 1, day);
+      onNavigateToDailyPlanner(eventDate);
+    } else {
+      // For follow-up reminders, navigate to applications
+      onNavigateToApplications();
+    }
+  };
 
   const menuItems = [
     {
@@ -39,7 +116,7 @@ export default function HomeScreen({
       title: 'Daily Planner',
       description: 'Plan your day with time blocks and notes',
       icon: '📝',
-      onPress: onNavigateToDailyPlanner,
+      onPress: () => onNavigateToDailyPlanner(),
     },
     {
       id: 'calendar',
@@ -54,20 +131,6 @@ export default function HomeScreen({
       description: 'Track your job applications and search history',
       icon: '💼',
       onPress: onNavigateToApplications,
-    },
-    {
-      id: 'resumes',
-      title: 'Resumes',
-      description: 'Manage your resume files',
-      icon: '📄',
-      onPress: onNavigateToResumes,
-    },
-    {
-      id: 'reports',
-      title: 'Reports',
-      description: 'View weekly schedules and unemployment reports',
-      icon: '📊',
-      onPress: onNavigateToReports,
     },
   ];
 
@@ -190,14 +253,32 @@ export default function HomeScreen({
           <TouchableOpacity
             style={styles.settingsButton}
             onPress={onNavigateToAbout}
+            onLongPress={() => {
+              setShowAboutTooltip(true);
+              setTimeout(() => setShowAboutTooltip(false), 2000);
+            }}
           >
             <Text style={[styles.settingsIcon, { color: colorScheme.colors.text }]}>ℹ️</Text>
+            {showAboutTooltip && (
+              <View style={[styles.tooltip, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}>
+                <Text style={[styles.tooltipText, { color: colorScheme.colors.text }]}>About</Text>
+              </View>
+            )}
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.settingsButton}
             onPress={onNavigateToSettings}
+            onLongPress={() => {
+              setShowSettingsTooltip(true);
+              setTimeout(() => setShowSettingsTooltip(false), 2000);
+            }}
           >
             <Text style={[styles.settingsIcon, { color: colorScheme.colors.text }]}>⚙️</Text>
+            {showSettingsTooltip && (
+              <View style={[styles.tooltip, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}>
+                <Text style={[styles.tooltipText, { color: colorScheme.colors.text }]}>Settings</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -207,32 +288,96 @@ export default function HomeScreen({
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
+        {/* Upcoming Items Banner */}
+        {upcomingItems.length > 0 && (
+          <View>
+            <View style={[styles.upcomingBanner, { backgroundColor: colorScheme.colors.background }]}>
+              <Text style={[styles.upcomingBannerTitle, { color: colorScheme.colors.text }]}>
+                ⏰ Upcoming in Next 24 Hours
+              </Text>
+            {upcomingItems.slice(0, 3).map((item, index) => {
+              const isEvent = item.type === 'event';
+              const event = isEvent ? item.data as Event : null;
+              const reminder = !isEvent ? item.data as FollowUpReminder : null;
+              
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={[styles.upcomingItem, { backgroundColor: colorScheme.colors.surface }]}
+                  onPress={() => handleUpcomingItemPress(item)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.upcomingItemIcon, { color: colorScheme.colors.primary }]}>
+                    {isEvent 
+                      ? (event?.type === 'interview' ? '📞' : event?.type === 'appointment' ? '📍' : '⏰')
+                      : (reminder?.type === 'interview' ? '💼' : '📋')}
+                  </Text>
+                  <View style={styles.upcomingItemContent}>
+                    <Text style={[styles.upcomingItemTitle, { color: colorScheme.colors.text }]} numberOfLines={1}>
+                      {isEvent 
+                        ? event?.title || 'Event'
+                        : reminder 
+                          ? (reminder.type === 'interview' 
+                            ? `Interview Follow-Up: ${reminder.company}`
+                            : `Application Follow-Up: ${reminder.company}`)
+                          : 'Follow-Up'}
+                    </Text>
+                    <Text style={[styles.upcomingItemTime, { color: colorScheme.colors.textSecondary }]}>
+                      {item.dateTime.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: preferences?.use12HourClock ?? false
+                      })}
+                      {' • '}
+                      {formatTimeUntil(item.dateTime)}
+                    </Text>
+                  </View>
+                  <Text style={[styles.upcomingItemArrow, { color: colorScheme.colors.primary }]}>→</Text>
+                </TouchableOpacity>
+              );
+            })}
+            {upcomingItems.length > 3 && (
+              <Text style={[styles.upcomingBannerMore, { color: colorScheme.colors.textSecondary }]}>
+                +{upcomingItems.length - 3} more
+              </Text>
+            )}
+            </View>
+            <View style={[styles.bannerSeparator, { backgroundColor: colorScheme.colors.border }]} />
+          </View>
+        )}
+
         <View style={styles.mainContent}>
           <View style={styles.jobSitesSection}>
             <Text style={[styles.sectionTitle, { color: colorScheme.colors.text }]}>
               Job Sites
             </Text>
-            <View style={[styles.jobSitesList, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}>
+            <View style={[styles.jobSitesList, { backgroundColor: colorScheme.colors.surface }]}>
               {jobSites.map((site, index) => (
                 <TouchableOpacity
                   key={site.id}
-                  style={[
-                    styles.jobSiteItem,
-                    {
-                      borderBottomColor: colorScheme.colors.border,
-                      borderBottomWidth: index < jobSites.length - 1 ? 1 : 0,
-                    },
-                  ]}
+                  style={styles.jobSiteItem}
                   onPress={() => handleJobSitePress(site.appUrl, site.webUrl)}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.jobSiteIcon}>{site.icon}</Text>
-                  <Text style={[styles.jobSiteName, { color: colorScheme.colors.text }]}>
+                  <Text style={[styles.jobSiteName, { color: colorScheme.colors.text }]} numberOfLines={1}>
                     {site.name}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
+            <TouchableOpacity
+              style={[styles.reportsButton, { backgroundColor: colorScheme.colors.surface }]}
+              onPress={onNavigateToReports}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.reportsIcon}>📊</Text>
+              <Text style={[styles.reportsName, { color: colorScheme.colors.text }]}>
+                Reports
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.menuSection}>
@@ -307,9 +452,33 @@ const styles = StyleSheet.create({
     padding: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
   settingsIcon: {
     fontSize: 24,
+  },
+  tooltip: {
+    position: 'absolute',
+    bottom: -35,
+    left: '50%',
+    marginLeft: -35,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  tooltipText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,
@@ -335,7 +504,6 @@ const styles = StyleSheet.create({
   },
   jobSitesList: {
     borderRadius: 12,
-    borderWidth: 1,
     overflow: 'hidden',
   },
   jobSiteItem: {
@@ -348,6 +516,23 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   jobSiteName: {
+    fontSize: 13,
+    fontWeight: '500',
+    flex: 1,
+    flexShrink: 1,
+  },
+  reportsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 12,
+    marginTop: 16,
+  },
+  reportsIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  reportsName: {
     fontSize: 13,
     fontWeight: '500',
     flex: 1,
@@ -387,6 +572,54 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     flex: 1,
     flexShrink: 1,
+  },
+  upcomingBanner: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 0,
+  },
+  bannerSeparator: {
+    height: 1,
+    marginBottom: 16,
+    marginTop: 0,
+  },
+  upcomingBannerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  upcomingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  upcomingItemIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  upcomingItemContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  upcomingItemTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  upcomingItemTime: {
+    fontSize: 12,
+  },
+  upcomingItemArrow: {
+    fontSize: 18,
+    marginLeft: 8,
+  },
+  upcomingBannerMore: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
 });
 

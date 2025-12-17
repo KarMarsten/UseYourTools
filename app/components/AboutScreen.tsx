@@ -65,14 +65,14 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>📅 Calendar & Daily Planner</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Monthly calendar showing all events and planned activities. Customizable time blocks that adapt to your schedule. Daily themes for focused planning. Persistent notes saved automatically.
+              Monthly calendar showing all events and planned activities. Customizable time blocks that adapt to your schedule. Daily themes for focused planning. Persistent notes saved automatically. Swipe left/right to navigate between days. View events with clickable email, phone, and address fields.
             </Text>
           </View>
 
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>💼 Job Applications</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Comprehensive tracking system with search, statistics, duplicate detection, quick links, filtering, and interview event creation.
+              Comprehensive tracking system with search, statistics, duplicate detection, quick links, filtering, and interview event creation. Human-readable date and time pickers for applied dates. Track application status (Applied, Rejected, Interview) with easy status updates.
             </Text>
           </View>
 
@@ -123,6 +123,12 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           </Text>
           <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
             • Tap any address to get directions instantly
+          </Text>
+          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
+            • In event view mode, tap email, phone, or address to interact with them
+          </Text>
+          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
+            • Long-press the About (ℹ️) or Settings (⚙️) icons for tooltips
           </Text>
           <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
             • All data stays on your device - nothing is sent to servers

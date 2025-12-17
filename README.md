@@ -55,9 +55,11 @@ Create three types of events:
 - Tap addresses to open in Apple Maps or Google Maps
 - Tap phone numbers to call or text
 - Tap email addresses to compose an email
+- In event view mode: Email, phone, and address fields are clickable
 - Automatic notifications 10 minutes before each event
 - View events in read-only mode (tap to view, tap "Edit" to modify)
 - Calendar sync with Apple Calendar or Google Calendar
+- Swipe left/right in daily planner to navigate between days
 
 ### 💼 Job Applications
 
@@ -67,7 +69,7 @@ Comprehensive tracking system for all your applications:
 - Position title and company name
 - Source (LinkedIn, Indeed, company website, etc.)
 - Job posting URL
-- Applied date & time (auto-recorded, editable for backfilling)
+- Applied date & time with human-readable date and time pickers (auto-recorded, editable)
 - Status tracking:
   - Applied (newly submitted)
   - Rejected
@@ -102,6 +104,14 @@ Organize all your resume versions:
 - Toggle Active/Inactive: Organize your resume collection
 - Delete: Remove old versions
 
+### 📝 Cover Letters
+
+Organize your cover letters:
+- Save multiple cover letter versions
+- Support for PDF, DOC, and DOCX files
+- Mark as templates or company-specific
+- Preview, share, save, rename, and manage active/inactive status
+
 ### ⚙️ Settings & Customization
 
 **Schedule Setup:**
@@ -121,6 +131,9 @@ Choose from four beautiful color schemes:
 - Apple Maps or Google Maps for addresses
 - Device timezone or custom timezone
 - Calendar sync with Apple Calendar or Google Calendar
+
+**Interface:**
+- Long-press the About (ℹ️) or Settings (⚙️) icons in the header for tooltips
 
 ### 📊 Reports
 
