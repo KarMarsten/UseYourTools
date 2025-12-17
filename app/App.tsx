@@ -8,6 +8,7 @@ import ReportsScreen from './components/ReportsScreen';
 import ViewReportScreen from './components/ViewReportScreen';
 import ApplicationsScreen from './components/ApplicationsScreen';
 import ResumeScreen from './components/ResumeScreen';
+import AboutScreen from './components/AboutScreen';
 import { PreferencesProvider } from './context/PreferencesContext';
 import { loadPreferences } from './utils/preferences';
 
@@ -70,7 +71,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-type Screen = 'home' | 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport' | 'applications' | 'resumes';
+type Screen = 'home' | 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport' | 'applications' | 'resumes' | 'about';
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
@@ -104,11 +105,6 @@ function AppContent() {
     setCurrentScreen('dailyPlanner');
   };
 
-  const handleBackToCalendarFromPlanner = () => {
-    setCurrentScreen('calendar');
-    // Trigger calendar refresh to update entry indicators
-    setCalendarRefreshTrigger(prev => prev + 1);
-  };
 
   const handleSetupComplete = () => {
     setCurrentScreen('home');
@@ -148,6 +144,14 @@ function AppContent() {
     setCurrentScreen('resumes');
   };
 
+  const handleNavigateToDailyPlanner = () => {
+    // Set to today's date and navigate to daily planner
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    setSelectedDate(today);
+    setCurrentScreen('dailyPlanner');
+  };
+
   if (currentScreen === 'setup') {
     return <SetupScreen onComplete={handleSetupComplete} onBack={handleBackToHome} />;
   }
@@ -156,10 +160,12 @@ function AppContent() {
     return (
       <HomeScreen
         onNavigateToCalendar={() => setCurrentScreen('calendar')}
+        onNavigateToDailyPlanner={handleNavigateToDailyPlanner}
         onNavigateToApplications={handleViewApplications}
         onNavigateToResumes={handleViewResumes}
         onNavigateToReports={handleViewReports}
         onNavigateToSettings={handleViewSettings}
+        onNavigateToAbout={() => setCurrentScreen('about')}
       />
     );
   }
@@ -177,7 +183,29 @@ function AppContent() {
   }
 
   if (currentScreen === 'dailyPlanner' && selectedDate) {
-    return <DailyPlannerScreen date={selectedDate} onBack={handleBackToCalendarFromPlanner} initialApplicationId={selectedApplicationId} />;
+    // Determine where we came from: if selectedApplicationId exists, we came from calendar/applications
+    // Otherwise, if it's today's date, we likely came from home
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isToday = selectedDate.getTime() === today.getTime();
+    
+    return (
+      <DailyPlannerScreen
+        date={selectedDate}
+        onBack={() => {
+          if (selectedApplicationId || !isToday) {
+            // Came from calendar/applications (specific date selected)
+            setCurrentScreen('calendar');
+            setCalendarRefreshTrigger(prev => prev + 1);
+          } else {
+            // Came from home (today's planner accessed directly)
+            setCurrentScreen('home');
+          }
+          setSelectedApplicationId(undefined); // Clear application context
+        }}
+        initialApplicationId={selectedApplicationId}
+      />
+    );
   }
 
   if (currentScreen === 'applications') {
@@ -193,14 +221,20 @@ function AppContent() {
     return <ResumeScreen onBack={handleBackToHome} />;
   }
 
+  if (currentScreen === 'about') {
+    return <AboutScreen onBack={handleBackToHome} />;
+  }
+
   // Fallback to home if no screen matches (should never happen)
   return (
     <HomeScreen
       onNavigateToCalendar={() => setCurrentScreen('calendar')}
+      onNavigateToDailyPlanner={handleNavigateToDailyPlanner}
       onNavigateToApplications={handleViewApplications}
       onNavigateToResumes={handleViewResumes}
       onNavigateToReports={handleViewReports}
       onNavigateToSettings={handleViewSettings}
+      onNavigateToAbout={() => setCurrentScreen('about')}
     />
   );
 }

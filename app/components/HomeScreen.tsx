@@ -18,6 +18,7 @@ interface HomeScreenProps {
   onNavigateToResumes: () => void;
   onNavigateToReports: () => void;
   onNavigateToSettings: () => void;
+  onNavigateToAbout: () => void;
 }
 
 export default function HomeScreen({
@@ -27,6 +28,7 @@ export default function HomeScreen({
   onNavigateToResumes,
   onNavigateToReports,
   onNavigateToSettings,
+  onNavigateToAbout,
 }: HomeScreenProps) {
   const { colorScheme } = usePreferences();
   const statusBarHeight = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0;
@@ -184,12 +186,20 @@ export default function HomeScreen({
             Tools for Job Hunters
           </Text>
         </View>
-        <TouchableOpacity
-          style={styles.settingsButton}
-          onPress={onNavigateToSettings}
-        >
-          <Text style={[styles.settingsIcon, { color: colorScheme.colors.text }]}>⚙️</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={onNavigateToAbout}
+          >
+            <Text style={[styles.settingsIcon, { color: colorScheme.colors.text }]}>ℹ️</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={onNavigateToSettings}
+          >
+            <Text style={[styles.settingsIcon, { color: colorScheme.colors.text }]}>⚙️</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -287,6 +297,11 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     textAlign: 'center',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   settingsButton: {
     padding: 8,
