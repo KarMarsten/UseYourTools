@@ -34,6 +34,8 @@
       "package": "com.useyourtools.app",
       "permissions": [
         "READ_CALENDAR",
+        "WRITE_CALENDAR",
+        "READ_CALENDAR",
         "WRITE_CALENDAR"
       ]
     },
@@ -41,6 +43,15 @@
     "scheme": "useyourtools",
     "plugins": [
       "expo-asset"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "43ad00a3-7e94-43eb-9462-340003fc7e70"
+      }
+    },
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/43ad00a3-7e94-43eb-9462-340003fc7e70"
+    }
   }
 }

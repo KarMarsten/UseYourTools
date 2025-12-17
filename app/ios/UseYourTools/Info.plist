@@ -47,7 +47,7 @@
     <key>NSAppTransportSecurity</key>
     <dict>
       <key>NSAllowsArbitraryLoads</key>
-      <false/>
+      <true/>
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
@@ -59,6 +59,15 @@
     <string>This app needs full access to your reminders to sync events.</string>
     <key>NSRemindersUsageDescription</key>
     <string>This app needs access to your reminders to sync events.</string>
+    <key>LSApplicationQueriesSchemes</key>
+    <array>
+      <string>indeed</string>
+      <string>linkedin</string>
+      <string>glassdoor</string>
+      <string>monster</string>
+      <string>ziprecruiter</string>
+      <string>dice</string>
+    </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>

@@ -1,152 +1,130 @@
 <p align="center"><img width="400" height="400" alt="UseYourTools App Icon" src="https://github.com/KarMarsten/UseYourTools/blob/main/app/assets/icon.png" /></p>
 
-# UseYourTools 🎯
+# UseYourTools
 
 **Tools for Job Hunters**
 
-A beautifully designed mobile app built specifically for job seekers. Organize your job search activities, track applications, manage your resumes, and keep everything in one place.
+A comprehensive mobile app built specifically for job seekers. Organize your job search activities, track applications, manage resumes, and keep everything in one place.
 
 ---
 
-## 🌟 What is UseYourTools?
+## Features
 
-UseYourTools is a comprehensive toolkit for job seekers that helps you:
-- 📅 **Plan your day** with a customizable calendar and daily planner
-- 💼 **Track job applications** and search history to avoid duplicates
-- 📄 **Manage your resumes** in one convenient location
-- 📊 **Generate reports** for unemployment filing or personal tracking
-- 🔔 **Never miss an appointment** with automatic reminders
-- 🗓️ **Sync with your calendar** to keep everything connected
+### Home Screen
 
-All your data is stored locally on your device - private, secure, and always accessible.
+The central hub providing quick access to all tools:
+- **Job Sites** sidebar: Quick links to popular job search platforms (Indeed, LinkedIn, Glassdoor, Monster, ZipRecruiter, Dice)
+- **Tools** section: Access to Daily Planner, Calendar, Job Applications, Resumes, and Reports
+- Clean, modern interface that adapts to your chosen color theme
 
----
-
-## ✨ Key Features
-
-### 🏠 Home Screen
-
-Start here! The home screen welcomes you and gives you easy access to all your tools:
-- **Calendar**: View your schedule and daily planner
-- **Job Applications**: Track your job applications and search history
-- **Resumes**: Manage your resume files
-- **Reports**: View weekly schedules and unemployment reports
-
-### 📅 Calendar
+### Calendar & Daily Planner
 
 **Calendar View:**
-- Monthly calendar showing all your events and planned activities
+- Monthly calendar showing all events and planned activities
 - Visual indicators for days with entries, events, and reminders
 - Quick navigation to any date
-- Tap any date to open your daily planner
+- Tap any date to open the daily planner
 
 **Daily Planner:**
-- **Customizable Time Blocks**: Arrange your day exactly how you want
-- **Flexible Scheduling**: Set your own start and end times (defaults to 9-hour workday)
-- **Daily Themes**: Each day of the week has a focused planning theme
-- **Persistent Notes**: Write notes for each time block - they're saved automatically
+- Customizable time blocks that adapt to your schedule
+- Daily themes for focused planning
+- Persistent notes saved automatically for each time block
+- Full integration with calendar events
 
 **Event Management:**
 
 Create three types of events:
 
-1. **Interviews** 📞
+1. **Interviews** - Track interview details including:
    - Company name and job title
-   - Contact person details (name, email, phone)
+   - Contact person (name, email, phone)
    - Address (tap to open in Maps)
-   - Start and end times (end time defaults to 30 minutes after start time)
-   - Date selection - choose the interview date directly in the event form
+   - Start and end times (end time defaults to 30 minutes after start)
    - Notes section
-   - Can be linked to job applications for easy tracking
+   - Can be linked to job applications
 
-2. **Appointments** 📍
+2. **Appointments** - For networking meetings, career fairs, or scheduled activities
    - Same features as interviews
-   - Perfect for networking meetings, career fairs, or any scheduled activity
-   - End time defaults to 30 minutes after start time (fully editable)
+   - Fully customizable end times
 
-3. **Reminders** ⏰
-   - Simple reminders with just a title and time
-   - Great for quick to-dos or deadlines
-
-**Smart Actions:**
-- ⏱️ **Auto-end time**: End time automatically sets to 30 minutes after start time (you can change it anytime)
-- 📍 Tap addresses to open in Apple Maps or Google Maps
-- 📞 Tap phone numbers to call or send a text
-- ✉️ Tap email addresses to compose an email
-- 🔔 Get automatic notifications 10 minutes before each event
-- 👁️ View events in read-only mode (tap to view, tap "Edit" to modify)
-
-### 💼 Job Applications
-
-Keep track of every job you apply to with a comprehensive tracking system:
-
-**Application Tracking:**
-- **Position Title**: Record the exact job title you're applying for
-- **Company Name**: Track which companies you've applied to
-- **Source**: Note where you found the job (LinkedIn, Indeed, company website, etc.)
-- **Job Posting URL**: Save a direct link to the original job posting
-- **Applied Date & Time**: Automatically records when you applied (or edit for backfilling)
-- **Status**: Track your application status:
-  - Applied (newly submitted)
-  - Rejected (received a "no thank you")
-  - Interview (application has progressed to interview stage)
-- **Notes**: Add any additional details or follow-up notes
+3. **Reminders** - Simple reminders with title and time
+   - Perfect for quick to-dos or deadlines
 
 **Smart Features:**
-- 🔍 **Search**: Quickly find applications by company, position, or source
-- 📊 **Statistics**: See your application stats at a glance (total, applied, rejected, interviews)
-- ⚠️ **Duplicate Detection**: Warns you if you try to apply to the same position twice
-- 🔗 **Quick Links**: Tap to open the original job posting
-- 🗂️ **Filter**: View applications by status (all, applied, rejected, interview)
-- ➕ **Create Interview Events**: When an application status is "Interview", easily create interview events directly from the application
-- 📅 **Multiple Interview Events**: Link multiple interview events to a single application (first round, second round, etc.)
-- 👀 **View Interview Schedule**: See all interview events for an application with date, time, and contact name
+- Auto-end time: End time automatically sets to 30 minutes after start (fully editable)
+- Tap addresses to open in Apple Maps or Google Maps
+- Tap phone numbers to call or text
+- Tap email addresses to compose an email
+- Automatic notifications 10 minutes before each event
+- View events in read-only mode (tap to view, tap "Edit" to modify)
+- Calendar sync with Apple Calendar or Google Calendar
 
-Never lose track of where you've applied, and make sure you don't accidentally apply to the same position twice!
+### Job Applications
 
-### 📄 Resumes
+Comprehensive tracking system for all your applications:
 
-Keep all your resume versions organized and accessible:
+**Application Tracking:**
+- Position title and company name
+- Source (LinkedIn, Indeed, company website, etc.)
+- Job posting URL
+- Applied date & time (auto-recorded, editable for backfilling)
+- Status tracking:
+  - Applied (newly submitted)
+  - Rejected
+  - Interview (application has progressed)
+- Notes section
+
+**Smart Features:**
+- Search: Find applications by company, position, or source
+- Statistics: See application stats at a glance
+- Duplicate detection: Warns if you try to apply to the same position twice
+- Quick links: Tap to open the original job posting
+- Filter: View applications by status
+- Create interview events: Easily create interview events from applications
+- Multiple interviews: Link multiple interview events to a single application
+- View interview schedule: See all interview events with date, time, and contact name
+
+### Resumes
+
+Organize all your resume versions:
 
 **Resume Management:**
-- **Save Multiple Versumes**: Store different versions of your resume (e.g., "Software Engineer Resume v2")
-- **File Support**: Works with PDF, DOC, and DOCX files
-- **Easy Access**: All your resumes in one place, sorted by most recent
-- **File Information**: See file size, type, and when you saved it
-- **Active Status**: Mark resumes as active or inactive to keep your list organized
+- Save multiple resume versions (e.g., "Software Engineer Resume v2")
+- Support for PDF, DOC, and DOCX files
+- All resumes in one place, sorted by most recent
+- Active/Inactive status for better organization
 
 **Actions:**
-- 👁️ **Preview**: View PDF resumes directly in the app
-- 📤 **Share**: Easily share your resume via email, messages, or any app
-- ✏️ **Rename**: Give your resumes descriptive names for easy identification
-- ✅ **Toggle Active/Inactive**: Mark resumes as active or inactive with a click
-- 🗑️ **Delete**: Remove old versions you no longer need
+- Preview: View PDF resumes directly in the app
+- Share: Easily share via email, messages, or any app
+- Save: Save resumes to your device
+- Rename: Give resumes descriptive names
+- Toggle Active/Inactive: Organize your resume collection
+- Delete: Remove old versions
 
-Perfect for managing different resume versions tailored to different job types or industries!
-
-### ⚙️ Settings & Customization
+### Settings & Customization
 
 **Schedule Setup:**
-- Choose your workday start time (end time automatically set to 9 hours later)
-- Reorder time blocks to match your daily routine
+- Customize workday start time
+- Reorder time blocks to match your routine
 - Time blocks automatically adjust to your schedule
 
 **Visual Themes:**
 Choose from four beautiful color schemes:
-- 🌿 **Earth-Tone** (default): Warm browns and tans
-- 🌊 **Cheerful Nature**: Greens and blues
-- ☀️ **Sunny Sky**: Vibrant oranges and yellows
-- 💜 **Imagination Run Wild**: Purples and pinks
+- Earth-Tone (default): Warm browns and tans
+- Cheerful Nature: Greens and blues
+- Sunny Sky: Vibrant oranges and yellows
+- Imagination Run Wild: Purples and pinks
 
 **Preferences:**
-- ⏰ 12-hour or 24-hour clock format
-- 🗺️ Choose Apple Maps or Google Maps for addresses
-- 🌍 Use device timezone or specify a custom timezone
-- 📅 Sync events with Apple Calendar or Google Calendar
+- 12-hour or 24-hour clock format
+- Apple Maps or Google Maps for addresses
+- Device timezone or custom timezone
+- Calendar sync with Apple Calendar or Google Calendar
 
-### 📊 Reports
+### Reports
 
-Generate professional PDF reports from your planning data:
+Generate professional PDF reports:
 
 **Weekly Schedule Report:**
 - Complete view of your week (Sunday through Saturday)
@@ -157,49 +135,62 @@ Generate professional PDF reports from your planning data:
 **Unemployment Report:**
 - Formatted specifically for unemployment filing
 - Includes company, contact person, date, time, and job title
-- Only shows interviews and appointments (excludes reminders)
+- Only shows interviews and appointments
 - Export as PDF for easy submission
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
-### For Users
+### Prerequisites
 
-**Option 1: Development Build (Recommended for Calendar Sync)**
+- [Node.js](https://nodejs.org/) installed
+- iOS development: Xcode (for iOS builds)
+- Android development: Android Studio (for Android builds)
 
-If you want calendar sync features, you'll need to build the app yourself:
+### Installation
 
-1. Make sure you have [Node.js](https://nodejs.org/) installed
-2. Clone this repository:
+1. Clone this repository:
    ```bash
    git clone https://github.com/KarMarsten/UseYourTools.git
    cd UseYourTools/app
    ```
-3. Install dependencies:
+
+2. Install dependencies:
    ```bash
    npm install
    ```
-4. Build and run on iOS:
+
+3. For iOS, install CocoaPods dependencies:
    ```bash
-   npx expo run:ios
-   ```
-   Or on Android:
-   ```bash
-   npx expo run:android
+   cd ios
+   pod install
+   cd ..
    ```
 
-**Option 2: Expo Go (Quick Test)**
+### Running the App
 
-For quick testing without calendar sync:
+**Development Build (Recommended for Calendar Sync):**
 
-1. Install [Expo Go](https://expo.dev/client) on your phone
-2. Clone the repository and install dependencies (steps 1-3 above)
-3. Start the development server:
-   ```bash
-   npm start
-   ```
-4. Scan the QR code with Expo Go
+```bash
+# iOS
+npx expo run:ios
+
+# Android
+npx expo run:android
+```
+
+**Development Server:**
+
+```bash
+# Start Metro bundler
+npm start
+
+# Or with tunnel (for testing on devices outside local network)
+npm run start:tunnel
+```
+
+**Note:** Calendar sync features require a development build. Expo Go does not support all native features.
 
 ### First Time Setup
 
@@ -212,92 +203,73 @@ When you first open the app:
 
 ---
 
-## 📱 How to Use
+## How to Use
 
 ### Navigating the App
 
-Start at the **Home Screen** - your central hub for all tools. From here, tap any tool card to access:
-- 📅 **Calendar** - View your schedule and plan your days
-- 💼 **Job Applications** - Track your applications
-- 📄 **Resumes** - Manage your resume files
-- 📊 **Reports** - Generate reports
+Start at the **Home Screen** - your central hub. From here:
+- Use the **Job Sites** sidebar for quick access to job search platforms
+- Tap any tool card to access Calendar, Job Applications, Resumes, or Reports
 
 ### Creating Events
 
 **From Calendar:**
-1. From the home screen, tap **Calendar**
+1. Tap **Calendar** from home
 2. Tap any date on the calendar
-3. Tap **"+ Add Event"** button
+3. Tap **"+ Add Event"**
 4. Choose event type (Interview, Appointment, or Reminder)
-5. Fill in the details
-6. End time automatically defaults to 30 minutes after start time (you can change it)
-7. Tap **"Save"**
+5. Fill in details (end time defaults to 30 minutes after start)
+6. Tap **"Save"**
 
 **From Job Application:**
-1. From the home screen, tap **Job Applications**
+1. Tap **Job Applications** from home
 2. Find an application with status "Interview"
 3. Tap **"+ Add Interview Event"**
-4. The event form opens with company and position pre-filled
-5. Select the interview date using the date picker
-6. Fill in time, contact details, and other information
-7. Tap **"Save"** - the event is automatically linked to the application
-
-### Viewing and Editing Events
-
-- **View**: Tap any event to see details in read-only mode
-- **Edit**: Tap the **"Edit"** button in the upper right corner
-- **Delete**: Delete from the edit screen
+4. Event form opens with company and position pre-filled
+5. Select interview date, fill in time and contact details
+6. Tap **"Save"** - event is automatically linked to the application
 
 ### Tracking Job Applications
 
-**Adding Applications:**
-1. From the home screen, tap **Job Applications**
+1. Tap **Job Applications** from home
 2. Tap **"+ Add"** to add a new application
-3. Fill in the position title, company, source, and optional job posting URL
-4. The applied date/time defaults to now, but you can edit it if you're backfilling
-5. Choose the application status (Applied, Rejected, or Interview)
-6. Add any notes if needed
-7. Tap **"Save Application"**
+3. Fill in position title, company, source, and optional job posting URL
+4. Choose application status (Applied, Rejected, or Interview)
+5. Add notes if needed
+6. Tap **"Save Application"**
 
-**Managing Interview Applications:**
-- When an application progresses to "Interview" status, you can create interview events directly from the application
-- Each application can have multiple interview events linked (for multiple rounds)
-- View all interview events for an application with date, time, and contact name
-- Tap any interview event to view it in your calendar
-- Change application status quickly by tapping the status badge
-
-Use the search bar to find specific applications, or filter by status to see your progress!
+Use search to find specific applications or filter by status to see your progress.
 
 ### Managing Resumes
 
-1. From the home screen, tap **Resumes**
+1. Tap **Resumes** from home
 2. Tap **"+ Add"** to save a resume
 3. Select a PDF, DOC, or DOCX file from your device
-4. The file is automatically saved with its original name (you can rename it later)
+4. File is saved with its original name (you can rename it later)
 
-To share, rename, or delete a resume, tap the respective buttons on each resume card.
+To share, save, rename, or delete a resume, use the buttons on each resume card.
 
 ### Calendar Sync
 
-To sync your events with your device's calendar:
+To sync events with your device's calendar:
 
-1. Go to **Settings** (gear icon on any screen, or from home screen)
+1. Go to **Settings** (gear icon)
 2. Under **"Calendar Sync"**, choose **"Apple Calendar"** or **"Google Calendar"**
-3. Tap **"Sync All Existing Events to Calendar"** to sync events you've already created
+3. Tap **"Sync All Existing Events to Calendar"** to sync existing events
 4. New events will automatically sync going forward
 
-**Note:** The app automatically selects a writable calendar (one that allows modifications). If you have read-only calendars (like subscribed calendars), the app will use or create a writable calendar for your events.
+**Note:** The app automatically selects a writable calendar. Read-only calendars (like subscribed calendars) will not be used.
 
 ### Generating Reports
 
-1. From the home screen, tap **Reports**
+1. Tap **Reports** from home
 2. Choose report type (Weekly Schedule or Unemployment Report)
 3. Select the week you want to report on
 4. View the report, then tap **"Export PDF"** to save or share
 
 ---
 
-## 🛠️ Technical Details
+## Technical Details
 
 **Built with:**
 - React Native 0.79.6
@@ -307,34 +279,59 @@ To sync your events with your device's calendar:
 - Calendar integration with expo-calendar
 - PDF generation with expo-print
 - File system with expo-file-system
+- Safe area handling with react-native-safe-area-context
 
 **Platform Support:**
 - ✅ iOS (requires iOS 15.1+)
-- ✅ Android (coming soon)
+- ✅ Android
+
+**Architecture:**
+- All data stored locally on device (privacy-first)
+- No external servers or cloud storage required
+- Calendar sync uses device's native calendar APIs
 
 ---
 
-## 💡 Tips & Tricks
+## Tips & Tricks
 
-- **Home Screen Hub**: Always return to the home screen to access any tool - it's your central command center!
-- **Application Search**: Use the search feature in Job Applications to quickly find if you've already applied somewhere
-- **Multiple Interview Events**: Track all rounds of interviews for a single application - create as many interview events as needed
-- **Quick Status Changes**: Tap the status badge on any application to quickly change its status
-- **Auto End Time**: When creating events, the end time automatically sets to 30 minutes later - but you can always change it
-- **Resume Organization**: Name your resumes descriptively (e.g., "Software Engineer - Tech Focus") and mark active ones for easy identification
-- **Smart Notifications**: You'll get a reminder 10 minutes before each event
+- **Home Screen Hub**: Always return to home to access any tool
+- **Application Search**: Use search to quickly find if you've already applied somewhere
+- **Multiple Interview Events**: Track all rounds of interviews for a single application
+- **Quick Status Changes**: Tap the status badge on any application to quickly change status
+- **Auto End Time**: End time automatically sets to 30 minutes later - but you can always change it
+- **Resume Organization**: Name resumes descriptively and mark active ones for easy identification
+- **Smart Notifications**: Get reminders 10 minutes before each event
 - **Map Integration**: Tap any address to get directions instantly
 - **Privacy First**: All data stays on your device - nothing is sent to servers
 
 ---
 
-## 📝 License
+## Troubleshooting
+
+### Development Server Connection
+
+If you're having trouble connecting to the development server:
+
+1. Make sure Metro bundler is running (`npm start`)
+2. For iOS: If using tunnel mode, you may need to rebuild the app after Info.plist changes
+3. Check that your device and computer are on the same network (for LAN mode)
+4. See `app/TROUBLESHOOTING_CONNECTION.md` for more details
+
+### Calendar Sync Issues
+
+- Ensure calendar permissions are granted
+- The app automatically selects a writable calendar
+- If you have only read-only calendars, the app will create a new writable calendar
+
+---
+
+## License
 
 This project is licensed under the **MIT License**.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Feel free to submit issues or pull requests.
 
