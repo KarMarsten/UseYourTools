@@ -60,5 +60,24 @@ target 'UseYourTools' do
         end
       end
     end
+
+    # Suppress nullability warnings from Expo pods
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['OTHER_CFLAGS'] ||= ['$(inherited)']
+        config.build_settings['OTHER_CFLAGS'] << '-Wno-nullability-completeness'
+      end
+    end
+
+    # Configure Hermes script phase to run on every build (suppress warning)
+    installer.pods_project.targets.each do |target|
+      target.build_phases.each do |phase|
+        if phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase)
+          if phase.name && phase.name.include?('Hermes')
+            phase.always_out_of_date = true
+          end
+        end
+      end
+    end
   end
 end

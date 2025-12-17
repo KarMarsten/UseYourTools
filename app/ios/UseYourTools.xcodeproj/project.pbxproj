@@ -462,6 +462,7 @@
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-Wno-nullability-completeness",
+					"-Wno-nullability",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
@@ -524,6 +525,7 @@
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-Wno-nullability-completeness",
+					"-Wno-nullability",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
