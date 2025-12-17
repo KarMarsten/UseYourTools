@@ -1,6 +1,6 @@
 <p align="center"><img width="400" height="400" alt="UseYourTools App Icon" src="https://github.com/KarMarsten/UseYourTools/blob/main/app/assets/icon.png" /></p>
 
-# UseYourTools
+# UseYourTools 🎯
 
 **Tools for Job Hunters**
 
@@ -8,16 +8,16 @@ A comprehensive mobile app built specifically for job seekers. Organize your job
 
 ---
 
-## Features
+## ✨ Features
 
-### Home Screen
+### 🏠 Home Screen
 
 The central hub providing quick access to all tools:
-- **Job Sites** sidebar: Quick links to popular job search platforms (Indeed, LinkedIn, Glassdoor, Monster, ZipRecruiter, Dice)
-- **Tools** section: Access to Daily Planner, Calendar, Job Applications, Resumes, and Reports
-- Clean, modern interface that adapts to your chosen color theme
+- 🔗 **Job Sites** sidebar: Quick links to popular job search platforms (Indeed, LinkedIn, Glassdoor, Monster, ZipRecruiter, Dice)
+- 🛠️ **Tools** section: Access to Daily Planner, Calendar, Job Applications, Resumes, and Reports
+- 🎨 Clean, modern interface that adapts to your chosen color theme
 
-### Calendar & Daily Planner
+### 📅 Calendar & Daily Planner
 
 **Calendar View:**
 - Monthly calendar showing all events and planned activities
@@ -35,7 +35,7 @@ The central hub providing quick access to all tools:
 
 Create three types of events:
 
-1. **Interviews** - Track interview details including:
+1. **Interviews** 📞 - Track interview details including:
    - Company name and job title
    - Contact person (name, email, phone)
    - Address (tap to open in Maps)
@@ -43,23 +43,23 @@ Create three types of events:
    - Notes section
    - Can be linked to job applications
 
-2. **Appointments** - For networking meetings, career fairs, or scheduled activities
+2. **Appointments** 📍 - For networking meetings, career fairs, or scheduled activities
    - Same features as interviews
    - Fully customizable end times
 
-3. **Reminders** - Simple reminders with title and time
+3. **Reminders** ⏰ - Simple reminders with title and time
    - Perfect for quick to-dos or deadlines
 
 **Smart Features:**
-- Auto-end time: End time automatically sets to 30 minutes after start (fully editable)
-- Tap addresses to open in Apple Maps or Google Maps
-- Tap phone numbers to call or text
-- Tap email addresses to compose an email
-- Automatic notifications 10 minutes before each event
-- View events in read-only mode (tap to view, tap "Edit" to modify)
-- Calendar sync with Apple Calendar or Google Calendar
+- ⏱️ Auto-end time: End time automatically sets to 30 minutes after start (fully editable)
+- 📍 Tap addresses to open in Apple Maps or Google Maps
+- 📞 Tap phone numbers to call or text
+- ✉️ Tap email addresses to compose an email
+- 🔔 Automatic notifications 10 minutes before each event
+- 👁️ View events in read-only mode (tap to view, tap "Edit" to modify)
+- 📅 Calendar sync with Apple Calendar or Google Calendar
 
-### Job Applications
+### 💼 Job Applications
 
 Comprehensive tracking system for all your applications:
 
@@ -75,16 +75,16 @@ Comprehensive tracking system for all your applications:
 - Notes section
 
 **Smart Features:**
-- Search: Find applications by company, position, or source
-- Statistics: See application stats at a glance
-- Duplicate detection: Warns if you try to apply to the same position twice
-- Quick links: Tap to open the original job posting
-- Filter: View applications by status
-- Create interview events: Easily create interview events from applications
-- Multiple interviews: Link multiple interview events to a single application
-- View interview schedule: See all interview events with date, time, and contact name
+- 🔍 Search: Find applications by company, position, or source
+- 📊 Statistics: See application stats at a glance
+- ⚠️ Duplicate detection: Warns if you try to apply to the same position twice
+- 🔗 Quick links: Tap to open the original job posting
+- 🗂️ Filter: View applications by status
+- ➕ Create interview events: Easily create interview events from applications
+- 📅 Multiple interviews: Link multiple interview events to a single application
+- 👀 View interview schedule: See all interview events with date, time, and contact name
 
-### Resumes
+### 📄 Resumes
 
 Organize all your resume versions:
 
@@ -95,14 +95,14 @@ Organize all your resume versions:
 - Active/Inactive status for better organization
 
 **Actions:**
-- Preview: View PDF resumes directly in the app
-- Share: Easily share via email, messages, or any app
-- Save: Save resumes to your device
-- Rename: Give resumes descriptive names
-- Toggle Active/Inactive: Organize your resume collection
-- Delete: Remove old versions
+- 👁️ Preview: View PDF resumes directly in the app
+- 📤 Share: Easily share via email, messages, or any app
+- 💾 Save: Save resumes to your device
+- ✏️ Rename: Give resumes descriptive names
+- ✅ Toggle Active/Inactive: Organize your resume collection
+- 🗑️ Delete: Remove old versions
 
-### Settings & Customization
+### ⚙️ Settings & Customization
 
 **Schedule Setup:**
 - Customize workday start time
@@ -111,18 +111,18 @@ Organize all your resume versions:
 
 **Visual Themes:**
 Choose from four beautiful color schemes:
-- Earth-Tone (default): Warm browns and tans
-- Cheerful Nature: Greens and blues
-- Sunny Sky: Vibrant oranges and yellows
-- Imagination Run Wild: Purples and pinks
+- 🌿 Earth-Tone (default): Warm browns and tans
+- 🌊 Cheerful Nature: Greens and blues
+- ☀️ Sunny Sky: Vibrant oranges and yellows
+- 💜 Imagination Run Wild: Purples and pinks
 
 **Preferences:**
-- 12-hour or 24-hour clock format
-- Apple Maps or Google Maps for addresses
-- Device timezone or custom timezone
-- Calendar sync with Apple Calendar or Google Calendar
+- ⏰ 12-hour or 24-hour clock format
+- 🗺️ Apple Maps or Google Maps for addresses
+- 🌍 Device timezone or custom timezone
+- 📅 Calendar sync with Apple Calendar or Google Calendar
 
-### Reports
+### 📊 Reports
 
 Generate professional PDF reports:
 
@@ -140,7 +140,7 @@ Generate professional PDF reports:
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
@@ -203,7 +203,7 @@ When you first open the app:
 
 ---
 
-## How to Use
+## 📱 How to Use
 
 ### Navigating the App
 
@@ -269,7 +269,7 @@ To sync events with your device's calendar:
 
 ---
 
-## Technical Details
+## 🛠️ Technical Details
 
 **Built with:**
 - React Native 0.79.6
@@ -292,7 +292,7 @@ To sync events with your device's calendar:
 
 ---
 
-## Tips & Tricks
+## 💡 Tips & Tricks
 
 - **Home Screen Hub**: Always return to home to access any tool
 - **Application Search**: Use search to quickly find if you've already applied somewhere
@@ -306,7 +306,7 @@ To sync events with your device's calendar:
 
 ---
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
 ### Development Server Connection
 
@@ -325,13 +325,13 @@ If you're having trouble connecting to the development server:
 
 ---
 
-## License
+## 📝 License
 
 This project is licensed under the **MIT License**.
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Feel free to submit issues or pull requests.
 
