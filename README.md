@@ -13,9 +13,9 @@ A comprehensive mobile app built specifically for job seekers. Organize your job
 ### 🏠 Home Screen
 
 The central hub providing quick access to all tools:
-- 🔗 **Job Sites** sidebar: Quick links to popular job search platforms (Indeed, LinkedIn, Glassdoor, Monster, ZipRecruiter, Dice)
-- 🛠️ **Tools** section: Access to Daily Planner, Calendar, Job Applications, Resumes, and Reports
-- 🎨 Clean, modern interface that adapts to your chosen color theme
+- **Job Sites** sidebar: Quick links to popular job search platforms (Indeed, LinkedIn, Glassdoor, Monster, ZipRecruiter, Dice)
+- **Tools** section: Access to Daily Planner, Calendar, Job Applications, Resumes, and Reports
+- Clean, modern interface that adapts to your chosen color theme
 
 ### 📅 Calendar & Daily Planner
 
@@ -51,13 +51,13 @@ Create three types of events:
    - Perfect for quick to-dos or deadlines
 
 **Smart Features:**
-- ⏱️ Auto-end time: End time automatically sets to 30 minutes after start (fully editable)
-- 📍 Tap addresses to open in Apple Maps or Google Maps
-- 📞 Tap phone numbers to call or text
-- ✉️ Tap email addresses to compose an email
-- 🔔 Automatic notifications 10 minutes before each event
-- 👁️ View events in read-only mode (tap to view, tap "Edit" to modify)
-- 📅 Calendar sync with Apple Calendar or Google Calendar
+- Auto-end time: End time automatically sets to 30 minutes after start (fully editable)
+- Tap addresses to open in Apple Maps or Google Maps
+- Tap phone numbers to call or text
+- Tap email addresses to compose an email
+- Automatic notifications 10 minutes before each event
+- View events in read-only mode (tap to view, tap "Edit" to modify)
+- Calendar sync with Apple Calendar or Google Calendar
 
 ### 💼 Job Applications
 
@@ -75,14 +75,14 @@ Comprehensive tracking system for all your applications:
 - Notes section
 
 **Smart Features:**
-- 🔍 Search: Find applications by company, position, or source
-- 📊 Statistics: See application stats at a glance
-- ⚠️ Duplicate detection: Warns if you try to apply to the same position twice
-- 🔗 Quick links: Tap to open the original job posting
-- 🗂️ Filter: View applications by status
-- ➕ Create interview events: Easily create interview events from applications
-- 📅 Multiple interviews: Link multiple interview events to a single application
-- 👀 View interview schedule: See all interview events with date, time, and contact name
+- Search: Find applications by company, position, or source
+- Statistics: See application stats at a glance
+- Duplicate detection: Warns if you try to apply to the same position twice
+- Quick links: Tap to open the original job posting
+- Filter: View applications by status
+- Create interview events: Easily create interview events from applications
+- Multiple interviews: Link multiple interview events to a single application
+- View interview schedule: See all interview events with date, time, and contact name
 
 ### 📄 Resumes
 
@@ -96,11 +96,11 @@ Organize all your resume versions:
 
 **Actions:**
 - 👁️ Preview: View PDF resumes directly in the app
-- 📤 Share: Easily share via email, messages, or any app
-- 💾 Save: Save resumes to your device
-- ✏️ Rename: Give resumes descriptive names
-- ✅ Toggle Active/Inactive: Organize your resume collection
-- 🗑️ Delete: Remove old versions
+- Share: Easily share via email, messages, or any app
+- Save: Save resumes to your device
+- Rename: Give resumes descriptive names
+- Toggle Active/Inactive: Organize your resume collection
+- Delete: Remove old versions
 
 ### ⚙️ Settings & Customization
 
@@ -117,10 +117,10 @@ Choose from four beautiful color schemes:
 - 💜 Imagination Run Wild: Purples and pinks
 
 **Preferences:**
-- ⏰ 12-hour or 24-hour clock format
-- 🗺️ Apple Maps or Google Maps for addresses
-- 🌍 Device timezone or custom timezone
-- 📅 Calendar sync with Apple Calendar or Google Calendar
+- 12-hour or 24-hour clock format
+- Apple Maps or Google Maps for addresses
+- Device timezone or custom timezone
+- Calendar sync with Apple Calendar or Google Calendar
 
 ### 📊 Reports
 
