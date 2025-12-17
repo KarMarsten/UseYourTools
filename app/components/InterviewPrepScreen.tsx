@@ -25,7 +25,11 @@ import {
   saveSTARResponse,
   deleteSTARResponse,
   getAllCompanyResearch,
+  saveCompanyResearch,
+  deleteCompanyResearch,
   getAllInterviewFeedback,
+  saveInterviewFeedback,
+  deleteInterviewFeedback,
 } from '../utils/interviewPrep';
 import { getAllApplications, JobApplication } from '../utils/applications';
 
@@ -58,6 +62,28 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
   const [starAction, setStarAction] = useState<string>('');
   const [starResult, setStarResult] = useState<string>('');
   const [showQuestionDropdown, setShowQuestionDropdown] = useState<boolean>(false);
+  
+  // Company Research form state
+  const [showResearchForm, setShowResearchForm] = useState<boolean>(false);
+  const [editingResearch, setEditingResearch] = useState<CompanyResearch | null>(null);
+  const [researchCompanyName, setResearchCompanyName] = useState<string>('');
+  const [researchPositionTitle, setResearchPositionTitle] = useState<string>('');
+  const [researchNotes, setResearchNotes] = useState<string>('');
+  const [researchWebsite, setResearchWebsite] = useState<string>('');
+  const [researchLinkedIn, setResearchLinkedIn] = useState<string>('');
+  const [researchGlassdoor, setResearchGlassdoor] = useState<string>('');
+  const [selectedApplicationForResearch, setSelectedApplicationForResearch] = useState<string | undefined>(undefined);
+  
+  // Interview Feedback form state
+  const [showFeedbackForm, setShowFeedbackForm] = useState<boolean>(false);
+  const [editingFeedback, setEditingFeedback] = useState<InterviewFeedback | null>(null);
+  const [feedbackCompanyName, setFeedbackCompanyName] = useState<string>('');
+  const [feedbackPositionTitle, setFeedbackPositionTitle] = useState<string>('');
+  const [feedbackInterviewDate, setFeedbackInterviewDate] = useState<Date>(new Date());
+  const [feedbackText, setFeedbackText] = useState<string>('');
+  const [feedbackStrengths, setFeedbackStrengths] = useState<string>('');
+  const [feedbackAreasForImprovement, setFeedbackAreasForImprovement] = useState<string>('');
+  const [selectedApplicationForFeedback, setSelectedApplicationForFeedback] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     loadInterviewPrepData();
@@ -183,6 +209,185 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
         },
       ]
     );
+  };
+
+  // Company Research handlers
+  const resetResearchForm = () => {
+    setResearchCompanyName('');
+    setResearchPositionTitle('');
+    setResearchNotes('');
+    setResearchWebsite('');
+    setResearchLinkedIn('');
+    setResearchGlassdoor('');
+    setSelectedApplicationForResearch(undefined);
+    setEditingResearch(null);
+    setShowResearchForm(false);
+  };
+
+  const handleEditResearch = (research: CompanyResearch) => {
+    setEditingResearch(research);
+    setResearchCompanyName(research.companyName);
+    setResearchPositionTitle(research.positionTitle || '');
+    setResearchNotes(research.researchNotes);
+    setResearchWebsite(research.website || '');
+    setResearchLinkedIn(research.linkedinUrl || '');
+    setResearchGlassdoor(research.glassdoorUrl || '');
+    setSelectedApplicationForResearch(research.applicationId);
+    setShowResearchForm(true);
+  };
+
+  const handleSaveResearch = async () => {
+    if (!researchCompanyName.trim()) {
+      Alert.alert('Error', 'Please enter a company name');
+      return;
+    }
+    if (!selectedApplicationForResearch) {
+      Alert.alert('Error', 'Please select a job application');
+      return;
+    }
+    if (!researchNotes.trim()) {
+      Alert.alert('Error', 'Please enter research notes');
+      return;
+    }
+
+    try {
+      const research: CompanyResearch = {
+        id: editingResearch?.id || '',
+        applicationId: selectedApplicationForResearch!,
+        companyName: researchCompanyName.trim(),
+        positionTitle: researchPositionTitle.trim(),
+        researchNotes: researchNotes.trim(),
+        website: researchWebsite.trim() || undefined,
+        linkedinUrl: researchLinkedIn.trim() || undefined,
+        glassdoorUrl: researchGlassdoor.trim() || undefined,
+        createdAt: editingResearch?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await saveCompanyResearch(research);
+      await loadInterviewPrepData();
+      resetResearchForm();
+      Alert.alert('Success', editingResearch ? 'Company research updated' : 'Company research saved');
+    } catch (error) {
+      console.error('Error saving company research:', error);
+      Alert.alert('Error', 'Failed to save company research');
+    }
+  };
+
+  const handleDeleteResearch = (research: CompanyResearch) => {
+    Alert.alert(
+      'Delete Company Research',
+      `Are you sure you want to delete this company research?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteCompanyResearch(research.id);
+              await loadInterviewPrepData();
+              Alert.alert('Success', 'Company research deleted');
+            } catch (error) {
+              console.error('Error deleting company research:', error);
+              Alert.alert('Error', 'Failed to delete company research');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Interview Feedback handlers
+  const resetFeedbackForm = () => {
+    setFeedbackCompanyName('');
+    setFeedbackPositionTitle('');
+    setFeedbackInterviewDate(new Date());
+    setFeedbackText('');
+    setFeedbackStrengths('');
+    setFeedbackAreasForImprovement('');
+    setSelectedApplicationForFeedback(undefined);
+    setEditingFeedback(null);
+    setShowFeedbackForm(false);
+  };
+
+  const handleEditFeedback = (feedback: InterviewFeedback) => {
+    setEditingFeedback(feedback);
+    setFeedbackCompanyName(feedback.companyName);
+    setFeedbackPositionTitle(feedback.positionTitle || '');
+    setFeedbackInterviewDate(new Date(feedback.interviewDate));
+    setFeedbackText(feedback.feedback);
+    setFeedbackStrengths(feedback.strengths || '');
+    setFeedbackAreasForImprovement(feedback.areasForImprovement || '');
+    setSelectedApplicationForFeedback(feedback.applicationId);
+    setShowFeedbackForm(true);
+  };
+
+  const handleSaveFeedback = async () => {
+    if (!feedbackCompanyName.trim()) {
+      Alert.alert('Error', 'Please enter a company name');
+      return;
+    }
+    if (!selectedApplicationForFeedback) {
+      Alert.alert('Error', 'Please select a job application');
+      return;
+    }
+    if (!feedbackText.trim()) {
+      Alert.alert('Error', 'Please enter feedback');
+      return;
+    }
+
+    try {
+      const feedback: InterviewFeedback = {
+        id: editingFeedback?.id || '',
+        applicationId: selectedApplicationForFeedback!,
+        companyName: feedbackCompanyName.trim(),
+        positionTitle: feedbackPositionTitle.trim() || '',
+        interviewDate: feedbackInterviewDate.toISOString(),
+        feedback: feedbackText.trim(),
+        strengths: feedbackStrengths.trim() || undefined,
+        areasForImprovement: feedbackAreasForImprovement.trim() || undefined,
+        createdAt: editingFeedback?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await saveInterviewFeedback(feedback);
+      await loadInterviewPrepData();
+      resetFeedbackForm();
+      Alert.alert('Success', editingFeedback ? 'Interview feedback updated' : 'Interview feedback saved');
+    } catch (error) {
+      console.error('Error saving interview feedback:', error);
+      Alert.alert('Error', 'Failed to save interview feedback');
+    }
+  };
+
+  const handleDeleteFeedback = (feedback: InterviewFeedback) => {
+    Alert.alert(
+      'Delete Interview Feedback',
+      `Are you sure you want to delete this interview feedback?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteInterviewFeedback(feedback.id);
+              await loadInterviewPrepData();
+              Alert.alert('Success', 'Interview feedback deleted');
+            } catch (error) {
+              console.error('Error deleting interview feedback:', error);
+              Alert.alert('Error', 'Failed to delete interview feedback');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const getApplicationDisplay = (appId: string) => {
+    const app = applications.find(a => a.id === appId);
+    return app ? `${app.positionTitle} at ${app.company}` : 'Unknown Application';
   };
 
   return (
@@ -401,8 +606,8 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
               <Text style={[styles.interviewPrepSectionTitle, { color: colorScheme.colors.text }]}>Company Research</Text>
               <TouchableOpacity
                 onPress={() => {
-                  // TODO: Open company research form
-                  Alert.alert('Coming Soon', 'Company research form will be implemented');
+                  resetResearchForm();
+                  setShowResearchForm(true);
                 }}
               >
                 <Text style={[styles.addButtonText, { color: colorScheme.colors.primary }]}>+ New</Text>
@@ -441,6 +646,20 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
                       </TouchableOpacity>
                     )}
                   </View>
+                  <View style={styles.researchActions}>
+                    <TouchableOpacity
+                      style={[styles.researchActionButton, { backgroundColor: colorScheme.colors.primary }]}
+                      onPress={() => handleEditResearch(research)}
+                    >
+                      <Text style={styles.researchActionButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.researchActionButton, { backgroundColor: '#d32f2f' }]}
+                      onPress={() => handleDeleteResearch(research)}
+                    >
+                      <Text style={styles.researchActionButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))
             )}
@@ -457,8 +676,8 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
               <Text style={[styles.interviewPrepSectionTitle, { color: colorScheme.colors.text }]}>Interview Feedback</Text>
               <TouchableOpacity
                 onPress={() => {
-                  // TODO: Open interview feedback form
-                  Alert.alert('Coming Soon', 'Interview feedback form will be implemented');
+                  resetFeedbackForm();
+                  setShowFeedbackForm(true);
                 }}
               >
                 <Text style={[styles.addButtonText, { color: colorScheme.colors.primary }]}>+ New</Text>
@@ -495,6 +714,20 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
                       <Text style={[styles.feedbackValue, { color: colorScheme.colors.textSecondary }]}>{feedback.areasForImprovement}</Text>
                     </View>
                   )}
+                  <View style={styles.feedbackActions}>
+                    <TouchableOpacity
+                      style={[styles.feedbackActionButton, { backgroundColor: colorScheme.colors.primary }]}
+                      onPress={() => handleEditFeedback(feedback)}
+                    >
+                      <Text style={styles.feedbackActionButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.feedbackActionButton, { backgroundColor: '#d32f2f' }]}
+                      onPress={() => handleDeleteFeedback(feedback)}
+                    >
+                      <Text style={styles.feedbackActionButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))
             )}
@@ -751,6 +984,331 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
           </KeyboardAvoidingView>
         </Modal>
       )}
+
+      {/* Company Research Form Modal */}
+      {showResearchForm && (
+        <Modal
+          visible={showResearchForm}
+          animationType="slide"
+          transparent={false}
+          onRequestClose={resetResearchForm}
+        >
+          <KeyboardAvoidingView
+            style={[styles.modalContainer, { backgroundColor: colorScheme.colors.background }]}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          >
+            <View style={[styles.modalHeader, { backgroundColor: colorScheme.colors.surface, borderBottomColor: colorScheme.colors.border }]}>
+              <TouchableOpacity onPress={resetResearchForm} style={styles.modalBackButton}>
+                <Text style={[styles.modalBackButtonText, { color: colorScheme.colors.primary }]}>← Cancel</Text>
+              </TouchableOpacity>
+              <Text style={[styles.modalTitle, { color: colorScheme.colors.text }]}>
+                {editingResearch ? 'Edit Company Research' : 'New Company Research'}
+              </Text>
+              <TouchableOpacity onPress={handleSaveResearch} style={styles.modalSaveButton}>
+                <Text style={[styles.modalSaveButtonText, { color: colorScheme.colors.primary }]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.modalScrollView}
+              contentContainerStyle={styles.modalContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.starFormGroup}>
+                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Job Application *</Text>
+                <TouchableOpacity
+                  style={[styles.pickerButton, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}
+                  onPress={() => {
+                    if (applications.length === 0) {
+                      Alert.alert('No Applications', 'Please add a job application first');
+                      return;
+                    }
+                    const options = applications.map(app => getApplicationDisplay(app.id));
+                    const currentIndex = selectedApplicationForResearch
+                      ? applications.findIndex(app => app.id === selectedApplicationForResearch)
+                      : -1;
+                    Alert.alert(
+                      'Select Application',
+                      '',
+                      options.map((name, index) => ({
+                        text: name,
+                        onPress: () => setSelectedApplicationForResearch(applications[index].id),
+                        style: index === currentIndex ? 'default' : undefined,
+                      }))
+                    );
+                  }}
+                >
+                  <Text style={[styles.pickerButtonText, { color: selectedApplicationForResearch ? colorScheme.colors.text : colorScheme.colors.textSecondary }]}>
+                    {selectedApplicationForResearch
+                      ? getApplicationDisplay(selectedApplicationForResearch)
+                      : 'Select an application...'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.starFormGroup}>
+                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Company Name *</Text>
+                <TextInput
+                  style={[styles.starFormInput, { backgroundColor: colorScheme.colors.surface, color: colorScheme.colors.text, borderColor: colorScheme.colors.border }]}
+                  value={researchCompanyName}
+                  onChangeText={setResearchCompanyName}
+                  placeholder="Enter company name"
+                  placeholderTextColor={colorScheme.colors.textSecondary}
+                />
+              </View>
+
+              <View style={styles.starFormGroup}>
+                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Position Title *</Text>
+                <TextInput
+                  style={[styles.starFormInput, { backgroundColor: colorScheme.colors.surface, color: colorScheme.colors.text, borderColor: colorScheme.colors.border }]}
+                  value={researchPositionTitle}
+                  onChangeText={setResearchPositionTitle}
+                  placeholder="Enter position title"
+                  placeholderTextColor={colorScheme.colors.textSecondary}
+                />
+              </View>
+
+              <View style={styles.starFormGroup}>
+                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Research Notes *</Text>
+                <TextInput
+                  style={[styles.starFormTextArea, { backgroundColor: colorScheme.colors.surface, color: colorScheme.colors.text, borderColor: colorScheme.colors.border }]}
+                  value={researchNotes}
+                  onChangeText={setResearchNotes}
+                  placeholder="Enter your research notes about the company..."
+                  placeholderTextColor={colorScheme.colors.textSecondary}
+                  multiline
+                  numberOfLines={6}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              <View style={styles.starFormGroup}>
+                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Website URL (Optional)</Text>
+                <TextInput
+                  style={[styles.starFormInput, { backgroundColor: colorScheme.colors.surface, color: colorScheme.colors.text, borderColor: colorScheme.colors.border }]}
+                  value={researchWebsite}
+                  onChangeText={setResearchWebsite}
+                  placeholder="https://..."
+                  placeholderTextColor={colorScheme.colors.textSecondary}
+                  keyboardType="url"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.starFormGroup}>
+                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>LinkedIn URL (Optional)</Text>
+                <TextInput
+                  style={[styles.starFormInput, { backgroundColor: colorScheme.colors.surface, color: colorScheme.colors.text, borderColor: colorScheme.colors.border }]}
+                  value={researchLinkedIn}
+                  onChangeText={setResearchLinkedIn}
+                  placeholder="https://linkedin.com/..."
+                  placeholderTextColor={colorScheme.colors.textSecondary}
+                  keyboardType="url"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.starFormGroup}>
+                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Glassdoor URL (Optional)</Text>
+                <TextInput
+                  style={[styles.starFormInput, { backgroundColor: colorScheme.colors.surface, color: colorScheme.colors.text, borderColor: colorScheme.colors.border }]}
+                  value={researchGlassdoor}
+                  onChangeText={setResearchGlassdoor}
+                  placeholder="https://glassdoor.com/..."
+                  placeholderTextColor={colorScheme.colors.textSecondary}
+                  keyboardType="url"
+                  autoCapitalize="none"
+                />
+              </View>
+              <View style={{ height: 40 }} />
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </Modal>
+      )}
+
+      {/* Interview Feedback Form Modal */}
+      {showFeedbackForm && (
+        <Modal
+          visible={showFeedbackForm}
+          animationType="slide"
+          transparent={false}
+          onRequestClose={resetFeedbackForm}
+        >
+          <KeyboardAvoidingView
+            style={[styles.modalContainer, { backgroundColor: colorScheme.colors.background }]}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          >
+            <View style={[styles.modalHeader, { backgroundColor: colorScheme.colors.surface, borderBottomColor: colorScheme.colors.border }]}>
+              <TouchableOpacity onPress={resetFeedbackForm} style={styles.modalBackButton}>
+                <Text style={[styles.modalBackButtonText, { color: colorScheme.colors.primary }]}>← Cancel</Text>
+              </TouchableOpacity>
+              <Text style={[styles.modalTitle, { color: colorScheme.colors.text }]}>
+                {editingFeedback ? 'Edit Interview Feedback' : 'New Interview Feedback'}
+              </Text>
+              <TouchableOpacity onPress={handleSaveFeedback} style={styles.modalSaveButton}>
+                <Text style={[styles.modalSaveButtonText, { color: colorScheme.colors.primary }]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.modalScrollView}
+              contentContainerStyle={styles.modalContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.starFormGroup}>
+                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Job Application *</Text>
+                <TouchableOpacity
+                  style={[styles.pickerButton, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}
+                  onPress={() => {
+                    if (applications.length === 0) {
+                      Alert.alert('No Applications', 'Please add a job application first');
+                      return;
+                    }
+                    const options = applications.map(app => getApplicationDisplay(app.id));
+                    const currentIndex = selectedApplicationForFeedback
+                      ? applications.findIndex(app => app.id === selectedApplicationForFeedback)
+                      : -1;
+                    Alert.alert(
+                      'Select Application',
+                      '',
+                      options.map((name, index) => ({
+                        text: name,
+                        onPress: () => setSelectedApplicationForFeedback(applications[index].id),
+                        style: index === currentIndex ? 'default' : undefined,
+                      }))
+                    );
+                  }}
+                >
+                  <Text style={[styles.pickerButtonText, { color: selectedApplicationForFeedback ? colorScheme.colors.text : colorScheme.colors.textSecondary }]}>
+                    {selectedApplicationForFeedback
+                      ? getApplicationDisplay(selectedApplicationForFeedback)
+                      : 'Select an application...'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.starFormGroup}>
+                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Company Name *</Text>
+                <TextInput
+                  style={[styles.starFormInput, { backgroundColor: colorScheme.colors.surface, color: colorScheme.colors.text, borderColor: colorScheme.colors.border }]}
+                  value={feedbackCompanyName}
+                  onChangeText={setFeedbackCompanyName}
+                  placeholder="Enter company name"
+                  placeholderTextColor={colorScheme.colors.textSecondary}
+                />
+              </View>
+
+              <View style={styles.starFormGroup}>
+                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Position Title (Optional)</Text>
+                <TextInput
+                  style={[styles.starFormInput, { backgroundColor: colorScheme.colors.surface, color: colorScheme.colors.text, borderColor: colorScheme.colors.border }]}
+                  value={feedbackPositionTitle}
+                  onChangeText={setFeedbackPositionTitle}
+                  placeholder="Enter position title"
+                  placeholderTextColor={colorScheme.colors.textSecondary}
+                />
+              </View>
+
+              <View style={styles.starFormGroup}>
+                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Interview Date *</Text>
+                <TouchableOpacity
+                  style={[styles.datePickerButton, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}
+                  onPress={() => {
+                    const year = feedbackInterviewDate.getFullYear();
+                    const month = feedbackInterviewDate.getMonth() + 1;
+                    const day = feedbackInterviewDate.getDate();
+                    Alert.prompt(
+                      'Enter Interview Date',
+                      'Format: YYYY-MM-DD or MM/DD/YYYY',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'OK',
+                          onPress: (input) => {
+                            if (!input) return;
+                            const parts = input.includes('/') ? input.split('/') : input.split('-');
+                            if (parts.length === 3) {
+                              let y, m, d;
+                              if (input.includes('/')) {
+                                // MM/DD/YYYY
+                                m = parseInt(parts[0], 10);
+                                d = parseInt(parts[1], 10);
+                                y = parseInt(parts[2], 10);
+                              } else {
+                                // YYYY-MM-DD
+                                y = parseInt(parts[0], 10);
+                                m = parseInt(parts[1], 10);
+                                d = parseInt(parts[2], 10);
+                              }
+                              if (y && m && d) {
+                                const newDate = new Date(y, m - 1, d);
+                                if (!isNaN(newDate.getTime())) {
+                                  setFeedbackInterviewDate(newDate);
+                                }
+                              }
+                            }
+                          },
+                        },
+                      ],
+                      'plain-text',
+                      `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                    );
+                  }}
+                >
+                  <Text style={[styles.datePickerText, { color: colorScheme.colors.text }]}>
+                    {feedbackInterviewDate.toLocaleDateString()}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.starFormGroup}>
+                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Feedback *</Text>
+                <TextInput
+                  style={[styles.starFormTextArea, { backgroundColor: colorScheme.colors.surface, color: colorScheme.colors.text, borderColor: colorScheme.colors.border }]}
+                  value={feedbackText}
+                  onChangeText={setFeedbackText}
+                  placeholder="Enter your feedback about the interview..."
+                  placeholderTextColor={colorScheme.colors.textSecondary}
+                  multiline
+                  numberOfLines={6}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              <View style={styles.starFormGroup}>
+                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Strengths (Optional)</Text>
+                <TextInput
+                  style={[styles.starFormTextArea, { backgroundColor: colorScheme.colors.surface, color: colorScheme.colors.text, borderColor: colorScheme.colors.border }]}
+                  value={feedbackStrengths}
+                  onChangeText={setFeedbackStrengths}
+                  placeholder="What went well?"
+                  placeholderTextColor={colorScheme.colors.textSecondary}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              <View style={styles.starFormGroup}>
+                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Areas for Improvement (Optional)</Text>
+                <TextInput
+                  style={[styles.starFormTextArea, { backgroundColor: colorScheme.colors.surface, color: colorScheme.colors.text, borderColor: colorScheme.colors.border }]}
+                  value={feedbackAreasForImprovement}
+                  onChangeText={setFeedbackAreasForImprovement}
+                  placeholder="What could be improved?"
+                  placeholderTextColor={colorScheme.colors.textSecondary}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              </View>
+              <View style={{ height: 40 }} />
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -921,6 +1479,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textDecorationLine: 'underline',
   },
+  researchActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 12,
+    gap: 8,
+  },
+  researchActionButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  researchActionButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   feedbackCard: {
     padding: 16,
     borderRadius: 12,
@@ -955,6 +1529,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 8,
     marginBottom: 8,
+  },
+  feedbackActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 12,
+    gap: 8,
+  },
+  feedbackActionButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  feedbackActionButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   practiceSetup: {
     padding: 16,
@@ -1030,6 +1620,26 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  pickerButton: {
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 50,
+  },
+  pickerButtonText: {
+    fontSize: 16,
+  },
+  datePickerButton: {
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 50,
+  },
+  datePickerText: {
+    fontSize: 16,
   },
   // STAR Form Modal Styles
   modalContainer: {

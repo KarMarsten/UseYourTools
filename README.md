@@ -4,7 +4,7 @@
 
 **Tools for Job Hunters**
 
-A comprehensive mobile app built specifically for job seekers. Organize your job search activities, track applications, manage resumes, track job offers, and keep everything in one place.
+A comprehensive mobile app built specifically for job seekers. Organize your job search activities, track applications, manage resumes, track job offers, prepare for interviews, and keep everything in one place.
 
 ---
 
@@ -17,6 +17,7 @@ The central hub providing quick access to all tools:
 - **Tools** section: Access to Daily Planner, Calendar, Job Applications, Job Offers, Interview Prep, Resumes, and Reports
 - Clean, modern interface that adapts to your chosen color theme
 - Tooltips: Long-press the About (ℹ️) or Settings (⚙️) icons for helpful tooltips
+- Upcoming events: See events scheduled in the next 24 hours at a glance
 
 ### 📅 Calendar & Daily Planner
 
@@ -28,10 +29,10 @@ The central hub providing quick access to all tools:
 
 **Daily Planner:**
 - Customizable time blocks that adapt to your schedule
-- Daily themes for focused planning (e.g., "Momentum & Planning", "Deep Focus & Skill Growth")
+- Daily themes for focused planning (e.g., "Momentum & Planning", "Deep Focus & Skill Growth", "Networking & Connection")
 - Persistent notes saved automatically for each time block
 - Full integration with calendar events
-- **Swipe navigation**: Swipe left/right to navigate between days
+- **Swipe navigation**: Swipe left/right to navigate between days effortlessly
 
 **Event Management:**
 
@@ -115,30 +116,37 @@ Comprehensive interview preparation toolkit:
 - Browse common interview questions by category (Behavioral, Technical, Situational)
 - Questions organized by industry and role
 - Filter questions by category to find exactly what you need
+- Pre-loaded with common questions to get you started
 
 **STAR Method Template:**
 - Prepare answers to behavioral questions using the STAR method (Situation, Task, Action, Result)
 - **Question bank integration**: Select questions directly from the question bank or type your own
 - Save multiple STAR responses for different questions
 - Edit and delete responses as you refine your answers
+- View all your STAR responses in one place
 
 **Company Research:**
 - Store research notes about companies you're interviewing with
 - Link research to specific job applications
-- Access company websites, LinkedIn profiles, and Glassdoor reviews
+- Save website URLs, LinkedIn profiles, and Glassdoor reviews for quick access
+- Clickable links to access company information
 - Keep all your research organized in one place
+- Edit and delete research entries as needed
 
 **Interview Feedback:**
 - Record feedback and notes after interviews
 - Track strengths and areas for improvement
 - Link feedback to specific applications
+- Save interview date for reference
 - Review feedback to prepare for future interviews
+- Edit and delete feedback entries as needed
 
 **Practice Mode:**
 - Practice answering questions with a built-in timer
 - Select question categories to focus your practice
 - Random question selection to keep practice fresh
 - Track your practice time to improve response speed
+- Get comfortable with timing your responses
 
 ### 📄 Resumes & Cover Letters
 
@@ -147,12 +155,14 @@ Comprehensive interview preparation toolkit:
 - Support for PDF, DOC, and DOCX files
 - All resumes in one place, sorted by most recent
 - Active/Inactive status for better organization
+- Link resumes to job applications
 
 **Cover Letter Management:**
 - Save multiple cover letter versions
 - Support for PDF, DOC, and DOCX files
 - Mark as templates or company-specific
 - Active/Inactive status for organization
+- Link cover letters to job applications
 
 **Actions for Both:**
 - 👁️ **Preview**: View PDF documents directly in the app
@@ -250,252 +260,77 @@ npx expo run:android
 **Development Server:**
 
 ```bash
-# Start Metro bundler
-npx expo start --dev-client
-
-# Or with cleared cache
-npx expo start --dev-client --clear
+npx expo start
 ```
 
-**Note:** Calendar sync features and other native functionality require a development build. Expo Go does not support all native features.
-
-### First Time Setup
-
-When you first open the app:
-1. Complete the setup wizard to configure your schedule
-2. Choose your preferred color scheme
-3. Set your time preferences (12/24 hour, timezone)
-4. Configure follow-up reminder settings
-5. Optionally enable calendar sync
-6. Start using your tools!
+Then press `i` for iOS simulator or `a` for Android emulator, or scan the QR code with Expo Go app on your device.
 
 ---
 
 ## 📱 How to Use
 
-### Navigating the App
+### Getting Started
+1. **Initial Setup**: When you first open the app, complete the setup wizard to configure your preferences
+2. **Add Your Schedule**: Set your workday start time and customize time blocks in Settings
+3. **Choose a Theme**: Pick a color scheme that suits your style
+4. **Start Tracking**: Begin adding job applications, events, and organizing your job search
 
-Start at the **Home Screen** - your central hub. From here:
-- Use the **Job Sites** sidebar for quick access to job search platforms
-- Tap any tool card to access Calendar, Daily Planner, Job Applications, Job Offers, Resumes, or Reports
-- Long-press About or Settings icons for tooltips
+### Daily Workflow
+1. **Morning**: Check the Home screen for upcoming events and follow-up reminders
+2. **Planning**: Use the Daily Planner to plan your day with time blocks
+3. **Applications**: Track new applications and update statuses as you progress
+4. **Events**: Create interview and appointment events directly from applications or calendar
+5. **Preparation**: Use Interview Prep tools to prepare for upcoming interviews
 
-### Creating Events
-
-**From Calendar:**
-1. Tap **Calendar** from home
-2. Tap any date on the calendar
-3. Tap **"+ Add Event"**
-4. Choose event type (Interview, Appointment, or Reminder)
-5. Select date and fill in details (end time defaults to 30 minutes after start)
-6. Tap **"Save"**
-
-**From Job Application:**
-1. Tap **Job Applications** from home
-2. Find an application with status "Interview"
-3. Tap **"+ Add Interview Event"**
-4. Event form opens with company and position pre-filled
-5. Select interview date, fill in time and contact details
-6. Tap **"Save"** - event is automatically linked to the application
-
-### Tracking Job Applications
-
-1. Tap **Job Applications** from home
-2. Tap **"+ Add"** to add a new application
-3. Fill in position title, company, source, and optional job posting URL
-4. Select applied date and time using the intuitive pickers
-5. Choose application status:
-   - **Applied**: Newly submitted application
-   - **Rejected**: If rejected, you can optionally add a rejection reason (useful for unemployment reporting)
-   - **Interview**: Application has progressed to interview stage
-6. Optionally link a resume and/or cover letter
-7. Add notes if needed
-8. Tap **"Save Application"**
-
-**From Edit Screen:**
-- Tap **"Edit"** on any application card
-- Make changes to any field
-- Use **"🎁 Create Offer"** button to create a job offer linked to this application
-
-Use search to find specific applications or filter by status to see your progress.
-
-### Managing Job Offers
-
-**Create an Offer:**
-1. From Job Applications screen, tap **"🎁 Create Offer"** on any application card, OR
-2. From the application edit screen, tap **"🎁 Create Offer"**
-3. The offer form opens with the application pre-selected
-4. Fill in:
-   - Salary range (optional)
-   - Benefits (optional)
-   - Work location (Remote, Hybrid, or Onsite)
-   - Notes (optional)
-5. Tap **"Save Offer"**
-
-**View and Manage Offers:**
-1. Tap **Job Offers** from home
-2. View all offers with their details
-3. Tap **"Edit"** to modify an offer
-4. Tap **"View Application →"** to see the linked job application
-5. Tap **"Delete"** to remove an offer
-
-### Managing Resumes & Cover Letters
-
-1. From Job Applications screen, use the tabs to switch between Applications, Resumes, and Cover Letters
-2. Tap **"+ Add"** to save a document
-3. Select a PDF, DOC, or DOCX file from your device
-4. File is saved with its original name (you can rename it later)
-
-To share, save, rename, toggle active/inactive, or delete documents, use the buttons on each document card.
-
-### Using Interview Preparation Tools
-
-**Preparing STAR Responses:**
-1. Tap **Interview Prep** from home
-2. Select **"STAR Method Template"**
-3. Tap **"+ New"** to create a new STAR response
-4. Tap **"📚 Select from Bank"** to choose a question from the question bank, or type your own question
-5. Fill in Situation, Task, Action, and Result sections
-6. Tap **"Save"** to save your response
-7. Edit or delete responses anytime
-
-**Using the Question Bank:**
-1. From Interview Prep, select **"Question Bank"**
-2. Filter questions by category (Behavioral, Technical, Situational) or view all
-3. Browse questions organized by industry and role
-4. Use questions to prepare your STAR responses
-
-**Practice Mode:**
-1. From Interview Prep, select **"Practice Mode"**
-2. Choose a question category (Behavioral, Technical, or Situational)
-3. A random question appears with a timer
-4. Practice answering out loud while the timer runs
-5. Tap **"Next Question"** for another question, or **"End Practice"** when done
-
-### Calendar Sync
-
-To sync events with your device's calendar:
-
-1. Go to **Settings** (gear icon) from home
-2. Under **"Calendar Sync"**, choose **"Apple Calendar"** or **"Google Calendar"**
-3. Tap **"Sync All Existing Events to Calendar"** to sync existing events
-4. New events will automatically sync going forward
-
-**Note:** The app automatically selects a writable calendar. Read-only calendars (like subscribed calendars) will not be used.
-
-### Generating Reports
-
-1. Tap **Reports** from home
-2. Select the week you want to report on using the week navigator
-3. Choose report type:
-   - **Weekly Schedule**: Complete view of your week with time blocks and events
-   - **Unemployment Report**: Formatted report with interviews, appointments, and rejected applications
-4. Tap **"View"** to preview the report
-5. Tap **"Export PDF"** to save or share
+### Tips & Best Practices
+- **Use swipe navigation** in the daily planner to quickly move between days
+- **Link everything**: Connect applications to events, resumes, and cover letters for better organization
+- **Take notes**: Use notes fields liberally - they're searchable and helpful for follow-ups
+- **Practice regularly**: Use Practice Mode in Interview Prep to refine your responses
+- **Track rejection reasons**: Help with unemployment reporting and identifying patterns
+- **Use filters**: Filter applications by status to focus on what needs attention
+- **Long-press icons**: Get helpful tooltips by long-pressing the About and Settings icons
 
 ---
 
 ## 🛠️ Technical Details
 
-**Built with:**
-- React Native 0.79.6
-- Expo SDK 53
-- TypeScript
-- Local storage with AsyncStorage (all data stored on device)
-- Calendar integration with expo-calendar
-- PDF generation with expo-print
-- File system with expo-file-system
-- Safe area handling with react-native-safe-area-context
-- WebView for document previews (react-native-webview)
-- Notifications with expo-notifications
+### Built With
+- **React Native** - Cross-platform mobile framework
+- **Expo** - Development platform and tooling
+- **TypeScript** - Type-safe JavaScript
+- **AsyncStorage** - Local data persistence
+- **Expo Calendar** - Native calendar integration
+- **Expo Notifications** - Push notifications
+- **Expo File System** - Document management
+- **Expo Print** - PDF generation
 
-**Platform Support:**
-- ✅ iOS (requires iOS 15.1+)
-- ✅ Android
+### Architecture
+- **Component-based**: Modular React components
+- **Context API**: Global state management for preferences and themes
+- **Local Storage**: All data stored locally on device using AsyncStorage
+- **Type Safety**: Full TypeScript coverage for type safety
 
-**Architecture:**
-- All data stored locally on device (privacy-first, no cloud required)
-- No external servers or cloud storage required
-- Calendar sync uses device's native calendar APIs
-- Modular component architecture with reusable utilities
-- Type-safe with TypeScript throughout
-
-**Data Structure:**
-- Applications: Linked to resumes, cover letters, events, and offers
-- Events: Linked to applications (interviews)
-- Offers: Linked to applications
-- Follow-up reminders: Automatically created based on settings
-
----
-
-## 💡 Tips & Tricks
-
-- **Home Screen Hub**: Always return to home to access any tool
-- **Application Search**: Use search to quickly find if you've already applied somewhere
-- **Multiple Interview Events**: Track all rounds of interviews for a single application
-- **Quick Status Changes**: Tap the status badge on any application to quickly change status
-- **Auto End Time**: End time automatically sets to 30 minutes later - but you can always change it
-- **Document Organization**: Name resumes and cover letters descriptively and mark active ones for easy identification
-- **Smart Notifications**: Get reminders 10 minutes before each event
-- **Map Integration**: Tap any address to get directions instantly
-- **Offer Comparison**: Use the Job Offers screen to compare multiple offers side-by-side
-- **Rejection Reasons**: Add rejection reasons to rejected applications for better unemployment reporting
-- **Swipe Navigation**: Swipe left/right in the daily planner to quickly navigate between days
-- **Privacy First**: All data stays on your device - nothing is sent to servers
-
----
-
-## 🔧 Troubleshooting
-
-### Development Server Connection
-
-If you're having trouble connecting to the development server:
-
-1. Make sure Metro bundler is running (`npx expo start --dev-client`)
-2. For iOS: If using tunnel mode, you may need to rebuild the app after Info.plist changes
-3. Check that your device and computer are on the same network (for LAN mode)
-4. Clear cache and restart: `npx expo start --dev-client --clear`
-
-### Calendar Sync Issues
-
-- Ensure calendar permissions are granted
-- The app automatically selects a writable calendar
-- If you have only read-only calendars, the app will create a new writable calendar
-
-### Date/Time Picker Issues
-
-- Date and time pickers use modals that appear above the keyboard
-- If a picker seems hidden, try dismissing the keyboard first
-- The pickers work best with a development build
-
----
-
-## 📝 License
-
-This project is licensed under the **MIT License**.
+### Data Storage
+- All data is stored locally on your device
+- No cloud sync or external servers
+- Data persists between app sessions
+- Export reports as PDFs to share or backup
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to submit issues or pull requests.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-## 📋 Recent Updates
+## 📄 License
 
-- **Interview Preparation Tools**: Comprehensive interview prep toolkit with question bank, STAR method templates, company research, interview feedback, and practice mode with timer
-- **STAR Method Enhancement**: Select questions directly from the question bank when creating STAR responses
-- **Job Offers**: Track and compare job offers with salary, benefits, and work location
-- **Rejection Reasons**: Add reasons to rejected applications for better unemployment reporting
-- **Enhanced Reports**: Unemployment reports now include rejected applications with reasons
-- **Improved Date/Time Pickers**: Better UX with separate date and time selection in application forms
-- **Page Breaks in Reports**: Weekly schedule reports now have page breaks between days for cleaner printing
-- **Swipe Navigation**: Swipe left/right in daily planner to navigate between days
-- **Clickable Fields**: Email, phone, and address fields in event view mode are now clickable
+This project is licensed under the MIT License.
 
 ---
 
-**Made with ❤️ for job seekers everywhere**
+## 🙏 Acknowledgments
 
-*Happy Job Hunting! 🎯✨*
+Built with ❤️ for job seekers everywhere. Good luck with your job search!

@@ -39,7 +39,7 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
             Tools for Job Hunters
           </Text>
           <Text style={[styles.description, { color: colorScheme.colors.text }]}>
-            A comprehensive mobile app to help you organize your job search. Track applications, manage resumes and cover letters, compare job offers, and keep everything in one place.
+            A comprehensive mobile app to help you organize your job search. Track applications, manage resumes and cover letters, compare job offers, prepare for interviews, and keep everything in one place.
           </Text>
         </View>
 
