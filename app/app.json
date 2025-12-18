@@ -20,7 +20,7 @@
       "bundleIdentifier": "com.kmarsten.useyourtools",
       "config": {
         "usesNonExemptEncryption": false
-      }
+      },
       "newArchEnabled": false,
       "infoPlist": {
         "NSCalendarsUsageDescription": "This app needs access to your calendar to sync events.",
