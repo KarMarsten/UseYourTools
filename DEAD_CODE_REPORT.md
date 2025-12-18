@@ -66,6 +66,10 @@ All exported functions from utility modules are either actively used or availabl
 - All Interview Prep features fully implemented (Company Research and Interview Feedback forms completed)
 - No dead code found in Interview Prep implementation
 
+✅ **Cleaned up on January 2025 (Bi-directional linking implementation)**:
+- Removed unused import `addApplicationEventId` from `DailyPlannerScreen.tsx` (bi-directional linking now handled by `saveEvent`)
+- Removed unused import `getEventById` from `ApplicationsScreen.tsx`
+
 ## Utility Functions Available for Future Use
 
 The following utility functions are exported but not currently imported anywhere. These are intentionally available for future features and are not considered dead code:

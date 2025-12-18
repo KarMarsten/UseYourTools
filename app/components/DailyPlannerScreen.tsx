@@ -7,7 +7,7 @@ import { generateTimeBlocks, GeneratedTimeBlock } from '../utils/timeBlockGenera
 import { usePreferences } from '../context/PreferencesContext';
 import { formatTimeRange, formatTime12Hour } from '../utils/timeFormatter';
 import { Event, loadEventsForDate, saveEvent, deleteEvent } from '../utils/events';
-import { getApplicationById, addApplicationEventId } from '../utils/applications';
+import { getApplicationById } from '../utils/applications';
 import { scheduleEventNotification, cancelEventNotification } from '../utils/eventNotifications';
 import { openAddressInMaps, openPhoneNumber, openEmail } from '../utils/eventActions';
 import { getDateKey } from '../utils/timeFormatter';
@@ -162,12 +162,8 @@ export default function DailyPlannerScreen({ date, onBack, onDateChange, initial
         event.applicationId = initialApplicationData.id;
       }
 
+      // Save event (bi-directional linking is handled by saveEvent)
       await saveEvent(event);
-
-      // If we have initialApplicationData, add the eventId to the application's eventIds array
-      if (initialApplicationData && event.type === 'interview') {
-        await addApplicationEventId(initialApplicationData.id, event.id);
-      }
 
       await loadEvents(); // Reload events to update UI
       setEditingEvent(undefined);

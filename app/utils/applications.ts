@@ -198,9 +198,10 @@ export const getApplicationById = async (id: string): Promise<JobApplication | n
 };
 
 /**
- * Add an eventId to a job application's eventIds array
+ * Add an eventId to a job application's eventIds array (bi-directional)
+ * @param skipEventUpdate - If true, don't update the event's applicationId (to avoid circular updates)
  */
-export const addApplicationEventId = async (applicationId: string, eventId: string): Promise<void> => {
+export const addApplicationEventId = async (applicationId: string, eventId: string, skipEventUpdate = false): Promise<void> => {
   try {
     const key = `${APPLICATIONS_KEY_PREFIX}${applicationId}`;
     const applicationData = await AsyncStorage.getItem(key);
@@ -214,10 +215,65 @@ export const addApplicationEventId = async (applicationId: string, eventId: stri
         await AsyncStorage.setItem(key, JSON.stringify(application));
       }
     }
+
+    // Update the event's applicationId field for bi-directional linking
+    if (!skipEventUpdate) {
+      const { getEventById, saveEvent } = await import('./events');
+      const event = await getEventById(eventId);
+      if (event) {
+        event.applicationId = applicationId;
+        await saveEvent(event, true); // Skip bidirectional update to avoid circular dependency
+      }
+    }
   } catch (error) {
     console.error('Error adding application eventId:', error);
     throw error;
   }
+};
+
+/**
+ * Remove an eventId from a job application's eventIds array (bi-directional)
+ * @param skipEventUpdate - If true, don't update the event's applicationId (to avoid circular updates)
+ */
+export const removeApplicationEventId = async (applicationId: string, eventId: string, skipEventUpdate = false): Promise<void> => {
+  try {
+    const key = `${APPLICATIONS_KEY_PREFIX}${applicationId}`;
+    const applicationData = await AsyncStorage.getItem(key);
+    if (applicationData) {
+      const application = JSON.parse(applicationData) as JobApplication;
+      if (application.eventIds) {
+        application.eventIds = application.eventIds.filter(id => id !== eventId);
+        await AsyncStorage.setItem(key, JSON.stringify(application));
+      }
+    }
+
+    // Update the event's applicationId field for bi-directional linking
+    if (!skipEventUpdate) {
+      const { getEventById, saveEvent } = await import('./events');
+      const event = await getEventById(eventId);
+      if (event && event.applicationId === applicationId) {
+        event.applicationId = undefined;
+        await saveEvent(event, true); // Skip bidirectional update to avoid circular dependency
+      }
+    }
+  } catch (error) {
+    console.error('Error removing application eventId:', error);
+    throw error;
+  }
+};
+
+/**
+ * Link an application to an event (bi-directional)
+ */
+export const linkApplicationToEvent = async (applicationId: string, eventId: string): Promise<void> => {
+  await addApplicationEventId(applicationId, eventId);
+};
+
+/**
+ * Unlink an application from an event (bi-directional)
+ */
+export const unlinkApplicationFromEvent = async (applicationId: string, eventId: string): Promise<void> => {
+  await removeApplicationEventId(applicationId, eventId);
 };
 
 

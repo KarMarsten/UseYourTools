@@ -283,9 +283,11 @@ export const generateUnemploymentReportHTML = (weekStart: Date, events: Event[],
     return (aH * 60 + aM) - (bH * 60 + bM);
   });
 
-  // Filter to rejected applications within the week
+  // Filter to rejected applications within the week (based on application date)
   const rejectedApplications = applications.filter(app => {
     if (app.status !== 'rejected') return false;
+    
+    // Filter by application date, not effective date, so we show applications in the week they were applied
     const appliedDate = new Date(app.appliedDate);
     appliedDate.setHours(0, 0, 0, 0);
     const weekStartNormalized = new Date(weekStart);
@@ -396,32 +398,51 @@ export const generateUnemploymentReportHTML = (weekStart: Date, events: Event[],
       const endTimeStr = event.endTime ? formatTime12Hour(event.endTime) : '';
       const timeStr = endTimeStr ? `${startTimeStr} - ${endTimeStr}` : startTimeStr;
 
+      // Check if this event is linked to a rejected application
+      const linkedRejectedApp = event.applicationId 
+        ? applications.find(app => app.id === event.applicationId && app.status === 'rejected')
+        : null;
+      
+      // Determine type: "Interview Rejected" if linked to rejected app, otherwise normal type
+      let typeDisplay = event.type.charAt(0).toUpperCase() + event.type.slice(1);
+      if (event.type === 'interview' && linkedRejectedApp) {
+        typeDisplay = 'Interview Rejected';
+      }
+
       html += `
         <tr>
           <td>${dateStr}</td>
           <td>${timeStr}</td>
-          <td>${event.type.charAt(0).toUpperCase() + event.type.slice(1)}</td>
+          <td>${typeDisplay}</td>
           <td>${event.company || '-'}</td>
           <td>${event.jobTitle || '-'}</td>
           <td>${event.contactName || '-'}</td>
           <td>${event.phone || '-'}</td>
           <td>${event.email || '-'}</td>
-          <td>-</td>
+          <td>${linkedRejectedApp?.rejectedReason || '-'}</td>
         </tr>
       `;
     });
 
-    // Add rejected applications
+    // Add rejected applications (show application date entry)
+    // For rejected applications with interviews, we show both:
+    // 1. The interview event (as "Interview Rejected" in events section above)
+    // 2. The application date entry (as "Application Rejected" here)
     rejectedApplications.forEach(app => {
+      // Always show the application date entry using the applied date
       const appliedDate = new Date(app.appliedDate);
       const dateStr = appliedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       const timeStr = appliedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+      // Always show as "Application Rejected" for the application date entry
+      // (The interview event is shown separately in the events section above as "Interview Rejected")
+      const typeDisplay = 'Application Rejected';
 
       html += `
         <tr>
           <td>${dateStr}</td>
           <td>${timeStr}</td>
-          <td>Application Rejected</td>
+          <td>${typeDisplay}</td>
           <td>${app.company || '-'}</td>
           <td>${app.positionTitle || '-'}</td>
           <td>-</td>

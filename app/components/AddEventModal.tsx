@@ -325,6 +325,11 @@ export default function AddEventModal({
       phone: (type !== 'reminder' && phone.trim()) ? phone.trim() : undefined,
       company: (type !== 'reminder' && company.trim()) ? company.trim() : undefined,
       jobTitle: (type !== 'reminder' && jobTitle.trim()) ? jobTitle.trim() : undefined,
+      // Preserve applicationId if editing existing event, or set from initialApplicationData
+      applicationId: event?.applicationId || initialApplicationData?.id || undefined,
+      // Preserve notificationId and calendarEventId
+      notificationId: event?.notificationId,
+      calendarEventId: event?.calendarEventId,
     };
 
     onSave(savedEvent);

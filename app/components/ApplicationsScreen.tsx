@@ -27,7 +27,7 @@ import {
 import { Event, getAllEvents, saveEvent } from '../utils/events';
 import { getDateKey, formatTime12Hour } from '../utils/timeFormatter';
 import AddEventModal from './AddEventModal';
-import { addApplicationEventId } from '../utils/applications';
+import { linkApplicationToEvent, unlinkApplicationFromEvent } from '../utils/applications';
 import { scheduleEventNotification } from '../utils/eventNotifications';
 import { 
   getAllResumes, 
@@ -84,6 +84,8 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
   const [showEventModal, setShowEventModal] = useState(false);
   const [creatingEventForApplication, setCreatingEventForApplication] = useState<JobApplication | null>(null);
   const [allEvents, setAllEvents] = useState<Event[]>([]);
+  const [showLinkEventModal, setShowLinkEventModal] = useState(false);
+  const [linkingEventForApplication, setLinkingEventForApplication] = useState<JobApplication | null>(null);
 
   // Form state
   const [positionTitle, setPositionTitle] = useState('');
@@ -461,6 +463,27 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  /**
+   * Get the effective date for an application display/sorting
+   * For rejected applications with interviews, use the interview date
+   * Otherwise use the appliedDate
+   */
+  const getEffectiveApplicationDate = (app: JobApplication): Date => {
+    // If rejected and has interview events, use the interview date
+    if (app.status === 'rejected' && app.eventIds && app.eventIds.length > 0) {
+      // Find the first interview event
+      const interviewEvent = allEvents.find(e => app.eventIds!.includes(e.id));
+      if (interviewEvent) {
+        const [year, month, day] = interviewEvent.dateKey.split('-').map(Number);
+        // Use the interview date at noon (12:00) to maintain consistent time for display
+        const interviewDate = new Date(year, month - 1, day, 12, 0, 0, 0);
+        return interviewDate;
+      }
+    }
+    // Otherwise use the appliedDate
+    return new Date(app.appliedDate);
+  };
+
   const formatDateShort = (isoDate: string): string => {
     const date = new Date(isoDate);
     return date.toLocaleDateString('en-US', {
@@ -494,9 +517,8 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
 
       await saveEvent(event);
 
-      // Add eventId to application's eventIds array
+      // Link is handled by saveEvent's bi-directional linking
       if (creatingEventForApplication && event.type === 'interview') {
-        await addApplicationEventId(creatingEventForApplication.id, event.id);
         await loadApplications(); // Reload to show the new event
         await loadAllEvents(); // Reload events list
       }
@@ -551,6 +573,13 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
       if (filterStatus !== 'all') {
         results = results.filter(app => app.status === filterStatus);
       }
+      
+      // Sort by effective date (newest first)
+      results.sort((a, b) => {
+        const dateA = getEffectiveApplicationDate(a);
+        const dateB = getEffectiveApplicationDate(b);
+        return dateB.getTime() - dateA.getTime();
+      });
       
       setApplications(results);
     } catch (error) {
@@ -1437,32 +1466,29 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                   📍 Source: {app.source}
                 </Text>
                 <Text style={[styles.detailText, { color: colorScheme.colors.textSecondary }]}>
-                  📅 Applied: {(() => {
-                    const date = new Date(app.appliedDate);
+                  {(() => {
+                    const effectiveDate = getEffectiveApplicationDate(app);
+                    const isUsingInterviewDate = app.status === 'rejected' && app.eventIds && app.eventIds.length > 0;
+                    const dateLabel = isUsingInterviewDate ? '📅 Interview Date' : '📅 Applied';
                     const timezone = preferences?.timezoneMode === 'custom' && preferences?.timezone
                       ? preferences.timezone
                       : undefined;
                     const use12Hour = preferences?.use12HourClock ?? false;
-                    const dateStr = date.toLocaleDateString('en-US', {
+                    const dateStr = effectiveDate.toLocaleDateString('en-US', {
                       timeZone: timezone,
                       month: 'short',
                       day: 'numeric',
                       year: 'numeric',
                     });
-                    const timeStr = date.toLocaleTimeString('en-US', {
+                    const timeStr = effectiveDate.toLocaleTimeString('en-US', {
                       timeZone: timezone,
                       hour: 'numeric',
                       minute: '2-digit',
                       hour12: use12Hour,
                     });
-                    return `${dateStr}, ${timeStr}`;
+                    return `${dateLabel}: ${dateStr}, ${timeStr}`;
                   })()}
                 </Text>
-                {app.status === 'rejected' && app.rejectedReason && (
-                  <Text style={[styles.detailText, { color: colorScheme.colors.textSecondary }]}>
-                    ❌ Rejection Reason: {app.rejectedReason}
-                  </Text>
-                )}
                 {app.sourceUrl && (
                   <TouchableOpacity onPress={() => handleOpenLink(app.sourceUrl!)}>
                     <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
@@ -1537,7 +1563,7 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                   }
                   return null;
                 })()}
-                {app.status === 'interview' && ((app.eventIds && app.eventIds.length > 0) || (app as any).eventId) && (
+                {((app.status === 'interview' || (app.status === 'rejected' && app.eventIds && app.eventIds.length > 0)) && ((app.eventIds && app.eventIds.length > 0) || (app as any).eventId)) && (
                   <View style={styles.interviewEventsContainer}>
                     <Text style={[styles.interviewEventsLabel, { color: colorScheme.colors.text }]}>
                       Interview Events:
@@ -1558,35 +1584,54 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                             : event.startTime)
                         : '';
                       return (
-                        <TouchableOpacity
-                          key={eventId}
-                          onPress={async () => {
-                            if (onSelectDate) {
-                              onSelectDate(eventDate);
-                            }
-                          }}
-                          style={styles.interviewEventItem}
-                        >
-                          <Text style={[styles.interviewEventText, { color: colorScheme.colors.text }]}>
-                            📅 {formattedDate} {timeDisplay && `at ${timeDisplay}`}
-                            {event.contactName && ` - ${event.contactName}`}
-                          </Text>
-                        </TouchableOpacity>
+                        <View key={eventId} style={styles.interviewEventItem}>
+                          <TouchableOpacity
+                            onPress={async () => {
+                              if (onSelectDate) {
+                                onSelectDate(eventDate);
+                              }
+                            }}
+                            style={{ flex: 1 }}
+                          >
+                            <Text style={[styles.interviewEventText, { color: colorScheme.colors.text }]}>
+                              📅 {formattedDate} {timeDisplay && `at ${timeDisplay}`}
+                              {event.contactName && ` - ${event.contactName}`}
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => handleUnlinkEvent(app.id, eventId)}
+                            style={styles.unlinkButton}
+                          >
+                            <Text style={[styles.unlinkButtonText, { color: '#d32f2f' }]}>✕</Text>
+                          </TouchableOpacity>
+                        </View>
                       );
                     })}
                   </View>
                 )}
                 {app.status === 'interview' && (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setCreatingEventForApplication(app);
-                      setShowEventModal(true);
-                    }}
-                  >
-                    <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
-                      ➕ Add Interview Event
-                    </Text>
-                  </TouchableOpacity>
+                  <View style={styles.eventActionsContainer}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setCreatingEventForApplication(app);
+                        setShowEventModal(true);
+                      }}
+                    >
+                      <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
+                        ➕ Add Interview Event
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setLinkingEventForApplication(app);
+                        setShowLinkEventModal(true);
+                      }}
+                    >
+                      <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
+                        🔗 Link to Existing Event
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
                 {onCreateOffer && (
                   <TouchableOpacity
@@ -1868,6 +1913,83 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
           allowDateSelection={true}
         />
       )}
+
+      {/* Modal for linking to existing events */}
+      <Modal
+        visible={showLinkEventModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowLinkEventModal(false);
+          setLinkingEventForApplication(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colorScheme.colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colorScheme.colors.text }]}>
+                Link to Existing Event
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowLinkEventModal(false);
+                  setLinkingEventForApplication(null);
+                }}
+              >
+                <Text style={[styles.modalCloseButton, { color: colorScheme.colors.text }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalScrollView}>
+              {allEvents.length === 0 ? (
+                <Text style={[styles.modalEmptyText, { color: colorScheme.colors.textSecondary }]}>
+                  No events found. Create an event first.
+                </Text>
+              ) : (
+                allEvents
+                  .filter(event => {
+                    // Filter out events already linked to this application
+                    if (!linkingEventForApplication) return false;
+                    const linkedEventIds = linkingEventForApplication.eventIds || [];
+                    return !linkedEventIds.includes(event.id);
+                  })
+                  .map((event) => {
+                    const [year, month, day] = event.dateKey.split('-').map(Number);
+                    const eventDate = new Date(year, month - 1, day);
+                    const formattedDate = eventDate.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    });
+                    const timeDisplay = event.startTime
+                      ? preferences?.use12HourClock
+                        ? formatTime12Hour(event.startTime)
+                        : event.startTime
+                      : '';
+                    return (
+                      <TouchableOpacity
+                        key={event.id}
+                        style={[styles.eventLinkItem, { borderColor: colorScheme.colors.border }]}
+                        onPress={() => {
+                          if (linkingEventForApplication) {
+                            handleLinkToExistingEvent(linkingEventForApplication.id, event.id);
+                          }
+                        }}
+                      >
+                        <Text style={[styles.eventLinkTitle, { color: colorScheme.colors.text }]}>
+                          {event.title}
+                        </Text>
+                        <Text style={[styles.eventLinkDetails, { color: colorScheme.colors.textSecondary }]}>
+                          📅 {formattedDate} {timeDisplay && `at ${timeDisplay}`}
+                          {event.company && ` • ${event.company}`}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Resume Preview Modal */}
       <Modal
@@ -2546,8 +2668,26 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   interviewEventItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 6,
     paddingHorizontal: 4,
+  },
+  unlinkButton: {
+    marginLeft: 8,
+    padding: 4,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  unlinkButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  eventActionsContainer: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 8,
   },
   interviewEventText: {
     fontSize: 14,
@@ -3074,6 +3214,60 @@ const styles = StyleSheet.create({
   timerText: {
     fontSize: 48,
     fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    maxHeight: '80%',
+    borderRadius: 12,
+    padding: 0,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  modalCloseButton: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  modalScrollView: {
+    maxHeight: 400,
+  },
+  modalEmptyText: {
+    padding: 20,
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  eventLinkItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  eventLinkTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  eventLinkDetails: {
+    fontSize: 14,
   },
   practiceQuestionCard: {
     padding: 24,

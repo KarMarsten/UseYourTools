@@ -14,7 +14,7 @@ A comprehensive mobile app built specifically for job seekers. Organize your job
 
 The central hub providing quick access to all tools:
 - **Job Sites** sidebar: Quick links to popular job search platforms (Indeed, LinkedIn, Glassdoor, Monster, ZipRecruiter, Dice)
-- **Tools** section: Access to Daily Planner, Calendar, Job Applications, Job Offers, Interview Prep, Resumes, and Reports
+- **Tools** section: Access to Daily Planner, Calendar, Job Applications, Job Offers, Interview Prep, and Reports
 - Clean, modern interface that adapts to your chosen color theme
 - Tooltips: Long-press the About (ℹ️) or Settings (⚙️) icons for helpful tooltips
 - Upcoming events: See events scheduled in the next 24 hours at a glance
@@ -44,11 +44,12 @@ Create three types of events:
    - Address (tap to open in Maps)
    - Start and end times (end time defaults to 30 minutes after start)
    - Notes section
-   - Can be linked to job applications
+   - **Bi-directional linking**: Link to job applications and vice versa
 
 2. **Appointments** 📍 - For networking meetings, career fairs, or scheduled activities
    - Same features as interviews
    - Fully customizable end times
+   - Can be linked to job applications
 
 3. **Reminders** ⏰ - Simple reminders with title and time
    - Perfect for quick to-dos or deadlines
@@ -61,6 +62,8 @@ Create three types of events:
 - Calendar sync with Apple Calendar or Google Calendar
 - **Date selection**: When creating events, you can select any date (not just today)
 - Formatted display: Events show formatted date and time for easy reading
+- **Link applications**: Link events to existing job applications or create events from applications
+- **View linked applications**: See which application an event is linked to, with quick navigation
 
 ### 💼 Job Applications
 
@@ -77,7 +80,8 @@ Comprehensive tracking system for all your applications:
   - **Interview** (application has progressed)
 - Notes section
 - Link resumes and cover letters to applications
-- Multiple interview events can be linked to a single application
+- **Bi-directional linking**: Link multiple interview events to a single application
+- **Smart date tracking**: Application date reflects interview date when moving from applied → interview → rejected
 
 **Smart Features:**
 - **Search**: Find applications by company, position, or source
@@ -86,7 +90,9 @@ Comprehensive tracking system for all your applications:
 - **Quick links**: Tap to open the original job posting
 - **Filter**: View applications by status
 - **Create interview events**: Easily create interview events from applications with company and position pre-filled
-- **View interview schedule**: See all interview events with date, time, and contact name
+- **Link to existing events**: Link applications to existing interview or appointment events
+- **View linked events**: See all events linked to an application with date, time, and contact name
+- **Unlink events**: Remove links between applications and events as needed
 - **Create offers**: Direct access to create job offers from the application edit screen
 - **Follow-up reminders**: Automatic reminders configured in settings for following up after applications and interviews
 
@@ -121,6 +127,7 @@ Comprehensive interview preparation toolkit:
 **STAR Method Template:**
 - Prepare answers to behavioral questions using the STAR method (Situation, Task, Action, Result)
 - **Question bank integration**: Select questions directly from the question bank or type your own
+- Dropdown interface for easy question selection
 - Save multiple STAR responses for different questions
 - Edit and delete responses as you refine your answers
 - View all your STAR responses in one place
@@ -211,7 +218,9 @@ Generate professional PDF reports:
 **Unemployment Report:**
 - Formatted specifically for unemployment filing
 - Includes interviews and appointments with full details (company, contact person, date, time, job title)
-- **Includes rejected applications**: Shows rejected applications with their rejection reasons
+- **Smart application tracking**: Shows rejected applications with their rejection reasons
+- **Interview Rejected entries**: Applications that moved from applied → interview → rejected show as "Interview Rejected" with interview date and rejection reason
+- **Application Rejected entries**: Applications rejected without interviews show as "Application Rejected" with application date and rejection reason
 - All data for the selected week in an organized table format
 - Export as PDF for easy submission
 
@@ -279,17 +288,19 @@ Then press `i` for iOS simulator or `a` for Android emulator, or scan the QR cod
 1. **Morning**: Check the Home screen for upcoming events and follow-up reminders
 2. **Planning**: Use the Daily Planner to plan your day with time blocks
 3. **Applications**: Track new applications and update statuses as you progress
-4. **Events**: Create interview and appointment events directly from applications or calendar
+4. **Events**: Create interview and appointment events directly from applications or calendar, and link them bi-directionally
 5. **Preparation**: Use Interview Prep tools to prepare for upcoming interviews
 
 ### Tips & Best Practices
 - **Use swipe navigation** in the daily planner to quickly move between days
 - **Link everything**: Connect applications to events, resumes, and cover letters for better organization
+- **Bi-directional linking**: Link events and applications together - changes reflect in both places
 - **Take notes**: Use notes fields liberally - they're searchable and helpful for follow-ups
 - **Practice regularly**: Use Practice Mode in Interview Prep to refine your responses
 - **Track rejection reasons**: Help with unemployment reporting and identifying patterns
 - **Use filters**: Filter applications by status to focus on what needs attention
 - **Long-press icons**: Get helpful tooltips by long-pressing the About and Settings icons
+- **Smart date tracking**: Application dates automatically reflect interview dates when applications progress through interview to rejection
 
 ---
 
@@ -310,6 +321,7 @@ Then press `i` for iOS simulator or `a` for Android emulator, or scan the QR cod
 - **Context API**: Global state management for preferences and themes
 - **Local Storage**: All data stored locally on device using AsyncStorage
 - **Type Safety**: Full TypeScript coverage for type safety
+- **Bi-directional Data Linking**: Smart synchronization between job applications and events
 
 ### Data Storage
 - All data is stored locally on your device

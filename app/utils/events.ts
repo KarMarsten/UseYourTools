@@ -23,8 +23,13 @@ export interface Event {
 
 const EVENTS_KEY_PREFIX = 'planner_event_';
 
-export const saveEvent = async (event: Event): Promise<void> => {
+export const saveEvent = async (event: Event, skipBidirectionalUpdate = false): Promise<void> => {
   try {
+    // Get existing event to handle bi-directional linking
+    const existingEvent = await getEventById(event.id);
+    const previousApplicationId = existingEvent?.applicationId;
+    const newApplicationId = event.applicationId;
+
     // Sync to calendar if enabled
     if (event.calendarEventId) {
       // Update existing calendar event
@@ -39,6 +44,19 @@ export const saveEvent = async (event: Event): Promise<void> => {
 
     const key = `${EVENTS_KEY_PREFIX}${event.id}`;
     await AsyncStorage.setItem(key, JSON.stringify(event));
+
+    // Handle bi-directional linking: Update application's eventIds array
+    if (!skipBidirectionalUpdate && previousApplicationId !== newApplicationId) {
+      const { addApplicationEventId, removeApplicationEventId } = await import('./applications');
+      // Remove from old application if it changed
+      if (previousApplicationId) {
+        await removeApplicationEventId(previousApplicationId, event.id, true);
+      }
+      // Add to new application
+      if (newApplicationId) {
+        await addApplicationEventId(newApplicationId, event.id, true);
+      }
+    }
   } catch (error) {
     console.error('Error saving event:', error);
     throw error;
@@ -77,12 +95,18 @@ export const loadEventsForDate = async (dateKey: string): Promise<Event[]> => {
 
 export const deleteEvent = async (eventId: string): Promise<void> => {
   try {
-    // Load event first to get calendarEventId
+    // Load event first to get calendarEventId and applicationId
     const key = `${EVENTS_KEY_PREFIX}${eventId}`;
     const eventData = await AsyncStorage.getItem(key);
     
     if (eventData) {
       const event = JSON.parse(eventData) as Event;
+      
+      // Unlink from application before deleting
+      if (event.applicationId) {
+        const { removeApplicationEventId } = await import('./applications');
+        await removeApplicationEventId(event.applicationId, eventId, true);
+      }
       
       // Delete from calendar if it exists
       if (event.calendarEventId) {
@@ -129,6 +153,42 @@ export const getAllEvents = async (): Promise<Event[]> => {
   } catch (error) {
     console.error('Error loading all events:', error);
     return [];
+  }
+};
+
+/**
+ * Link an event to an application (bi-directional)
+ */
+export const linkEventToApplication = async (eventId: string, applicationId: string): Promise<void> => {
+  try {
+    const event = await getEventById(eventId);
+    if (!event) {
+      throw new Error(`Event ${eventId} not found`);
+    }
+    event.applicationId = applicationId;
+    await saveEvent(event); // saveEvent handles bi-directional linking
+  } catch (error) {
+    console.error('Error linking event to application:', error);
+    throw error;
+  }
+};
+
+/**
+ * Unlink an event from its application (bi-directional)
+ */
+export const unlinkEventFromApplication = async (eventId: string): Promise<void> => {
+  try {
+    const event = await getEventById(eventId);
+    if (!event) {
+      throw new Error(`Event ${eventId} not found`);
+    }
+    if (event.applicationId) {
+      event.applicationId = undefined;
+      await saveEvent(event); // saveEvent handles bi-directional linking
+    }
+  } catch (error) {
+    console.error('Error unlinking event from application:', error);
+    throw error;
   }
 };
 

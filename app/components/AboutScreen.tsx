@@ -49,14 +49,14 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>📅 Calendar & Daily Planner</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Plan your week with customizable time blocks and daily themes. Create interviews, appointments, and reminders. Swipe between days to navigate quickly. All events sync with your device calendar.
+              Plan your week with customizable time blocks and daily themes. Create interviews, appointments, and reminders. Swipe between days to navigate quickly. All events sync with your device calendar. Link events to job applications for seamless organization.
             </Text>
           </View>
 
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>💼 Job Applications</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Track every application with position details, status, and notes. Add rejection reasons for unemployment reporting. Search and filter to stay organized. Create interview events directly from applications.
+              Track every application with position details, status, and notes. Add rejection reasons for unemployment reporting. Search and filter to stay organized. Create interview events directly from applications or link to existing events. Bi-directional linking keeps your data synchronized. Application dates automatically reflect interview dates when progressing through the interview process.
             </Text>
           </View>
 
@@ -77,14 +77,14 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>📄 Resumes & Cover Letters</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Keep all your documents organized. Preview, share, and manage multiple versions. Mark them as active or inactive for easy organization.
+              Keep all your documents organized. Preview, share, and manage multiple versions. Mark them as active or inactive for easy organization. Link documents to job applications.
             </Text>
           </View>
 
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>📊 Reports</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Generate PDF reports for your weekly schedule or unemployment filing. Weekly reports include all your time blocks and events. Unemployment reports include interviews and rejected applications.
+              Generate PDF reports for your weekly schedule or unemployment filing. Weekly reports include all your time blocks and events. Unemployment reports include interviews, appointments, and rejected applications with rejection reasons. Applications that progress through interviews show as "Interview Rejected" with interview dates.
             </Text>
           </View>
         </View>
@@ -118,6 +118,9 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           </Text>
           <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
             • Tap addresses, phone numbers, and emails in events to interact with them
+          </Text>
+          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
+            • Link events and applications together - changes sync automatically
           </Text>
           <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
             • Use the Job Offers screen to compare multiple offers at once
