@@ -22,7 +22,9 @@ export const PreferencesProvider = ({ children }: { children: ReactNode }) => {
     refreshPreferences();
   }, []);
 
-  const colorScheme = preferences ? getColorScheme(preferences.colorScheme) : getColorScheme('earth-tone');
+  const colorScheme = preferences 
+    ? getColorScheme(preferences.colorScheme, preferences.darkMode ?? false)
+    : getColorScheme('earth-tone', false);
 
   return (
     <PreferencesContext.Provider value={{ preferences, colorScheme, refreshPreferences }}>

@@ -183,15 +183,16 @@ Comprehensive interview preparation toolkit:
 
 **Schedule Setup:**
 - Customize workday start time
-- Reorder time blocks to match your routine
+- Select time blocks for each position (Morning Routine, Lunch, and Evening are fixed and cannot be changed)
 - Time blocks automatically adjust to your schedule
 
 **Visual Themes:**
-Choose from four beautiful color schemes:
+Choose from five beautiful color schemes:
 - 🌿 **Earth-Tone** (default): Warm browns and tans
 - 🌊 **Cheerful Nature**: Greens and blues
 - ☀️ **Sunny Sky**: Vibrant oranges and yellows
 - 💜 **Imagination Run Wild**: Purples and pinks
+- ✨ **Modern**: Contemporary indigo, purple, and pink palette with **dark mode support**
 
 **Preferences:**
 - 12-hour or 24-hour clock format
@@ -199,6 +200,7 @@ Choose from four beautiful color schemes:
 - Device timezone or custom timezone
 - Calendar sync with Apple Calendar or Google Calendar
 - **Follow-up reminders**: Configure days after application and days after interview for automatic follow-up reminders
+- **Dark mode**: Available for the Modern color scheme (toggle in settings)
 
 **Interface:**
 - Long-press the About (ℹ️) or Settings (⚙️) icons in the header for tooltips

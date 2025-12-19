@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, TextInput, TouchableOpacity, Alert, Switch } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TextInput, TouchableOpacity, Alert, Switch, Modal } from 'react-native';
 import { TIME_BLOCKS, TimeBlock } from '../utils/plannerData';
 import { UserPreferences, savePreferences, loadPreferences } from '../utils/preferences';
 import { generateTimeBlocks, GeneratedTimeBlock } from '../utils/timeBlockGenerator';
@@ -20,6 +20,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
   const [timeBlockOrder, setTimeBlockOrder] = useState<string[]>(TIME_BLOCKS.map(b => b.id));
   const [use12HourClock, setUse12HourClock] = useState(false);
   const [colorScheme, setColorScheme] = useState<ColorSchemeName>('earth-tone');
+  const [darkMode, setDarkMode] = useState(false);
   const [mapAppPreference, setMapAppPreference] = useState<'apple-maps' | 'google-maps'>('apple-maps');
   const [timezoneMode, setTimezoneMode] = useState<'device' | 'custom'>('device');
   const [timezone, setTimezone] = useState('');
@@ -27,9 +28,10 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
   const [followUpDaysAfterApplication, setFollowUpDaysAfterApplication] = useState('7');
   const [followUpDaysAfterInterview, setFollowUpDaysAfterInterview] = useState('2');
   const [loading, setLoading] = useState(true);
+  const [showTimeBlockDropdown, setShowTimeBlockDropdown] = useState<number | null>(null); // Index of the time block being edited
   const { refreshPreferences } = usePreferences();
   
-  const currentColorScheme = getColorScheme(colorScheme);
+  const currentColorScheme = getColorScheme(colorScheme, darkMode);
 
   useEffect(() => {
     loadUserPreferences();
@@ -82,6 +84,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
       setTimeBlockOrder(prefs.timeBlockOrder);
       setUse12HourClock(prefs.use12HourClock ?? false);
       setColorScheme(prefs.colorScheme ?? 'earth-tone');
+      setDarkMode(prefs.darkMode ?? false);
       setMapAppPreference(prefs.mapAppPreference ?? 'apple-maps');
       setTimezoneMode(prefs.timezoneMode ?? 'device');
       setTimezone(prefs.timezone ?? '');
@@ -170,6 +173,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         hasCompletedSetup: true,
         use12HourClock,
         colorScheme,
+        darkMode,
         mapAppPreference,
         timezoneMode,
         timezone: timezoneMode === 'custom' ? timezone.trim() : '',
@@ -187,22 +191,25 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
     }
   };
 
-  const moveBlockUp = (index: number) => {
-    if (index === 0) return;
+  const handleSelectTimeBlock = (index: number, blockId: string) => {
     const newOrder = [...timeBlockOrder];
-    [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+    newOrder[index] = blockId;
     setTimeBlockOrder(newOrder);
-  };
-
-  const moveBlockDown = (index: number) => {
-    if (index === timeBlockOrder.length - 1) return;
-    const newOrder = [...timeBlockOrder];
-    [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
-    setTimeBlockOrder(newOrder);
+    setShowTimeBlockDropdown(null);
   };
 
   const getTimeBlockById = (id: string): TimeBlock | undefined => {
     return TIME_BLOCKS.find(block => block.id === id);
+  };
+
+  const isBlockEditable = (blockId: string): boolean => {
+    // Morning routine, Lunch, and Evening blocks are fixed and not editable
+    return !['morning', 'lunch', 'evening'].includes(blockId);
+  };
+
+  const getAvailableTimeBlocks = (currentIndex: number): TimeBlock[] => {
+    // Return all available time blocks
+    return TIME_BLOCKS;
   };
 
   if (loading) {
@@ -291,7 +298,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
               Time Block Labels
             </Text>
             <Text style={[styles.sectionDescription, { color: currentColorScheme.colors.textSecondary }]}>
-              Reorder your time block labels. Times will shift based on your start time.
+              Select time blocks for each position. Times will shift based on your start time.
             </Text>
             {timeBlockOrder.map((blockId, index) => {
               const block = getTimeBlockById(blockId);
@@ -301,9 +308,10 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
               const generatedBlock = generatedBlocksPreview.find(gb => gb.id === blockId);
               const displayTime = generatedBlock ? generatedBlock.time : block.time;
               const formattedTime = use12HourClock ? formatTimeRange(displayTime, true) : displayTime;
+              const editable = isBlockEditable(blockId);
 
               return (
-                <View key={blockId} style={[
+                <View key={`${blockId}-${index}`} style={[
                   styles.blockItem,
                   {
                     backgroundColor: currentColorScheme.colors.surface,
@@ -311,6 +319,9 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
                   }
                 ]}>
                   <View style={styles.blockContent}>
+                    <Text style={[styles.blockPositionLabel, { color: currentColorScheme.colors.textSecondary }]}>
+                      Position {index + 1}
+                    </Text>
                     <Text style={[styles.blockTitle, { color: currentColorScheme.colors.text }]}>
                       🌿 {block.title}
                     </Text>
@@ -322,35 +333,86 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
                     <Text style={[styles.blockTime, { color: currentColorScheme.colors.primary }]}>
                       {formattedTime}
                     </Text>
+                    {!editable && (
+                      <Text style={[styles.blockFixedLabel, { color: currentColorScheme.colors.textSecondary }]}>
+                        Fixed block
+                      </Text>
+                    )}
                   </View>
-                <View style={styles.blockActions}>
+                  {editable && (
+                    <TouchableOpacity
+                      style={[
+                        styles.selectBlockButton,
+                        { backgroundColor: currentColorScheme.colors.primary, borderColor: currentColorScheme.colors.primary }
+                      ]}
+                      onPress={() => setShowTimeBlockDropdown(index)}
+                    >
+                      <Text style={styles.selectBlockButtonText}>Change</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Time Block Selection Dropdown Modal */}
+          <Modal
+            visible={showTimeBlockDropdown !== null}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowTimeBlockDropdown(null)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={[styles.modalContent, { backgroundColor: currentColorScheme.colors.surface, borderColor: currentColorScheme.colors.border }]}>
+                <View style={[styles.modalHeader, { borderBottomColor: currentColorScheme.colors.border }]}>
+                  <Text style={[styles.modalTitle, { color: currentColorScheme.colors.text }]}>
+                    Select Time Block
+                  </Text>
                   <TouchableOpacity
-                    style={[
-                      styles.moveButton,
-                      { backgroundColor: currentColorScheme.colors.primary },
-                      index === 0 && styles.moveButtonDisabled
-                    ]}
-                    onPress={() => moveBlockUp(index)}
-                    disabled={index === 0}
+                    onPress={() => setShowTimeBlockDropdown(null)}
+                    style={styles.modalCloseButton}
                   >
-                    <Text style={styles.moveButtonText}>↑</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.moveButton,
-                      { backgroundColor: currentColorScheme.colors.primary },
-                      index === timeBlockOrder.length - 1 && styles.moveButtonDisabled
-                    ]}
-                    onPress={() => moveBlockDown(index)}
-                    disabled={index === timeBlockOrder.length - 1}
-                  >
-                    <Text style={styles.moveButtonText}>↓</Text>
+                    <Text style={[styles.modalCloseButtonText, { color: currentColorScheme.colors.text }]}>✕</Text>
                   </TouchableOpacity>
                 </View>
+                <ScrollView style={styles.modalScrollView}>
+                  {showTimeBlockDropdown !== null && getAvailableTimeBlocks(showTimeBlockDropdown)
+                    .filter(block => isBlockEditable(block.id)) // Only show editable blocks in dropdown
+                    .map((block) => {
+                      const isSelected = timeBlockOrder[showTimeBlockDropdown] === block.id;
+                      return (
+                        <TouchableOpacity
+                          key={block.id}
+                          style={[
+                            styles.timeBlockOption,
+                            {
+                              backgroundColor: isSelected ? currentColorScheme.colors.surface : currentColorScheme.colors.background,
+                              borderColor: isSelected ? currentColorScheme.colors.primary : currentColorScheme.colors.border,
+                            },
+                            isSelected && { borderWidth: 2 }
+                          ]}
+                          onPress={() => handleSelectTimeBlock(showTimeBlockDropdown, block.id)}
+                        >
+                          <Text style={[styles.timeBlockOptionTitle, { color: currentColorScheme.colors.text }]}>
+                            {block.title}
+                          </Text>
+                          {block.description && (
+                            <Text style={[styles.timeBlockOptionDescription, { color: currentColorScheme.colors.textSecondary }]}>
+                              {block.description}
+                            </Text>
+                          )}
+                          {isSelected && (
+                            <Text style={[styles.timeBlockOptionSelected, { color: currentColorScheme.colors.primary }]}>
+                              ✓ Selected
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                </ScrollView>
               </View>
-            );
-          })}
-        </View>
+            </View>
+          </Modal>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Display Settings</Text>
@@ -697,6 +759,36 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
           ))}
         </View>
 
+        {colorScheme === 'modern' && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: currentColorScheme.colors.text }]}>
+              Dark Mode
+            </Text>
+            <Text style={[styles.sectionDescription, { color: currentColorScheme.colors.textSecondary }]}>
+              Toggle dark mode for the Modern color scheme
+            </Text>
+            <View style={[styles.settingRow, {
+              backgroundColor: currentColorScheme.colors.surface,
+              borderColor: currentColorScheme.colors.border,
+            }]}>
+              <View style={styles.settingContent}>
+                <Text style={[styles.settingLabel, { color: currentColorScheme.colors.text }]}>
+                  Enable Dark Mode
+                </Text>
+                <Text style={[styles.settingDescription, { color: currentColorScheme.colors.textSecondary }]}>
+                  Use dark color scheme
+                </Text>
+              </View>
+              <Switch
+                value={darkMode}
+                onValueChange={setDarkMode}
+                trackColor={{ false: '#6B7280', true: currentColorScheme.colors.secondary }}
+                thumbColor={darkMode ? currentColorScheme.colors.primary : '#f4f3f4'}
+              />
+            </View>
+          </View>
+        )}
+
         <TouchableOpacity style={[styles.saveButton, { backgroundColor: currentColorScheme.colors.primary }]} onPress={handleSave}>
           <Text style={styles.saveButtonText}>Save Preferences</Text>
         </TouchableOpacity>
@@ -817,6 +909,12 @@ const styles = StyleSheet.create({
   blockContent: {
     flex: 1,
   },
+  blockPositionLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6b5b4f',
+    marginBottom: 4,
+  },
   blockTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -833,26 +931,74 @@ const styles = StyleSheet.create({
     color: '#8C6A4A',
     fontWeight: '500',
   },
-  blockActions: {
-    flexDirection: 'column',
-    gap: 8,
+  blockFixedLabel: {
+    fontSize: 11,
+    fontStyle: 'italic',
+    marginTop: 4,
   },
-  moveButton: {
-    backgroundColor: '#8C6A4A',
-    width: 40,
-    height: 40,
+  selectBlockButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 8,
+    borderWidth: 1,
+    marginLeft: 12,
+  },
+  selectBlockButtonText: {
+    color: '#f5f5dc',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  moveButtonDisabled: {
-    backgroundColor: '#a0826d',
-    opacity: 0.5,
+  modalContent: {
+    width: '85%',
+    maxHeight: '70%',
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
-  moveButtonText: {
-    color: '#f5f5dc',
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
     fontSize: 18,
+    fontWeight: '600',
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalCloseButtonText: {
+    fontSize: 24,
     fontWeight: 'bold',
+  },
+  modalScrollView: {
+    maxHeight: 400,
+  },
+  timeBlockOption: {
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  timeBlockOptionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  timeBlockOptionDescription: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  timeBlockOptionSelected: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
   },
   saveButton: {
     padding: 16,

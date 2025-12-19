@@ -9,6 +9,7 @@ export interface UserPreferences {
   hasCompletedSetup: boolean;
   use12HourClock: boolean; // Toggle between 12-hour and 24-hour clock
   colorScheme: ColorSchemeName; // Selected color scheme
+  darkMode: boolean; // Dark mode toggle (only applies to modern color scheme)
   mapAppPreference: 'apple-maps' | 'google-maps'; // Preferred map app
   timezoneMode: 'device' | 'custom'; // Whether to use device timezone or a custom one
   timezone?: string; // IANA timezone name when timezoneMode is 'custom' (e.g., "America/New_York")
@@ -24,6 +25,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   hasCompletedSetup: false,
   use12HourClock: false, // Default to 24-hour clock
   colorScheme: 'earth-tone', // Default to Earth-Tone
+  darkMode: false, // Default to light mode
   mapAppPreference: 'apple-maps', // Default to Apple Maps
   timezoneMode: 'device',
   timezone: '',

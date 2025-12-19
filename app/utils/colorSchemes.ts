@@ -1,4 +1,4 @@
-export type ColorSchemeName = 'earth-tone' | 'cheerful-nature' | 'sunny-sky' | 'imagination';
+export type ColorSchemeName = 'earth-tone' | 'cheerful-nature' | 'sunny-sky' | 'imagination' | 'modern';
 
 export interface ColorScheme {
   name: ColorSchemeName;
@@ -72,9 +72,45 @@ export const COLOR_SCHEMES: Record<ColorSchemeName, ColorScheme> = {
       border: '#C47BC4',
     },
   },
+  'modern': {
+    name: 'modern',
+    displayName: 'Modern',
+    colors: {
+      primary: '#6366F1',
+      secondary: '#8B5CF6',
+      accent: '#EC4899',
+      background: '#FFFFFF',
+      surface: '#F9FAFB',
+      text: '#111827',
+      textSecondary: '#6B7280',
+      border: '#E5E7EB',
+    },
+  },
 };
 
-export const getColorScheme = (schemeName: ColorSchemeName): ColorScheme => {
-  return COLOR_SCHEMES[schemeName] || COLOR_SCHEMES['earth-tone'];
+// Dark mode colors for modern scheme
+const MODERN_DARK_COLORS = {
+  primary: '#6366F1',
+  secondary: '#8B5CF6',
+  accent: '#EC4899',
+  background: '#111827',
+  surface: '#1F2937',
+  text: '#F9FAFB',
+  textSecondary: '#9CA3AF',
+  border: '#374151',
+};
+
+export const getColorScheme = (schemeName: ColorSchemeName, darkMode?: boolean): ColorScheme => {
+  const baseScheme = COLOR_SCHEMES[schemeName] || COLOR_SCHEMES['earth-tone'];
+  
+  // Only modern scheme supports dark mode
+  if (schemeName === 'modern' && darkMode) {
+    return {
+      ...baseScheme,
+      colors: MODERN_DARK_COLORS,
+    };
+  }
+  
+  return baseScheme;
 };
 

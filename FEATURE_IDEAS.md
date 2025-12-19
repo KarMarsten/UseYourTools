@@ -3,13 +3,25 @@
 **Last Updated**: Current brainstorming session
 
 ## Current Features Summary
-- ✅ Job application tracking (Applied, Rejected, Interview statuses)
-- ✅ Calendar & daily planner with time blocks
-- ✅ Event management (Interviews, Appointments, Reminders)
+- ✅ Job application tracking (Applied, Rejected, Interview statuses with rejection reasons)
+- ✅ Calendar & daily planner with customizable time blocks
+- ✅ Event management (Interviews, Appointments, Reminders with notifications)
 - ✅ Resume management (multiple versions, active/inactive)
-- ✅ Reports (Weekly Schedule, Unemployment)
+- ✅ Cover letter management (save, link to applications, preview, share, active/inactive tracking)
+- ✅ Job offers tracking (salary, benefits, work location, notes)
+- ✅ Reports (Weekly Schedule, Unemployment with smart date tracking)
 - ✅ Calendar sync (Apple/Google)
 - ✅ Job site quick links (Indeed, LinkedIn, etc.)
+- ✅ Interview Prep tools:
+  - Interview question bank (by category/industry/role)
+  - STAR method responses (Situation, Task, Action, Result)
+  - Company research notes (with website, LinkedIn, Glassdoor links)
+  - Interview feedback (strengths, areas for improvement)
+  - Practice mode with timer
+- ✅ Bi-directional linking between job applications and events
+- ✅ Follow-up reminder settings (configurable days after application/interview)
+- ✅ Modern color palette with dark mode support
+- ✅ Multiple color scheme options (Earth-Tone, Cheerful Nature, Sunny Sky, Imagination, Modern)
 
 ---
 
@@ -18,12 +30,16 @@
 ### 1. **Cover Letter Management** 📝
 **Why**: Job seekers often need multiple cover letter versions, just like resumes.
 
+**Status**: ✅ **Fully Implemented** - Available in Applications screen with full management capabilities
+
 **Features**:
-- Save multiple cover letter templates
-- Link cover letters to specific job applications
-- Quick access to cover letters when applying
-- Template variables (company name, position, date auto-fill)
-- Version tracking (similar to resumes)
+- ✅ Save multiple cover letter files (PDF/DOC)
+- ✅ Link cover letters to specific job applications
+- ✅ Quick access to cover letters when applying (dropdown selector)
+- ✅ Cover letter management (rename, delete, share, preview, print)
+- ✅ Active/inactive status tracking (similar to resumes)
+- ✅ Template support (can mark cover letters as templates)
+- ⏳ Template variables (company name, position, date auto-fill)
 
 **Impact**: High - Saves time during application process
 
@@ -32,12 +48,14 @@
 ### 2. **Follow-Up Reminders** ⏰
 **Why**: Following up on applications is crucial but easy to forget.
 
+**Status**: ⏳ **Partially Implemented** - Settings allow configuring follow-up days, but no auto-creation of reminders yet
+
 **Features**:
-- Auto-create follow-up reminders when application status is "Applied"
-- Customizable follow-up timing (e.g., 1 week, 2 weeks after application)
-- Smart suggestions: "Follow up on [Company] application from [Date]"
-- Quick action: "Mark as Followed Up" button
-- Track follow-up history per application
+- ✅ Customizable follow-up timing in settings (days after application/interview)
+- ⏳ Auto-create follow-up reminders when application status is "Applied"
+- ⏳ Smart suggestions: "Follow up on [Company] application from [Date]"
+- ⏳ Quick action: "Mark as Followed Up" button
+- ⏳ Track follow-up history per application
 
 **Impact**: High - Improves application success rates
 
@@ -46,12 +64,15 @@
 ### 3. **Salary & Compensation Tracking** 💰
 **Why**: Job seekers need to track offers and negotiate effectively.
 
+**Status**: ✅ **Implemented** - Offers screen tracks salary, benefits, work location, and notes
+
 **Features**:
-- Add salary range/offer amount to applications
-- Track benefits (health insurance, PTO, 401k, etc.)
-- Compare offers side-by-side
-- Calculate total compensation value
-- Notes on negotiation conversations
+- ✅ Add salary range/offer amount to applications
+- ✅ Track benefits (health insurance, PTO, 401k, etc.)
+- ✅ Work location tracking (remote/hybrid/onsite)
+- ✅ Notes on negotiation conversations
+- ⏳ Compare offers side-by-side
+- ⏳ Calculate total compensation value
 
 **Impact**: Medium-High - Helps with decision-making
 
@@ -60,13 +81,15 @@
 ### 4. **Interview Preparation Tools** 🎤
 **Why**: Preparation is key to interview success.
 
+**Status**: ✅ **Fully Implemented**
+
 **Features**:
-- Interview question bank (common questions by role/industry)
-- STAR method template for behavioral questions
-- Company research notes section (linked to applications)
-- Interview feedback/notes after interviews
-- Practice mode with timer
-- Link to company website, LinkedIn, Glassdoor reviews
+- ✅ Interview question bank (common questions by role/industry with categories)
+- ✅ STAR method template for behavioral questions (Situation, Task, Action, Result)
+- ✅ Company research notes section (linked to applications)
+- ✅ Interview feedback/notes after interviews (with strengths, areas for improvement)
+- ✅ Practice mode with timer
+- ✅ Link to company website, LinkedIn, Glassdoor reviews
 
 **Impact**: High - Directly improves interview performance
 
@@ -135,14 +158,16 @@
 ### 9. **Company Research & Notes** 🏢
 **Why**: Researching companies before interviews is essential.
 
+**Status**: ✅ **Implemented** - Company Research form in Interview Prep screen
+
 **Features**:
-- Company profiles (linked to applications)
-- Research notes (culture, values, recent news)
-- Employee reviews summary
-- Interview questions specific to company
-- Salary ranges for company/role
-- Company size, industry, location
-- "Companies I'm Interested In" list (even without applications)
+- ✅ Company profiles (linked to applications)
+- ✅ Research notes (with company name, position, website, LinkedIn, Glassdoor links)
+- ⏳ Employee reviews summary
+- ⏳ Interview questions specific to company
+- ⏳ Salary ranges for company/role
+- ⏳ Company size, industry, location
+- ⏳ "Companies I'm Interested In" list (even without applications)
 
 **Impact**: Medium-High - Better interview preparation
 
@@ -166,13 +191,17 @@
 ### 11. **Interview Feedback & Reflection** 📝
 **Why**: Learning from each interview improves future performance.
 
+**Status**: ✅ **Implemented** - Interview Feedback form in Interview Prep screen
+
 **Features**:
-- Post-interview reflection form
-- What went well / What to improve
-- Questions asked (build personal question bank)
-- Interviewer names and roles
-- Follow-up actions
-- Rating system (1-5 stars) for interview experience
+- ✅ Post-interview reflection form
+- ✅ What went well / What to improve (strengths and areas for improvement fields)
+- ✅ Interview date tracking
+- ✅ Linked to job applications
+- ⏳ Questions asked (build personal question bank)
+- ⏳ Interviewer names and roles
+- ⏳ Follow-up actions
+- ⏳ Rating system (1-5 stars) for interview experience
 
 **Impact**: Medium - Helps improve over time
 
@@ -236,14 +265,11 @@
 ## 🎯 Priority Recommendations
 
 ### **Quick Wins** (1-2 weeks each):
-1. **Follow-Up Reminders** - High impact, relatively simple
-2. **Cover Letter Management** - Natural extension of resume feature
-3. **Interview Preparation Tools** - High value, moderate complexity
+1. **Follow-Up Reminders** - High impact, relatively simple (settings exist, need auto-creation logic)
 
 ### **Medium-Term** (2-4 weeks each):
 4. **Networking Contact Management** - High impact, moderate complexity
 5. **Application Analytics Dashboard** - Good insights, requires data aggregation
-6. **Salary & Compensation Tracking** - Useful for negotiations
 
 ### **Long-Term** (1-2 months):
 7. **Job Board Integration** - High impact but complex (API limitations)

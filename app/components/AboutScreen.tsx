@@ -49,7 +49,7 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>📅 Calendar & Daily Planner</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Plan your week with customizable time blocks and daily themes. Create interviews, appointments, and reminders. Swipe between days to navigate quickly. All events sync with your device calendar. Link events to job applications for seamless organization.
+              Plan your week with customizable time blocks and daily themes. Select time blocks for each position (fixed blocks like Morning Routine and Lunch cannot be changed). Create interviews, appointments, and reminders. Swipe between days to navigate quickly. All events sync with your device calendar. Link events to job applications for seamless organization.
             </Text>
           </View>
 
@@ -106,8 +106,11 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
             💜 Imagination Run Wild (purples and pinks)
           </Text>
+          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
+            ✨ Modern (contemporary indigo, purple, and pink with dark mode)
+          </Text>
           <Text style={[styles.text, { color: colorScheme.colors.textSecondary, marginTop: 12 }]}>
-            Customize your schedule, time format, and preferences to fit your workflow.
+            Customize your schedule, time format, and preferences to fit your workflow. The Modern theme includes an optional dark mode toggle.
           </Text>
         </View>
 
