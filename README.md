@@ -234,7 +234,7 @@ Generate professional PDF reports:
 
 - [Node.js](https://nodejs.org/) installed (v18 or higher recommended)
 - iOS development: Xcode (for iOS builds)
-- Android development: Android Studio (for Android builds)
+- ~~Android development: Android Studio (for Android builds)~~ - Android support coming soon
 
 ### Installation
 
@@ -264,8 +264,8 @@ Generate professional PDF reports:
 # iOS
 npx expo run:ios
 
-# Android
-npx expo run:android
+# Android (coming soon - not yet available)
+# npx expo run:android
 ```
 
 **Development Server:**
@@ -274,7 +274,9 @@ npx expo run:android
 npx expo start
 ```
 
-Then press `i` for iOS simulator or `a` for Android emulator, or scan the QR code with Expo Go app on your device.
+Then press `i` for iOS simulator, or scan the QR code with Expo Go app on your device.
+
+> **Note:** Android support is planned but not yet available. The app currently runs on iOS only.
 
 ---
 
