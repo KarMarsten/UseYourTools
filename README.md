@@ -226,6 +226,14 @@ Generate professional PDF reports:
 - All data for the selected week in an organized table format
 - Export as PDF for easy submission
 
+**Job Applications Report:**
+- Weekly report showing all job applications submitted during the selected week
+- Includes: Date, Time, Position Title, Company, Source, and Current Status
+- **Color-coded status**: Applied (blue), Interview (green), Rejected (red), No Response (orange)
+- Sorted chronologically by application date and time
+- Perfect for tracking weekly application activity
+- Export as PDF for records or sharing
+
 ---
 
 ## 🚀 Getting Started

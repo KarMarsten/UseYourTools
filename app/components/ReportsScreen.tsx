@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert } from 'rea
 import { usePreferences } from '../context/PreferencesContext';
 import { getAllEvents } from '../utils/events';
 import { getAllApplications } from '../utils/applications';
-import { exportWeeklySchedulePDF, exportUnemploymentReportPDF, generateWeeklyScheduleHTML, generateUnemploymentReportHTML } from '../utils/pdfExports';
+import { exportWeeklySchedulePDF, exportUnemploymentReportPDF, exportJobApplicationsReportPDF, generateWeeklyScheduleHTML, generateUnemploymentReportHTML, generateJobApplicationsReportHTML } from '../utils/pdfExports';
 import { getDateKey } from '../utils/timeFormatter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -140,6 +140,32 @@ export default function ReportsScreen({ onBack, onViewReport }: ReportsScreenPro
     }
   };
 
+  const handleExportJobApplicationsReport = async () => {
+    try {
+      const weekStart = getWeekStart(selectedWeekDate);
+      const allApplications = await getAllApplications();
+      
+      await exportJobApplicationsReportPDF(weekStart, allApplications, colorScheme);
+      // Success message is handled by the sharing dialog
+    } catch (error) {
+      console.error('Error exporting job applications report:', error);
+      Alert.alert('Error', 'Failed to export job applications report');
+    }
+  };
+
+  const handleViewJobApplicationsReport = async () => {
+    try {
+      const weekStart = getWeekStart(selectedWeekDate);
+      const allApplications = await getAllApplications();
+      
+      const html = generateJobApplicationsReportHTML(weekStart, allApplications, colorScheme);
+      onViewReport(html, `Job Applications Report - ${formatWeekRange(selectedWeekDate)}`);
+    } catch (error) {
+      console.error('Error generating job applications report:', error);
+      Alert.alert('Error', 'Failed to generate job applications report');
+    }
+  };
+
   const dynamicStyles = {
     container: { backgroundColor: colorScheme.colors.background },
     header: { backgroundColor: colorScheme.colors.surface },
@@ -163,7 +189,7 @@ export default function ReportsScreen({ onBack, onViewReport }: ReportsScreenPro
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, dynamicStyles.title]}>Report Options</Text>
           <Text style={[styles.sectionDescription, dynamicStyles.description]}>
-            View or export PDF reports for your weekly schedule and unemployment filing.
+            View or export PDF reports for your weekly schedule, unemployment filing, and job applications.
           </Text>
         </View>
 
@@ -244,6 +270,32 @@ export default function ReportsScreen({ onBack, onViewReport }: ReportsScreenPro
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: colorScheme.colors.accent, flex: 1, marginLeft: 8 }]}
                 onPress={handleExportUnemploymentReport}
+              >
+                <Text style={[styles.actionButtonText, { color: '#FFF8E7' }]}>
+                  Export PDF
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Job Applications Report Section */}
+          <View style={styles.reportSection}>
+            <Text style={[styles.reportTitle, dynamicStyles.title]}>💼 Job Applications Report</Text>
+            <Text style={[styles.reportDescription, dynamicStyles.description]}>
+              View or generate a PDF report showing all job applications submitted during the selected week
+            </Text>
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: colorScheme.colors.primary, flex: 1, marginRight: 8 }]}
+                onPress={handleViewJobApplicationsReport}
+              >
+                <Text style={[styles.actionButtonText, { color: '#FFF8E7' }]}>
+                  View
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: colorScheme.colors.accent, flex: 1, marginLeft: 8 }]}
+                onPress={handleExportJobApplicationsReport}
               >
                 <Text style={[styles.actionButtonText, { color: '#FFF8E7' }]}>
                   Export PDF

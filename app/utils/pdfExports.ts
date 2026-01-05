@@ -1,11 +1,8 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { Platform } from 'react-native';
 import { UserPreferences } from './preferences';
 import { Event } from './events';
-import { getAllEvents } from './events';
 import { generateTimeBlocks } from './timeBlockGenerator';
-import { DAY_THEMES } from './plannerData';
 import { getDayThemeForDate } from './plannerData';
 import { formatTime12Hour, getDateKey } from './timeFormatter';
 import { ColorScheme } from './colorSchemes';
@@ -516,6 +513,185 @@ export const exportUnemploymentReportPDF = async (weekStart: Date, events: Event
     }
   } catch (error) {
     console.error('Error exporting unemployment report PDF:', error);
+    throw error;
+  }
+};
+
+/**
+ * Generate HTML for job applications report PDF
+ */
+export const generateJobApplicationsReportHTML = (weekStart: Date, applications: JobApplication[], colorScheme: ColorScheme): string => {
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+
+  // Filter applications that were applied during this week (based on appliedDate)
+  const weekApplications = applications.filter(app => {
+    const appliedDate = new Date(app.appliedDate);
+    appliedDate.setHours(0, 0, 0, 0);
+    const weekStartNormalized = new Date(weekStart);
+    weekStartNormalized.setHours(0, 0, 0, 0);
+    const weekEndNormalized = new Date(weekEnd);
+    weekEndNormalized.setHours(0, 0, 0, 0);
+    return appliedDate >= weekStartNormalized && appliedDate <= weekEndNormalized;
+  }).sort((a, b) => {
+    // Sort by application date and time (earliest first)
+    return new Date(a.appliedDate).getTime() - new Date(b.appliedDate).getTime();
+  });
+
+  let html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          margin: 0;
+          padding: 20px;
+          background-color: ${colorScheme.colors.background};
+          color: ${colorScheme.colors.text};
+        }
+        .report-header {
+          text-align: center;
+          margin-bottom: 30px;
+        }
+        .report-title {
+          font-size: 24px;
+          font-weight: bold;
+          color: ${colorScheme.colors.primary};
+          margin-bottom: 10px;
+        }
+        .report-subtitle {
+          font-size: 14px;
+          color: ${colorScheme.colors.textSecondary};
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 20px;
+          background-color: ${colorScheme.colors.background};
+        }
+        th {
+          background-color: ${colorScheme.colors.surface};
+          padding: 12px;
+          text-align: left;
+          border: 1px solid ${colorScheme.colors.border};
+          font-weight: 600;
+          color: ${colorScheme.colors.text};
+          font-size: 12px;
+        }
+        td {
+          padding: 10px;
+          border: 1px solid ${colorScheme.colors.border};
+          font-size: 12px;
+          color: ${colorScheme.colors.text};
+        }
+        tr:nth-child(even) {
+          background-color: ${colorScheme.colors.surface};
+        }
+        .no-applications {
+          text-align: center;
+          padding: 40px;
+          color: ${colorScheme.colors.textSecondary};
+          font-style: italic;
+        }
+        .status-applied {
+          color: #1976d2;
+          font-weight: 600;
+        }
+        .status-interview {
+          color: #388e3c;
+          font-weight: 600;
+        }
+        .status-rejected {
+          color: #d32f2f;
+          font-weight: 600;
+        }
+        .status-no-response {
+          color: #f57c00;
+          font-weight: 600;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="report-header">
+        <div class="report-title">Weekly Job Applications Report</div>
+        <div class="report-subtitle">Week of ${weekStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Position Title</th>
+            <th>Company</th>
+            <th>Source</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  if (weekApplications.length === 0) {
+    html += `
+      <tr>
+        <td colspan="6" class="no-applications">No job applications for this week</td>
+      </tr>
+    `;
+  } else {
+    weekApplications.forEach(app => {
+      const appliedDate = new Date(app.appliedDate);
+      const dateStr = appliedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const timeStr = appliedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      
+      // Format status with appropriate styling class
+      let statusDisplay = app.status.charAt(0).toUpperCase() + app.status.slice(1).replace('-', ' ');
+      let statusClass = `status-${app.status}`;
+
+      html += `
+        <tr>
+          <td>${dateStr}</td>
+          <td>${timeStr}</td>
+          <td>${app.positionTitle || '-'}</td>
+          <td>${app.company || '-'}</td>
+          <td>${app.source || '-'}</td>
+          <td class="${statusClass}">${statusDisplay}</td>
+        </tr>
+      `;
+    });
+  }
+
+  html += `
+        </tbody>
+      </table>
+      </body>
+    </html>
+  `;
+
+  return html;
+};
+
+/**
+ * Export job applications report as PDF
+ */
+export const exportJobApplicationsReportPDF = async (weekStart: Date, applications: JobApplication[], colorScheme: ColorScheme): Promise<void> => {
+  try {
+    const html = generateJobApplicationsReportHTML(weekStart, applications, colorScheme);
+
+    // printToFileAsync creates a file in a shareable location, we can use it directly
+    const { uri } = await Print.printToFileAsync({ html, base64: false });
+
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Share Job Applications Report',
+        UTI: 'com.adobe.pdf', // iOS specific: specify PDF UTI
+      });
+    } else {
+      console.log('Sharing not available. File saved at:', uri);
+    }
+  } catch (error) {
+    console.error('Error exporting job applications report PDF:', error);
     throw error;
   }
 };
