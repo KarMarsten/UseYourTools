@@ -9,7 +9,7 @@
 - ✅ Resume management (multiple versions, active/inactive)
 - ✅ Cover letter management (save, link to applications, preview, share, active/inactive tracking)
 - ✅ Job offers tracking (salary, benefits, work location, notes)
-- ✅ Reports (Weekly Schedule, Unemployment with smart date tracking)
+- ✅ Reports (Weekly Schedule, Unemployment with smart date tracking, Job Applications)
 - ✅ Calendar sync (Apple/Google)
 - ✅ Job site quick links (Indeed, LinkedIn, etc.)
 - ✅ Interview Prep tools:
@@ -22,6 +22,7 @@
 - ✅ Follow-up reminder settings (configurable days after application/interview)
 - ✅ Modern color palette with dark mode support
 - ✅ Multiple color scheme options (Earth-Tone, Cheerful Nature, Sunny Sky, Imagination, Modern)
+- ✅ Reference Management (contact database, link to applications, quick actions for email/call)
 
 ---
 
@@ -39,22 +40,6 @@
 - Reminder to send thank you notes after interviews (configurable timing)
 
 **Impact**: High - Professional communication is crucial for job search success
-
----
-
-### NEW: **Reference Management** 👤
-**Why**: Managing references can be chaotic. Having them organized and easily accessible saves time during applications.
-
-**Features**:
-- Reference contact database (name, title, company, email, phone, relationship)
-- Link references to specific job applications
-- Track when references were contacted
-- Notes on each reference (strengths, how they know you, what they'll say)
-- Quick actions: Email, Call, LinkedIn
-- Reference availability tracker (e.g., "Available", "Busy", "Not available")
-- Reminder to thank references after they help
-
-**Impact**: High - Essential for applications that require references
 
 ---
 
@@ -387,8 +372,7 @@
 4. **Follow-Up Reminders** - High impact, relatively simple (settings exist, need auto-creation logic)
 
 ### **Medium-Term** (2-4 weeks each):
-1. **Reference Management** - High impact, moderate complexity, essential feature
-2. **Networking Contact Management** - High impact, moderate complexity
+1. **Networking Contact Management** - High impact, moderate complexity
 3. **Interview Prep Checklist** - Medium impact, simple but useful
 4. **Application Tags & Custom Notes** - Medium impact, enhances existing features
 5. **Salary Negotiation Helper** - Medium-high impact, useful tool

@@ -14,7 +14,7 @@ A comprehensive mobile app built specifically for job seekers. Organize your job
 
 The central hub providing quick access to all tools:
 - **Job Sites** sidebar: Quick links to popular job search platforms (Indeed, LinkedIn, Glassdoor, Monster, ZipRecruiter, Dice)
-- **Tools** section: Access to Daily Planner, Calendar, Job Applications, Job Offers, Interview Prep, and Reports
+- **Tools** section: Access to Daily Planner, Calendar, Job Applications, Job Offers, Interview Prep, References, and Reports
 - Clean, modern interface that adapts to your chosen color theme
 - Tooltips: Long-press the About (ℹ️) or Settings (⚙️) icons for helpful tooltips
 - Upcoming events: See events scheduled in the next 24 hours at a glance
@@ -94,6 +94,7 @@ Comprehensive tracking system for all your applications:
 - **View linked events**: See all events linked to an application with date, time, and contact name
 - **Unlink events**: Remove links between applications and events as needed
 - **Create offers**: Direct access to create job offers from the application edit screen
+- **Create references**: Easily create references linked to job applications
 - **Follow-up reminders**: Automatic reminders configured in settings for following up after applications and interviews
 
 ### 🎁 Job Offers
@@ -113,6 +114,23 @@ Track and compare job offers:
 - **Create from application**: Create offers directly from job application screens (both list and edit views)
 - **Compare offers**: View all offers in one place to compare and contrast
 - **Link management**: Each offer is linked to its job application for easy reference
+
+### 👤 Reference Management
+
+Organize and manage your professional references:
+
+**Reference Tracking:**
+- Complete contact database (name, title, company, email, phone, relationship)
+- Link references to specific job applications
+- Track if someone has agreed to provide a reference
+- Notes section for each reference
+- View and edit all references in one place
+
+**Smart Features:**
+- **Quick actions**: Tap email addresses to compose email, tap phone numbers to call or text
+- **Create from application**: Create references directly from job application screens
+- **View linked applications**: See which application a reference is linked to with quick navigation
+- **Organized list**: All references sorted alphabetically for easy access
 
 ### 🎤 Interview Preparation Tools
 
@@ -305,7 +323,7 @@ Then press `i` for iOS simulator, or scan the QR code with Expo Go app on your d
 
 ### Tips & Best Practices
 - **Use swipe navigation** in the daily planner to quickly move between days
-- **Link everything**: Connect applications to events, resumes, and cover letters for better organization
+- **Link everything**: Connect applications to events, resumes, cover letters, and references for better organization
 - **Bi-directional linking**: Link events and applications together - changes reflect in both places
 - **Take notes**: Use notes fields liberally - they're searchable and helpful for follow-ups
 - **Practice regularly**: Use Practice Mode in Interview Prep to refine your responses
@@ -313,6 +331,7 @@ Then press `i` for iOS simulator, or scan the QR code with Expo Go app on your d
 - **Use filters**: Filter applications by status to focus on what needs attention
 - **Long-press icons**: Get helpful tooltips by long-pressing the About and Settings icons
 - **Smart date tracking**: Application dates automatically reflect interview dates when applications progress through interview to rejection
+- **Manage references**: Keep your reference contacts organized and linked to applications for easy access when applying
 
 ---
 

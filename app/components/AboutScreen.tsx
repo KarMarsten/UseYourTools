@@ -68,6 +68,13 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           </View>
 
           <View style={styles.subsection}>
+            <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>👤 Reference Management</Text>
+            <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
+              Organize your professional references in one place. Store contact information, link references to job applications, and quickly reach out via email or phone. Track who has agreed to provide a reference for your applications.
+            </Text>
+          </View>
+
+          <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>🎤 Interview Preparation</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
               Prepare for interviews with a question bank, STAR method templates (select questions from the bank or type your own), company research notes, interview feedback tracking, and practice mode with timer.
@@ -84,7 +91,7 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>📊 Reports</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Generate PDF reports for your weekly schedule or unemployment filing. Weekly reports include all your time blocks and events. Unemployment reports include interviews, appointments, and rejected applications with rejection reasons. Applications that progress through interviews show as "Interview Rejected" with interview dates.
+              Generate PDF reports for your weekly schedule, unemployment filing, or job applications. Weekly schedule reports include all your time blocks and events. Unemployment reports include interviews, appointments, and rejected applications with rejection reasons. Job applications reports show all applications submitted during the selected week with status tracking. Applications that progress through interviews show as "Interview Rejected" with interview dates.
             </Text>
           </View>
         </View>
@@ -136,6 +143,9 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           </Text>
           <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
             • Practice answering questions with the timer in Practice Mode
+          </Text>
+          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
+            • Keep your references organized and linked to applications for easy access
           </Text>
           <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
             • Long-press the About or Settings icons for helpful tooltips
