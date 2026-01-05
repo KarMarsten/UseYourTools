@@ -6,6 +6,61 @@ import { loadPreferences, UserPreferences } from './preferences';
 let calendarId: string | null = null;
 
 /**
+ * Get available calendars for Google Calendar sync
+ * Since Google calendar detection is unreliable across platforms, we show all writable calendars
+ * and let the user select their Google calendar manually
+ */
+export const getGoogleCalendars = async (): Promise<Calendar.Calendar[]> => {
+  try {
+    // Request permissions
+    const { status } = await Calendar.requestCalendarPermissionsAsync();
+    if (status !== 'granted') {
+      console.warn('Calendar permissions not granted');
+      return [];
+    }
+
+    // Get all calendars
+    const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+    
+    // Filter for writable calendars only (user can select their Google calendar from this list)
+    // We show all writable calendars since detecting Google calendars reliably is difficult
+    const writableCalendars = calendars.filter(cal => {
+      return cal.allowsModifications !== false;
+    });
+    
+    // Sort calendars: try to put Google calendars first if we can detect them
+    const sortedCalendars = writableCalendars.sort((a, b) => {
+      const aIsGoogle = isLikelyGoogleCalendar(a);
+      const bIsGoogle = isLikelyGoogleCalendar(b);
+      if (aIsGoogle && !bIsGoogle) return -1;
+      if (!aIsGoogle && bIsGoogle) return 1;
+      return 0;
+    });
+    
+    return sortedCalendars;
+  } catch (error) {
+    console.error('Error getting calendars:', error);
+    return [];
+  }
+};
+
+/**
+ * Helper function to check if a calendar is likely a Google calendar
+ * (used for sorting, not filtering)
+ */
+const isLikelyGoogleCalendar = (calendar: Calendar.Calendar): boolean => {
+  const source = calendar.source;
+  const sourceType = source?.type?.toLowerCase() || '';
+  const sourceName = source?.name?.toLowerCase() || '';
+  const ownerAccount = (calendar as any).ownerAccount?.toLowerCase() || '';
+  
+  return sourceType.includes('google') || 
+         sourceName.includes('google') ||
+         ownerAccount.includes('gmail.com') ||
+         ownerAccount.includes('googlemail.com');
+};
+
+/**
  * Request calendar permissions and get/create the app's calendar
  */
 export const ensureCalendarAccess = async (): Promise<string | null> => {
@@ -168,20 +223,35 @@ export const createCalendarEvent = async (event: Event): Promise<string | null> 
       return null;
     }
 
-    // For Google Calendar, we'd need additional setup (not implemented yet)
-    // For now, only support Apple Calendar (iOS) and default calendar (Android)
+    // For Google Calendar, use the selected calendar ID from preferences
     if (preferences.calendarSyncProvider === 'google') {
-      console.warn('Google Calendar sync not yet implemented');
-      return null;
-    }
-
-    const calId = await ensureCalendarAccess();
-    if (!calId) {
-      return null;
+      if (!preferences.googleCalendarId) {
+        console.warn('Google Calendar ID not set in preferences');
+        return null;
+      }
+      // Verify the calendar still exists and is accessible
+      try {
+        const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+        const selectedCalendar = calendars.find(cal => cal.id === preferences.googleCalendarId);
+        if (!selectedCalendar || !selectedCalendar.allowsModifications) {
+          console.warn('Selected Google Calendar not found or not writable');
+          return null;
+        }
+        calendarId = selectedCalendar.id;
+      } catch (error) {
+        console.error('Error verifying Google Calendar:', error);
+        return null;
+      }
+    } else {
+      const calId = await ensureCalendarAccess();
+      if (!calId) {
+        return null;
+      }
+      calendarId = calId;
     }
 
     const calendarEvent = await eventToCalendarEvent(event);
-    const eventId = await Calendar.createEventAsync(calId, calendarEvent);
+    const eventId = await Calendar.createEventAsync(calendarId, calendarEvent);
     
     return eventId;
   } catch (error) {
@@ -235,13 +305,44 @@ export const syncAllEventsToCalendar = async (events: Event[]): Promise<void> =>
       return;
     }
 
-    const calId = await ensureCalendarAccess();
-    if (!calId) {
-      Alert.alert(
-        'Calendar Sync',
-        'Could not access calendar. Please check calendar permissions in Settings.'
-      );
-      return;
+    let calId: string | null = null;
+    
+    if (preferences.calendarSyncProvider === 'google') {
+      if (!preferences.googleCalendarId) {
+        Alert.alert(
+          'Calendar Sync',
+          'Please select a Google Calendar in Settings before syncing.'
+        );
+        return;
+      }
+      // Verify the calendar still exists
+      try {
+        const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+        const selectedCalendar = calendars.find(cal => cal.id === preferences.googleCalendarId);
+        if (!selectedCalendar || !selectedCalendar.allowsModifications) {
+          Alert.alert(
+            'Calendar Sync',
+            'Selected Google Calendar not found or not writable. Please select a different calendar in Settings.'
+          );
+          return;
+        }
+        calId = selectedCalendar.id;
+      } catch (error) {
+        Alert.alert(
+          'Calendar Sync',
+          'Could not access Google Calendar. Please check calendar permissions in Settings.'
+        );
+        return;
+      }
+    } else {
+      calId = await ensureCalendarAccess();
+      if (!calId) {
+        Alert.alert(
+          'Calendar Sync',
+          'Could not access calendar. Please check calendar permissions in Settings.'
+        );
+        return;
+      }
     }
 
     // Import saveEvent to update events with calendar IDs

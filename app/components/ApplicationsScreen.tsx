@@ -26,6 +26,7 @@ import {
 } from '../utils/applications';
 import { Event, getAllEvents, saveEvent } from '../utils/events';
 import { getDateKey, formatTime12Hour } from '../utils/timeFormatter';
+import { openEmail } from '../utils/eventActions';
 import AddEventModal from './AddEventModal';
 import { linkApplicationToEvent, unlinkApplicationFromEvent } from '../utils/applications';
 import { scheduleEventNotification } from '../utils/eventNotifications';
@@ -56,6 +57,7 @@ import {
   FollowUpReminder,
   deleteFollowUpRemindersForApplication 
 } from '../utils/followUpReminders';
+import EmailTemplateModal from './EmailTemplateModal';
 import * as FileSystem from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -86,6 +88,9 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [showLinkEventModal, setShowLinkEventModal] = useState(false);
   const [linkingEventForApplication, setLinkingEventForApplication] = useState<JobApplication | null>(null);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailType, setEmailType] = useState<'thank-you' | 'follow-up' | 'decline-offer'>('thank-you');
+  const [emailApplication, setEmailApplication] = useState<JobApplication | null>(null);
 
   // Form state
   const [positionTitle, setPositionTitle] = useState('');
@@ -1511,6 +1516,34 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                     Notes: {app.notes}
                   </Text>
                 )}
+                {/* Sent Emails History */}
+                {app.sentEmails && app.sentEmails.length > 0 && (
+                  <View style={styles.sentEmailsContainer}>
+                    <Text style={[styles.sentEmailsLabel, { color: colorScheme.colors.text }]}>
+                      Sent Emails:
+                    </Text>
+                    {app.sentEmails.map((sentEmail, index) => {
+                      const sentDate = new Date(sentEmail.sentDate);
+                      const emailTypeLabels = {
+                        'thank-you': '✉️ Thank You',
+                        'follow-up': '📧 Follow-Up',
+                        'decline-offer': '🙏 Decline Offer',
+                      };
+                      return (
+                        <View key={index} style={[styles.sentEmailItem, { backgroundColor: colorScheme.colors.background, borderColor: colorScheme.colors.border }]}>
+                          <Text style={[styles.sentEmailText, { color: colorScheme.colors.text }]}>
+                            {emailTypeLabels[sentEmail.type]} - {sentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </Text>
+                          {sentEmail.recipientEmail && (
+                            <Text style={[styles.sentEmailDetail, { color: colorScheme.colors.textSecondary }]}>
+                              To: {sentEmail.recipientEmail}
+                            </Text>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
                 {/* Follow-up Reminders */}
                 {(() => {
                   const appReminders = followUpReminders.filter(r => r.applicationId === app.id && !r.completed);
@@ -1595,8 +1628,25 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                           >
                             <Text style={[styles.interviewEventText, { color: colorScheme.colors.text }]}>
                               📅 {formattedDate} {timeDisplay && `at ${timeDisplay}`}
-                              {event.contactName && ` - ${event.contactName}`}
                             </Text>
+                            {event.contactName && (
+                              <Text style={[styles.interviewEventText, { color: colorScheme.colors.text, marginTop: 4 }]}>
+                                👤 {event.contactName}
+                              </Text>
+                            )}
+                            {event.email && (
+                              <TouchableOpacity
+                                onPress={(e) => {
+                                  e.stopPropagation();
+                                  openEmail(event.email!);
+                                }}
+                                style={{ marginTop: 4 }}
+                              >
+                                <Text style={[styles.interviewEventText, { color: colorScheme.colors.primary }]}>
+                                  ✉️ {event.email}
+                                </Text>
+                              </TouchableOpacity>
+                            )}
                           </TouchableOpacity>
                           <TouchableOpacity
                             onPress={() => handleUnlinkEvent(app.id, eventId)}
@@ -1641,6 +1691,50 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                       🎁 Create Offer
                     </Text>
                   </TouchableOpacity>
+                )}
+                {/* Email Template Actions */}
+                {preferences?.enableEmailTemplates !== false && (
+                  <View style={styles.emailActionsContainer}>
+                    {app.status === 'interview' && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setEmailApplication(app);
+                          setEmailType('thank-you');
+                          setShowEmailModal(true);
+                        }}
+                      >
+                        <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
+                          ✉️ Send Thank You Note
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    {app.status === 'applied' && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setEmailApplication(app);
+                          setEmailType('follow-up');
+                          setShowEmailModal(true);
+                        }}
+                      >
+                        <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
+                          📧 Send Follow-Up Email
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    {app.status === 'interview' && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setEmailApplication(app);
+                          setEmailType('decline-offer');
+                          setShowEmailModal(true);
+                        }}
+                      >
+                        <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
+                          🙏 Decline Offer (Professional)
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 )}
               </View>
 
@@ -2278,6 +2372,27 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
           </View>
         </View>
       </Modal>
+
+      {/* Email Template Modal */}
+      {emailApplication && (
+        <EmailTemplateModal
+          visible={showEmailModal}
+          onClose={() => {
+            setShowEmailModal(false);
+            setEmailApplication(null);
+          }}
+          application={emailApplication}
+          emailType={emailType}
+          linkedEvent={
+            emailApplication.eventIds && emailApplication.eventIds.length > 0
+              ? allEvents.find(e => e.id === emailApplication.eventIds![0] && e.type === 'interview')
+              : undefined
+          }
+          onEmailSent={() => {
+            loadApplications(); // Reload to show updated email tracking
+          }}
+        />
+      )}
     </View>
   );
 }
@@ -2689,6 +2804,10 @@ const styles = StyleSheet.create({
     gap: 16,
     marginTop: 8,
   },
+  emailActionsContainer: {
+    marginTop: 12,
+    gap: 8,
+  },
   interviewEventText: {
     fontSize: 14,
   },
@@ -3004,6 +3123,29 @@ const styles = StyleSheet.create({
   modalButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  sentEmailsContainer: {
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  sentEmailsLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  sentEmailItem: {
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 6,
+  },
+  sentEmailText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  sentEmailDetail: {
+    fontSize: 12,
   },
   followUpRemindersContainer: {
     marginTop: 8,

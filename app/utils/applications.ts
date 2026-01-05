@@ -14,6 +14,12 @@ export interface JobApplication {
   eventIds?: string[]; // IDs of linked interview events (if status is 'interview') - can have multiple
   resumeId?: string; // ID of the resume used for this application
   coverLetterId?: string; // ID of the cover letter used for this application
+  sentEmails?: Array<{
+    type: 'thank-you' | 'follow-up' | 'decline-offer';
+    sentDate: string; // ISO 8601 date string
+    recipientEmail?: string; // Email address of recipient
+    templateId?: string; // ID of template used
+  }>; // Track emails sent for this application
 }
 
 const APPLICATIONS_KEY_PREFIX = 'application_';
@@ -298,6 +304,39 @@ export const getApplicationStats = async (): Promise<ApplicationStats> => {
   } catch (error) {
     console.error('Error getting application stats:', error);
     return { total: 0, applied: 0, rejected: 0, interview: 0 };
+  }
+};
+
+/**
+ * Record that an email was sent for an application
+ */
+export const recordEmailSent = async (
+  applicationId: string,
+  emailType: 'thank-you' | 'follow-up' | 'decline-offer',
+  recipientEmail?: string,
+  templateId?: string
+): Promise<void> => {
+  try {
+    const application = await getApplicationById(applicationId);
+    if (!application) {
+      throw new Error('Application not found');
+    }
+
+    if (!application.sentEmails) {
+      application.sentEmails = [];
+    }
+
+    application.sentEmails.push({
+      type: emailType,
+      sentDate: new Date().toISOString(),
+      recipientEmail,
+      templateId,
+    });
+
+    await saveApplication(application);
+  } catch (error) {
+    console.error('Error recording email sent:', error);
+    throw error;
   }
 };
 

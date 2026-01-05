@@ -27,6 +27,122 @@
 
 ## 🚀 High-Value Feature Ideas
 
+### NEW: **Email Templates & Thank You Notes** ✉️
+**Why**: Professional follow-up emails and thank you notes significantly improve response rates and leave a positive impression.
+
+**Features**:
+- Pre-written email templates (follow-up, thank you after interview, acceptance, rejection response)
+- Customizable templates with variable placeholders (company name, position, date, interviewer name)
+- Quick send option (opens email client with pre-filled content)
+- Template library organized by purpose
+- Track which emails have been sent for each application
+- Reminder to send thank you notes after interviews (configurable timing)
+
+**Impact**: High - Professional communication is crucial for job search success
+
+---
+
+### NEW: **Reference Management** 👤
+**Why**: Managing references can be chaotic. Having them organized and easily accessible saves time during applications.
+
+**Features**:
+- Reference contact database (name, title, company, email, phone, relationship)
+- Link references to specific job applications
+- Track when references were contacted
+- Notes on each reference (strengths, how they know you, what they'll say)
+- Quick actions: Email, Call, LinkedIn
+- Reference availability tracker (e.g., "Available", "Busy", "Not available")
+- Reminder to thank references after they help
+
+**Impact**: High - Essential for applications that require references
+
+---
+
+### NEW: **Application Deadline Reminders** ⏰
+**Why**: Missing application deadlines is a common mistake that can be easily avoided.
+
+**Features**:
+- Add deadline date to applications (optional field)
+- Automatic reminders before deadlines (configurable: 3 days, 1 day, same day)
+- Deadline countdown in application list
+- Filter applications by upcoming deadlines
+- Visual indicators for urgent deadlines
+
+**Impact**: Medium-High - Prevents missed opportunities
+
+---
+
+### NEW: **Thank You Note Tracking** 💌
+**Why**: Following up after interviews with thank you notes is best practice, but easy to forget.
+
+**Features**:
+- Automatic prompt after interview events (configurable timing: same day, next day)
+- Track thank you note status per interview (Sent, Pending, Skipped)
+- Link to email templates for thank you notes
+- Reminder list of pending thank you notes
+- Quick action: "Mark as Sent"
+
+**Impact**: Medium-High - Professional follow-up improves outcomes
+
+---
+
+### NEW: **Interview Prep Checklist** ✅
+**Why**: Being prepared for interviews reduces anxiety and improves performance.
+
+**Features**:
+- Pre-interview checklist (research company, review resume, prepare questions, test tech setup)
+- Customizable checklist items
+- Interview-specific checklist (link to interview event)
+- Mark items as complete
+- Checklist templates for different interview types (phone, video, in-person, technical)
+
+**Impact**: Medium - Reduces stress and improves preparation
+
+---
+
+### NEW: **Application Tags & Custom Notes** 🏷️
+**Why**: Organizing applications with custom tags and detailed notes helps track priorities and follow-ups.
+
+**Features**:
+- Custom tags for applications (e.g., "Dream Job", "Remote Only", "High Priority", "Applied via Referral")
+- Filter applications by tags
+- Enhanced notes section with formatting options
+- Private notes vs. shared notes (if collaborating)
+- Tag suggestions based on application data
+
+**Impact**: Medium - Better organization and tracking
+
+---
+
+### NEW: **Salary Negotiation Helper** 💰
+**Why**: Negotiating salary effectively can significantly impact long-term earnings.
+
+**Features**:
+- Salary negotiation tips and scripts
+- Market rate research links (Glassdoor, Payscale, LinkedIn Salary)
+- Counter-offer tracker
+- Negotiation history per offer
+- Decision framework (compare offers with total compensation)
+- Benefits comparison tool
+
+**Impact**: Medium-High - Can significantly impact earnings
+
+---
+
+### NEW: **Interview Question Tracker** 📝
+**Why**: Building a personal database of interview questions helps prepare for future interviews.
+
+**Features**:
+- Track questions asked in each interview (link to interview feedback)
+- Personal question bank organized by category/company/role
+- Mark questions as "answered well" or "need to improve"
+- Practice mode with frequently asked questions
+- Export question bank for review
+
+**Impact**: Medium - Builds preparation over time
+
+---
+
 ### 1. **Cover Letter Management** 📝
 **Why**: Job seekers often need multiple cover letter versions, just like resumes.
 
@@ -265,15 +381,23 @@
 ## 🎯 Priority Recommendations
 
 ### **Quick Wins** (1-2 weeks each):
-1. **Follow-Up Reminders** - High impact, relatively simple (settings exist, need auto-creation logic)
+1. **Email Templates & Thank You Notes** - High impact, straightforward implementation
+2. **Application Deadline Reminders** - Medium-high impact, builds on existing reminder system
+3. **Thank You Note Tracking** - Medium-high impact, integrates with interview events
+4. **Follow-Up Reminders** - High impact, relatively simple (settings exist, need auto-creation logic)
 
 ### **Medium-Term** (2-4 weeks each):
-4. **Networking Contact Management** - High impact, moderate complexity
-5. **Application Analytics Dashboard** - Good insights, requires data aggregation
+1. **Reference Management** - High impact, moderate complexity, essential feature
+2. **Networking Contact Management** - High impact, moderate complexity
+3. **Interview Prep Checklist** - Medium impact, simple but useful
+4. **Application Tags & Custom Notes** - Medium impact, enhances existing features
+5. **Salary Negotiation Helper** - Medium-high impact, useful tool
+6. **Application Analytics Dashboard** - Good insights, requires data aggregation
 
 ### **Long-Term** (1-2 months):
-7. **Job Board Integration** - High impact but complex (API limitations)
-8. **Skills Tracker** - Comprehensive feature, requires good UX design
+1. **Job Board Integration** - High impact but complex (API limitations)
+2. **Skills Tracker** - Comprehensive feature, requires good UX design
+3. **Interview Question Tracker** - Medium impact, builds database over time
 
 ---
 

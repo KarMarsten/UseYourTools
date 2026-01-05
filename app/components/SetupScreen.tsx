@@ -6,8 +6,9 @@ import { generateTimeBlocks, GeneratedTimeBlock } from '../utils/timeBlockGenera
 import { COLOR_SCHEMES, ColorSchemeName, getColorScheme } from '../utils/colorSchemes';
 import { formatTimeRange } from '../utils/timeFormatter';
 import { usePreferences } from '../context/PreferencesContext';
-import { syncAllEventsToCalendar } from '../utils/calendarSync';
+import { syncAllEventsToCalendar, getGoogleCalendars } from '../utils/calendarSync';
 import { getAllEvents } from '../utils/events';
+import * as Calendar from 'expo-calendar';
 
 interface SetupScreenProps {
   onComplete: () => void;
@@ -21,10 +22,16 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
   const [use12HourClock, setUse12HourClock] = useState(false);
   const [colorScheme, setColorScheme] = useState<ColorSchemeName>('earth-tone');
   const [darkMode, setDarkMode] = useState(false);
+  const [showZenQuotes, setShowZenQuotes] = useState(true);
+  const [enableEmailTemplates, setEnableEmailTemplates] = useState(true);
+  const [emailClient, setEmailClient] = useState<'default' | 'gmail'>('default');
   const [mapAppPreference, setMapAppPreference] = useState<'apple-maps' | 'google-maps'>('apple-maps');
   const [timezoneMode, setTimezoneMode] = useState<'device' | 'custom'>('device');
   const [timezone, setTimezone] = useState('');
   const [calendarSyncProvider, setCalendarSyncProvider] = useState<'none' | 'apple' | 'google'>('none');
+  const [googleCalendarId, setGoogleCalendarId] = useState<string | undefined>(undefined);
+  const [availableGoogleCalendars, setAvailableGoogleCalendars] = useState<Calendar.Calendar[]>([]);
+  const [showGoogleCalendarPicker, setShowGoogleCalendarPicker] = useState(false);
   const [followUpDaysAfterApplication, setFollowUpDaysAfterApplication] = useState('7');
   const [followUpDaysAfterInterview, setFollowUpDaysAfterInterview] = useState('2');
   const [loading, setLoading] = useState(true);
@@ -36,6 +43,41 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
   useEffect(() => {
     loadUserPreferences();
   }, []);
+
+  // Load Google calendars when Google Calendar provider is selected
+  useEffect(() => {
+    if (calendarSyncProvider === 'google') {
+      loadGoogleCalendars();
+    }
+  }, [calendarSyncProvider]);
+
+  const loadGoogleCalendars = async () => {
+    try {
+      const calendars = await getGoogleCalendars();
+      setAvailableGoogleCalendars(calendars);
+      
+      // Only auto-select first calendar if no calendar is currently selected in state
+      // Don't override if user has already selected one or if one was loaded from preferences
+      if (!googleCalendarId && calendars.length > 0) {
+        // Check if we have a saved preference that exists in the current calendar list
+        try {
+          const prefs = await loadPreferences();
+          if (prefs.googleCalendarId && calendars.some(cal => cal.id === prefs.googleCalendarId)) {
+            // Use the saved preference if it still exists
+            setGoogleCalendarId(prefs.googleCalendarId);
+            return;
+          }
+        } catch (e) {
+          // If we can't load preferences, continue with auto-selection
+        }
+        // Only auto-select if truly no selection exists
+        setGoogleCalendarId(calendars[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading Google calendars:', error);
+      Alert.alert('Error', 'Failed to load Google calendars. Please check calendar permissions.');
+    }
+  };
 
   // Auto-update end time when start time changes (9 hours later)
   const handleStartTimeChange = (newStartTime: string) => {
@@ -85,10 +127,14 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
       setUse12HourClock(prefs.use12HourClock ?? false);
       setColorScheme(prefs.colorScheme ?? 'earth-tone');
       setDarkMode(prefs.darkMode ?? false);
+      setShowZenQuotes(prefs.showZenQuotes ?? true);
+      setEnableEmailTemplates(prefs.enableEmailTemplates ?? true);
+      setEmailClient(prefs.emailClient ?? 'default');
       setMapAppPreference(prefs.mapAppPreference ?? 'apple-maps');
       setTimezoneMode(prefs.timezoneMode ?? 'device');
       setTimezone(prefs.timezone ?? '');
       setCalendarSyncProvider(prefs.calendarSyncProvider ?? 'none');
+      setGoogleCalendarId(prefs.googleCalendarId);
     } catch (error) {
       console.error('Error loading preferences:', error);
     } finally {
@@ -174,10 +220,14 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         use12HourClock,
         colorScheme,
         darkMode,
+        showZenQuotes,
+        enableEmailTemplates,
+        emailClient,
         mapAppPreference,
         timezoneMode,
         timezone: timezoneMode === 'custom' ? timezone.trim() : '',
         calendarSyncProvider,
+        googleCalendarId: calendarSyncProvider === 'google' ? googleCalendarId : undefined,
         followUpDaysAfterApplication: parseInt(followUpDaysAfterApplication, 10) || 7,
         followUpDaysAfterInterview: parseInt(followUpDaysAfterInterview, 10) || 2,
       };
@@ -242,32 +292,48 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Day Times</Text>
-          <Text style={styles.sectionDescription}>
+          <Text style={[styles.sectionTitle, { color: currentColorScheme.colors.text }]}>Day Times</Text>
+          <Text style={[styles.sectionDescription, { color: currentColorScheme.colors.textSecondary }]}>
             Set your day start time. The end time is automatically set to 9 hours later. Time blocks will shift to match your schedule.
           </Text>
           <View style={styles.timeInputContainer}>
             <View style={styles.timeInput}>
-              <Text style={styles.timeLabel}>Start Time</Text>
+              <Text style={[styles.timeLabel, { color: currentColorScheme.colors.text }]}>Start Time</Text>
               <TextInput
-                style={styles.timeInputField}
+                style={[
+                  styles.timeInputField,
+                  {
+                    backgroundColor: currentColorScheme.colors.surface,
+                    borderColor: currentColorScheme.colors.border,
+                    color: currentColorScheme.colors.text,
+                  }
+                ]}
                 value={startTime}
                 onChangeText={handleStartTimeChange}
                 placeholder="08:00"
-                placeholderTextColor="#a0826d"
+                placeholderTextColor={currentColorScheme.colors.textSecondary}
               />
-              <Text style={styles.timeHint}>24-hour format (HH:MM)</Text>
+              <Text style={[styles.timeHint, { color: currentColorScheme.colors.textSecondary }]}>24-hour format (HH:MM)</Text>
             </View>
             <View style={styles.timeInput}>
-              <Text style={styles.timeLabel}>End Time (auto)</Text>
+              <Text style={[styles.timeLabel, { color: currentColorScheme.colors.text }]}>End Time (auto)</Text>
               <TextInput
-                style={[styles.timeInputField, styles.timeInputFieldReadOnly]}
+                style={[
+                  styles.timeInputField,
+                  styles.timeInputFieldReadOnly,
+                  {
+                    backgroundColor: currentColorScheme.colors.surface,
+                    borderColor: currentColorScheme.colors.border,
+                    color: currentColorScheme.colors.text,
+                    opacity: 0.7,
+                  }
+                ]}
                 value={endTime}
                 editable={false}
                 placeholder="22:00"
-                placeholderTextColor="#a0826d"
+                placeholderTextColor={currentColorScheme.colors.textSecondary}
               />
-              <Text style={styles.timeHint}>Automatically set to 9 hours after start</Text>
+              <Text style={[styles.timeHint, { color: currentColorScheme.colors.textSecondary }]}>Automatically set to 9 hours after start</Text>
             </View>
           </View>
           {generatedBlocksPreview.length > 0 && (
@@ -355,6 +421,69 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
             })}
           </View>
 
+          {/* Google Calendar Selection Modal */}
+          <Modal
+            visible={showGoogleCalendarPicker}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowGoogleCalendarPicker(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={[styles.modalContent, { backgroundColor: currentColorScheme.colors.surface, borderColor: currentColorScheme.colors.border }]}>
+                <View style={[styles.modalHeader, { borderBottomColor: currentColorScheme.colors.border }]}>
+                  <Text style={[styles.modalTitle, { color: currentColorScheme.colors.text }]}>
+                    Select Google Calendar
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setShowGoogleCalendarPicker(false)}
+                    style={styles.modalCloseButton}
+                  >
+                    <Text style={[styles.modalCloseButtonText, { color: currentColorScheme.colors.text }]}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.modalScrollView}>
+                  {availableGoogleCalendars.map((calendar) => {
+                    const isSelected = googleCalendarId === calendar.id;
+                    return (
+                      <TouchableOpacity
+                        key={calendar.id}
+                        style={[
+                          styles.timeBlockOption,
+                          {
+                            backgroundColor: isSelected ? currentColorScheme.colors.surface : currentColorScheme.colors.background,
+                            borderColor: isSelected ? currentColorScheme.colors.primary : currentColorScheme.colors.border,
+                          },
+                          isSelected && { borderWidth: 2 }
+                        ]}
+                        onPress={() => {
+                          // Ensure the calendar ID is valid before setting it
+                          if (calendar.id) {
+                            setGoogleCalendarId(calendar.id);
+                          }
+                          setShowGoogleCalendarPicker(false);
+                        }}
+                      >
+                        <Text style={[styles.timeBlockOptionTitle, { color: currentColorScheme.colors.text }]}>
+                          {calendar.title}
+                        </Text>
+                        {calendar.source && (
+                          <Text style={[styles.timeBlockOptionDescription, { color: currentColorScheme.colors.textSecondary }]}>
+                            {calendar.source.name}
+                          </Text>
+                        )}
+                        {isSelected && (
+                          <Text style={[styles.timeBlockOptionSelected, { color: currentColorScheme.colors.primary }]}>
+                            ✓ Selected
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
+
           {/* Time Block Selection Dropdown Modal */}
           <Modal
             visible={showTimeBlockDropdown !== null}
@@ -415,7 +544,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
           </Modal>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Display Settings</Text>
+          <Text style={[styles.sectionTitle, { color: currentColorScheme.colors.text }]}>Display Settings</Text>
           
           <View style={[styles.settingRow, {
             backgroundColor: currentColorScheme.colors.surface,
@@ -436,6 +565,103 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
               thumbColor={use12HourClock ? currentColorScheme.colors.primary : '#f4f3f4'}
             />
           </View>
+
+          <View style={[styles.settingRow, {
+            backgroundColor: currentColorScheme.colors.surface,
+            borderColor: currentColorScheme.colors.border,
+          }]}>
+            <View style={styles.settingContent}>
+              <Text style={[styles.settingLabel, { color: currentColorScheme.colors.text }]}>
+                Daily Zen Quotes
+              </Text>
+              <Text style={[styles.settingDescription, { color: currentColorScheme.colors.textSecondary }]}>
+                Show daily inspirational quotes in the Daily Planner
+              </Text>
+            </View>
+            <Switch
+              value={showZenQuotes}
+              onValueChange={setShowZenQuotes}
+              trackColor={{ false: '#a0826d', true: currentColorScheme.colors.secondary }}
+              thumbColor={showZenQuotes ? currentColorScheme.colors.primary : '#f4f3f4'}
+            />
+          </View>
+
+          <View style={[styles.settingRow, {
+            backgroundColor: currentColorScheme.colors.surface,
+            borderColor: currentColorScheme.colors.border,
+          }]}>
+            <View style={styles.settingContent}>
+              <Text style={[styles.settingLabel, { color: currentColorScheme.colors.text }]}>
+                Email Templates
+              </Text>
+              <Text style={[styles.settingDescription, { color: currentColorScheme.colors.textSecondary }]}>
+                Enable email template functionality for thank you notes and follow-ups
+              </Text>
+            </View>
+            <Switch
+              value={enableEmailTemplates}
+              onValueChange={setEnableEmailTemplates}
+              trackColor={{ false: '#a0826d', true: currentColorScheme.colors.secondary }}
+              thumbColor={enableEmailTemplates ? currentColorScheme.colors.primary : '#f4f3f4'}
+            />
+          </View>
+
+          {enableEmailTemplates && (
+            <View style={{ marginTop: 12 }}>
+              <Text style={[styles.settingLabel, { color: currentColorScheme.colors.text, marginBottom: 8 }]}>
+                Email Client
+              </Text>
+              <Text style={[styles.settingDescription, { color: currentColorScheme.colors.textSecondary, marginBottom: 8 }]}>
+                Choose which email client to use when sending emails
+              </Text>
+              <View style={styles.mapAppContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.mapAppOption,
+                    {
+                      backgroundColor: currentColorScheme.colors.surface,
+                      borderColor: emailClient === 'default' ? currentColorScheme.colors.primary : currentColorScheme.colors.border,
+                    },
+                    emailClient === 'default' && { borderWidth: 2 }
+                  ]}
+                  onPress={() => setEmailClient('default')}
+                >
+                  <Text
+                    style={[
+                      styles.mapAppText,
+                      { color: currentColorScheme.colors.text },
+                      emailClient === 'default' && { fontWeight: 'bold', color: currentColorScheme.colors.primary }
+                    ]}
+                  >
+                    📧 Default Email Client
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <View style={[styles.mapAppContainer, { marginTop: 8 }]}>
+                <TouchableOpacity
+                  style={[
+                    styles.mapAppOption,
+                    {
+                      backgroundColor: currentColorScheme.colors.surface,
+                      borderColor: emailClient === 'gmail' ? currentColorScheme.colors.primary : currentColorScheme.colors.border,
+                    },
+                    emailClient === 'gmail' && { borderWidth: 2 }
+                  ]}
+                  onPress={() => setEmailClient('gmail')}
+                >
+                  <Text
+                    style={[
+                      styles.mapAppText,
+                      { color: currentColorScheme.colors.text },
+                      emailClient === 'gmail' && { fontWeight: 'bold', color: currentColorScheme.colors.primary }
+                    ]}
+                  >
+                    📨 Gmail
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -628,6 +854,57 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
               </Text>
             </TouchableOpacity>
           </View>
+          {calendarSyncProvider === 'google' && (
+            <View style={{ marginTop: 12 }}>
+              <Text style={[styles.settingLabel, { color: currentColorScheme.colors.text, marginBottom: 8 }]}>
+                Select Calendar
+              </Text>
+              <Text style={[styles.settingDescription, { color: currentColorScheme.colors.textSecondary, marginBottom: 8 }]}>
+                Choose which calendar to sync events with. Google calendars will appear at the top if detected.
+              </Text>
+              {availableGoogleCalendars.length === 0 ? (
+                <View>
+                  <Text style={[styles.settingDescription, { color: currentColorScheme.colors.textSecondary, marginBottom: 8 }]}>
+                    No Google calendars found. Please ensure you have Google Calendar synced on your device.
+                  </Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.syncButton,
+                      {
+                        backgroundColor: currentColorScheme.colors.primary,
+                        borderColor: currentColorScheme.colors.primary,
+                        padding: 12,
+                        marginTop: 8,
+                      }
+                    ]}
+                    onPress={loadGoogleCalendars}
+                  >
+                    <Text style={[styles.syncButtonText, { fontSize: 14 }]}>
+                      🔄 Refresh Calendar List
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.pickerButton,
+                    {
+                      backgroundColor: currentColorScheme.colors.surface,
+                      borderColor: currentColorScheme.colors.border,
+                    }
+                  ]}
+                  onPress={() => setShowGoogleCalendarPicker(true)}
+                >
+                  <Text style={[styles.pickerButtonText, { color: googleCalendarId ? currentColorScheme.colors.text : currentColorScheme.colors.textSecondary }]}>
+                    {googleCalendarId 
+                      ? availableGoogleCalendars.find(cal => cal.id === googleCalendarId)?.title || 'Select calendar...'
+                      : 'Select calendar...'}
+                  </Text>
+                  <Text style={[styles.pickerButtonArrow, { color: currentColorScheme.colors.textSecondary }]}>▼</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
           {calendarSyncProvider !== 'none' && (
             <TouchableOpacity
               style={[
@@ -869,8 +1146,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   timeInputFieldReadOnly: {
-    backgroundColor: '#f5f5dc',
-    opacity: 0.7,
+    // backgroundColor and opacity now set dynamically in component
   },
   timeHint: {
     fontSize: 12,
@@ -1102,6 +1378,22 @@ const styles = StyleSheet.create({
     color: '#f5f5dc',
     fontSize: 16,
     fontWeight: '600',
+  },
+  pickerButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  pickerButtonText: {
+    fontSize: 16,
+    flex: 1,
+  },
+  pickerButtonArrow: {
+    fontSize: 12,
+    marginLeft: 8,
   },
 });
 

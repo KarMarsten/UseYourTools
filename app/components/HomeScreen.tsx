@@ -481,6 +481,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
+  quoteContainer: {
+    marginTop: 12,
+    marginBottom: 8,
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  quoteText: {
+    fontSize: 15,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  quoteAuthor: {
+    fontSize: 12,
+    textAlign: 'right',
+    width: '100%',
+    fontStyle: 'normal',
+  },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',

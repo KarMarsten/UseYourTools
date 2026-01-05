@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, ScrollView, TextInput, TouchableOpacity, Alert, PanResponder } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDayThemeForDate, getDayName } from '../utils/plannerData';
+import { getDailyQuote } from '../utils/dailyQuotes';
 import { loadPreferences } from '../utils/preferences';
 import { generateTimeBlocks, GeneratedTimeBlock } from '../utils/timeBlockGenerator';
 import { usePreferences } from '../context/PreferencesContext';
@@ -274,6 +275,22 @@ export default function DailyPlannerScreen({ date, onBack, onDateChange, initial
             <Text style={styles.themeLabel}>🌿</Text>
             <Text style={[styles.themeText, dynamicStyles.themeText]}>{dayTheme.theme}</Text>
           </View>
+          {/* Daily Quote */}
+          {preferences?.showZenQuotes !== false && (() => {
+            const dailyQuote = getDailyQuote(normalizedDate);
+            return (
+              <View style={[styles.quoteContainer, { backgroundColor: colorScheme.colors.background, borderColor: colorScheme.colors.border }]}>
+                <Text style={[styles.quoteText, { color: colorScheme.colors.text }]}>
+                  "{dailyQuote.quote}"
+                </Text>
+                {dailyQuote.author && (
+                  <Text style={[styles.quoteAuthor, { color: colorScheme.colors.textSecondary }]}>
+                    — {dailyQuote.author}
+                  </Text>
+                )}
+              </View>
+            );
+          })()}
         </View>
 
         <View style={[styles.divider, dynamicStyles.divider]} />
@@ -460,6 +477,7 @@ export default function DailyPlannerScreen({ date, onBack, onDateChange, initial
         viewMode={isViewMode}
         onEdit={handleSwitchToEdit}
         initialApplicationData={initialApplicationData}
+        allowDateSelection={true}
       />
     </View>
   );
@@ -522,6 +540,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#4A3A2A',
     flex: 1,
+  },
+  quoteContainer: {
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  quoteText: {
+    fontSize: 15,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  quoteAuthor: {
+    fontSize: 12,
+    textAlign: 'right',
+    width: '100%',
+    fontStyle: 'normal',
   },
   divider: {
     height: 1,

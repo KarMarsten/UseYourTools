@@ -107,6 +107,13 @@ export default function AddEventModal({
         setPhone(event.phone || '');
         setCompany(event.company || '');
         setJobTitle(event.jobTitle || '');
+        // Update selectedDate from event's dateKey (always update, not just when allowDateSelection is true)
+        if (event.dateKey) {
+          const [year, month, day] = event.dateKey.split('-').map(Number);
+          const eventDate = new Date(year, month - 1, day);
+          eventDate.setHours(0, 0, 0, 0);
+          setSelectedDate(eventDate);
+        }
       } else if (initialApplicationData) {
         // If creating from application, populate from application data
         setTitle(initialApplicationData.positionTitle || '');
