@@ -335,33 +335,6 @@ Then press `i` for iOS simulator, or scan the QR code with Expo Go app on your d
 
 ---
 
-## 🛠️ Technical Details
-
-### Built With
-- **React Native** - Cross-platform mobile framework
-- **Expo** - Development platform and tooling
-- **TypeScript** - Type-safe JavaScript
-- **AsyncStorage** - Local data persistence
-- **Expo Calendar** - Native calendar integration
-- **Expo Notifications** - Push notifications
-- **Expo File System** - Document management
-- **Expo Print** - PDF generation
-
-### Architecture
-- **Component-based**: Modular React components
-- **Context API**: Global state management for preferences and themes
-- **Local Storage**: All data stored locally on device using AsyncStorage
-- **Type Safety**: Full TypeScript coverage for type safety
-- **Bi-directional Data Linking**: Smart synchronization between job applications and events
-
-### Data Storage
-- All data is stored locally on your device
-- No cloud sync or external servers
-- Data persists between app sessions
-- Export reports as PDFs to share or backup
-
----
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
