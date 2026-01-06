@@ -1,0 +1,15 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities for up to 30 days.
+version: v1.28.0
+
+# Ignore SNYK-JS-INFLIGHT-6095116
+# This vulnerability is mitigated via npm overrides in package.json
+# All packages are forced to use glob@^10.4.2 which doesn't depend on inflight
+# Verified: inflight is not installed (npm ls inflight returns empty)
+# Verified: npm audit shows 0 vulnerabilities
+patch: {}
+ignore:
+  SNYK-JS-INFLIGHT-6095116:
+    - '*':
+        reason: Mitigated via npm overrides - glob@^10.4.2 forced, inflight not installed
+        expires: '2025-12-31T23:59:59.999Z'
+

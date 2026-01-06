@@ -38,5 +38,8 @@
     "babel-preset-expo": "~13.0.0",
     "typescript": "~5.8.3"
   },
+  "overrides": {
+    "glob": "^10.4.2"
+  },
   "private": true
 }
