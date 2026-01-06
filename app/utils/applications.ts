@@ -312,7 +312,7 @@ export const getApplicationStats = async (): Promise<ApplicationStats> => {
  */
 export const recordEmailSent = async (
   applicationId: string,
-  emailType: 'thank-you' | 'follow-up' | 'decline-offer',
+  emailType: 'thank-you' | 'follow-up' | 'decline-offer' | 'acceptance' | 'rejection-response',
   recipientEmail?: string,
   templateId?: string
 ): Promise<void> => {

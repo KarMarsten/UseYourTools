@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -67,9 +67,10 @@ interface ApplicationsScreenProps {
   onBack: () => void;
   onSelectDate?: (date: Date, applicationId?: string) => void;
   onCreateOffer?: (applicationId: string) => void;
+  onCreateReference?: (applicationId: string) => void;
 }
 
-export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer }: ApplicationsScreenProps) {
+export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer, onCreateReference }: ApplicationsScreenProps) {
   const [activeTab, setActiveTab] = useState<'applications' | 'resumes' | 'coverLetters'>('applications');
   
   const [applications, setApplications] = useState<JobApplication[]>([]);
@@ -89,8 +90,9 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
   const [showLinkEventModal, setShowLinkEventModal] = useState(false);
   const [linkingEventForApplication, setLinkingEventForApplication] = useState<JobApplication | null>(null);
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const [emailType, setEmailType] = useState<'thank-you' | 'follow-up' | 'decline-offer'>('thank-you');
+  const [emailType, setEmailType] = useState<'thank-you' | 'follow-up' | 'decline-offer' | 'acceptance' | 'rejection-response'>('thank-you');
   const [emailApplication, setEmailApplication] = useState<JobApplication | null>(null);
+  const [emailLinkedEvent, setEmailLinkedEvent] = useState<Event | null>(null);
 
   // Form state
   const [positionTitle, setPositionTitle] = useState('');
@@ -518,13 +520,23 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
       // Link event to application if creating from application
       if (creatingEventForApplication && event.type === 'interview') {
         event.applicationId = creatingEventForApplication.id;
+        
+        // Auto-update application status to 'interview' if it's currently 'applied'
+        if (creatingEventForApplication.status === 'applied') {
+          const updatedApp: JobApplication = {
+            ...creatingEventForApplication,
+            status: 'interview',
+          };
+          await saveApplication(updatedApp);
+        }
       }
 
       await saveEvent(event);
 
       // Link is handled by saveEvent's bi-directional linking
       if (creatingEventForApplication && event.type === 'interview') {
-        await loadApplications(); // Reload to show the new event
+        await loadApplications(); // Reload to show the new event and status change
+        await loadStats(); // Reload stats to reflect status change
         await loadAllEvents(); // Reload events list
       }
 
@@ -732,6 +744,20 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
         coverLetterId: selectedCoverLetterId || undefined,
       };
 
+      // If status changed to rejected, automatically complete any application follow-up reminders
+      if (application.status === 'rejected' && editingApplication && editingApplication.status !== 'rejected') {
+        try {
+          const appReminders = await getFollowUpRemindersForApplication(application.id);
+          const applicationReminders = appReminders.filter(r => r.type === 'application' && !r.completed);
+          for (const reminder of applicationReminders) {
+            await completeFollowUpReminder(reminder.id);
+          }
+        } catch (error) {
+          console.error('Error completing follow-up reminders:', error);
+          // Don't fail the save if reminder completion fails
+        }
+      }
+
       await saveApplication(application);
       
       // Create follow-up reminder if this is a new application with status "applied"
@@ -748,6 +774,9 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
           // Don't fail the save if reminder creation fails
         }
       }
+      
+      // Reload reminders after saving
+      await loadFollowUpReminders();
       
       await loadApplications();
       await loadStats();
@@ -766,8 +795,24 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
         status: newStatus,
       };
       await saveApplication(updatedApp);
+      
+      // If status changed to rejected, automatically complete any application follow-up reminders
+      if (newStatus === 'rejected') {
+        try {
+          const appReminders = await getFollowUpRemindersForApplication(app.id);
+          const applicationReminders = appReminders.filter(r => r.type === 'application' && !r.completed);
+          for (const reminder of applicationReminders) {
+            await completeFollowUpReminder(reminder.id);
+          }
+        } catch (error) {
+          console.error('Error completing follow-up reminders:', error);
+          // Don't fail the status change if reminder completion fails
+        }
+      }
+      
       await loadApplications();
       await loadStats();
+      await loadFollowUpReminders(); // Reload reminders to reflect changes
       Alert.alert('Success', `Status changed to ${getStatusLabel(newStatus)}`);
     } catch (error) {
       console.error('Error changing status:', error);
@@ -1140,6 +1185,14 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
               <Text style={styles.createOfferButtonText}>🎁 Create Offer</Text>
             </TouchableOpacity>
           )}
+          {editingApplication && onCreateReference && (
+            <TouchableOpacity
+              style={[styles.createOfferButton, { backgroundColor: colorScheme.colors.secondary, marginBottom: 12 }]}
+              onPress={() => onCreateReference(editingApplication.id)}
+            >
+              <Text style={styles.createOfferButtonText}>📞 Add Reference</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[styles.saveButton, { backgroundColor: colorScheme.colors.primary }]}
@@ -1164,7 +1217,7 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
         >
           <View style={styles.modalOverlay}>
             <TouchableOpacity 
-              style={{ flex: 1, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} 
+              style={styles.modalOverlayTouchable} 
               onPress={() => {
                 setShowDatePicker(false);
                 setDateInputText('');
@@ -1174,96 +1227,96 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-              style={{ width: '100%', alignItems: 'center', justifyContent: 'center' }}
+              style={styles.modalContentContainer}
             >
               <View style={[styles.modalContent, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colorScheme.colors.text }]}>Select Date</Text>
-              <Text style={[styles.hint, { color: colorScheme.colors.textSecondary, marginBottom: 8 }]}>
-                Current: {formatDateDisplay(selectedDate)}
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colorScheme.colors.background,
-                    borderColor: colorScheme.colors.border,
-                    color: colorScheme.colors.text,
-                    marginBottom: 8,
-                  },
-                ]}
-                value={dateInputText}
-                onChangeText={setDateInputText}
-                placeholder="YYYY-MM-DD or MM/DD/YYYY"
-                placeholderTextColor={colorScheme.colors.textSecondary}
-                keyboardType="numbers-and-punctuation"
-                autoFocus={true}
-              />
-              <Text style={[styles.hint, { color: colorScheme.colors.textSecondary }]}>
-                Tip: You can type either 2025-12-20 or 12/20/2025.
-              </Text>
-              <View style={styles.modalActions}>
-                <TouchableOpacity
-                  style={[styles.modalButton, { borderColor: colorScheme.colors.border }]}
-                  onPress={() => {
-                    setShowDatePicker(false);
-                    setDateInputText('');
-                  }}
-                >
-                  <Text style={[styles.modalButtonText, { color: colorScheme.colors.text }]}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, { backgroundColor: colorScheme.colors.primary }]}
-                  onPress={() => {
-                    let year: number | undefined;
-                    let month: number | undefined;
-                    let day: number | undefined;
+                <Text style={[styles.modalTitle, { color: colorScheme.colors.text, marginBottom: 12 }]}>Select Date</Text>
+                <Text style={[styles.hint, { color: colorScheme.colors.textSecondary, marginBottom: 12 }]}>
+                  Current: {formatDateDisplay(selectedDate)}
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colorScheme.colors.background,
+                      borderColor: colorScheme.colors.border,
+                      color: colorScheme.colors.text,
+                      marginBottom: 12,
+                    },
+                  ]}
+                  value={dateInputText}
+                  onChangeText={setDateInputText}
+                  placeholder="YYYY-MM-DD or MM/DD/YYYY"
+                  placeholderTextColor={colorScheme.colors.textSecondary}
+                  keyboardType="numbers-and-punctuation"
+                  autoFocus={true}
+                />
+                <Text style={[styles.hint, { color: colorScheme.colors.textSecondary, marginBottom: 0 }]}>
+                  Tip: You can type either 2025-12-20 or 12/20/2025.
+                </Text>
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { borderColor: colorScheme.colors.border }]}
+                    onPress={() => {
+                      setShowDatePicker(false);
+                      setDateInputText('');
+                    }}
+                  >
+                    <Text style={[styles.modalButtonText, { color: colorScheme.colors.text }]}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: colorScheme.colors.primary }]}
+                    onPress={() => {
+                      let year: number | undefined;
+                      let month: number | undefined;
+                      let day: number | undefined;
 
-                    const isoMatch = dateInputText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-                    const usMatch = dateInputText.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+                      const isoMatch = dateInputText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                      const usMatch = dateInputText.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
 
-                    if (isoMatch) {
-                      year = Number(isoMatch[1]);
-                      month = Number(isoMatch[2]);
-                      day = Number(isoMatch[3]);
-                    } else if (usMatch) {
-                      month = Number(usMatch[1]);
-                      day = Number(usMatch[2]);
-                      year = Number(usMatch[3]);
-                    }
+                      if (isoMatch) {
+                        year = Number(isoMatch[1]);
+                        month = Number(isoMatch[2]);
+                        day = Number(isoMatch[3]);
+                      } else if (usMatch) {
+                        month = Number(usMatch[1]);
+                        day = Number(usMatch[2]);
+                        year = Number(usMatch[3]);
+                      }
 
-                    if (year && month && day) {
-                      const newDate = new Date(year, month - 1, day);
-                      if (!isNaN(newDate.getTime())) {
-                        // Preserve the selected hour and minute from state
-                        const use12Hour = preferences?.use12HourClock ?? false;
-                        let hour24 = selectedHour;
-                        if (use12Hour && selectedPeriod) {
-                          if (selectedPeriod === 'AM' && selectedHour === 12) {
-                            hour24 = 0;
-                          } else if (selectedPeriod === 'PM' && selectedHour !== 12) {
-                            hour24 = selectedHour + 12;
+                      if (year && month && day) {
+                        const newDate = new Date(year, month - 1, day);
+                        if (!isNaN(newDate.getTime())) {
+                          // Preserve the selected hour and minute from state
+                          const use12Hour = preferences?.use12HourClock ?? false;
+                          let hour24 = selectedHour;
+                          if (use12Hour && selectedPeriod) {
+                            if (selectedPeriod === 'AM' && selectedHour === 12) {
+                              hour24 = 0;
+                            } else if (selectedPeriod === 'PM' && selectedHour !== 12) {
+                              hour24 = selectedHour + 12;
+                            }
                           }
+                          newDate.setHours(hour24, selectedMinute, 0, 0);
+                          setSelectedDate(newDate);
+                          setShowDatePicker(false);
+                          setDateInputText('');
+                        } else {
+                          Alert.alert('Invalid Date', 'Please enter a valid date');
                         }
-                        newDate.setHours(hour24, selectedMinute, 0, 0);
-                        setSelectedDate(newDate);
+                      } else if (dateInputText.trim() === '') {
+                        // If empty, just close without changing
                         setShowDatePicker(false);
                         setDateInputText('');
                       } else {
-                        Alert.alert('Invalid Date', 'Please enter a valid date');
+                        Alert.alert('Invalid Format', 'Please enter the date as YYYY-MM-DD or MM/DD/YYYY');
                       }
-                    } else if (dateInputText.trim() === '') {
-                      // If empty, just close without changing
-                      setShowDatePicker(false);
-                      setDateInputText('');
-                    } else {
-                      Alert.alert('Invalid Format', 'Please enter the date as YYYY-MM-DD or MM/DD/YYYY');
-                    }
-                  }}
-                >
-                  <Text style={[styles.modalButtonText, { color: '#fff' }]}>OK</Text>
-                </TouchableOpacity>
+                    }}
+                  >
+                    <Text style={[styles.modalButtonText, { color: '#fff' }]}>OK</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
             </KeyboardAvoidingView>
           </View>
         </Modal>
@@ -1511,6 +1564,16 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                     ✉️ Cover Letter: {coverLetters.find(cl => cl.id === app.coverLetterId)?.name || 'Unknown'}
                   </Text>
                 )}
+                {app.status === 'rejected' && app.rejectedReason && (
+                  <View style={[styles.rejectionReasonContainer, { backgroundColor: colorScheme.colors.background, borderLeftColor: '#d32f2f', borderColor: colorScheme.colors.border }]}>
+                    <Text style={[styles.rejectionReasonLabel, { color: colorScheme.colors.text }]}>
+                      Rejection Reason:
+                    </Text>
+                    <Text style={[styles.rejectionReasonText, { color: colorScheme.colors.textSecondary }]}>
+                      {app.rejectedReason}
+                    </Text>
+                  </View>
+                )}
                 {app.notes && (
                   <Text style={[styles.notesText, { color: colorScheme.colors.textSecondary }]}>
                     Notes: {app.notes}
@@ -1524,15 +1587,17 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                     </Text>
                     {app.sentEmails.map((sentEmail, index) => {
                       const sentDate = new Date(sentEmail.sentDate);
-                      const emailTypeLabels = {
+                      const emailTypeLabels: Record<string, string> = {
                         'thank-you': '✉️ Thank You',
                         'follow-up': '📧 Follow-Up',
                         'decline-offer': '🙏 Decline Offer',
+                        'acceptance': '✅ Accept Offer',
+                        'rejection-response': '📝 Rejection Response',
                       };
                       return (
                         <View key={index} style={[styles.sentEmailItem, { backgroundColor: colorScheme.colors.background, borderColor: colorScheme.colors.border }]}>
                           <Text style={[styles.sentEmailText, { color: colorScheme.colors.text }]}>
-                            {emailTypeLabels[sentEmail.type]} - {sentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            {emailTypeLabels[sentEmail.type]} - {sentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {sentDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                           </Text>
                           {sentEmail.recipientEmail && (
                             <Text style={[styles.sentEmailDetail, { color: colorScheme.colors.textSecondary }]}>
@@ -1546,7 +1611,13 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                 )}
                 {/* Follow-up Reminders */}
                 {(() => {
-                  const appReminders = followUpReminders.filter(r => r.applicationId === app.id && !r.completed);
+                  // Filter reminders: exclude application follow-ups if status is rejected
+                  const appReminders = followUpReminders.filter(r => {
+                    if (r.applicationId !== app.id || r.completed) return false;
+                    // Don't show application follow-up reminders if the application is rejected
+                    if (app.status === 'rejected' && r.type === 'application') return false;
+                    return true;
+                  });
                   if (appReminders.length > 0) {
                     return (
                       <View style={styles.followUpRemindersContainer}>
@@ -1616,7 +1687,7 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                             ? formatTime12Hour(event.startTime)
                             : event.startTime)
                         : '';
-                      return (
+      return (
                         <View key={eventId} style={styles.interviewEventItem}>
                           <TouchableOpacity
                             onPress={async () => {
@@ -1647,6 +1718,50 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                                 </Text>
                               </TouchableOpacity>
                             )}
+            {/* Thank You Note Status and Actions */}
+            <View style={{ marginTop: 8 }}>
+              <Text style={[styles.interviewEventText, { color: colorScheme.colors.textSecondary }]}>
+                Thank You Note: {event.thankYouNoteStatus ? event.thankYouNoteStatus.toUpperCase() : 'PENDING'}
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 16, marginTop: 4 }}>
+                <TouchableOpacity
+                  onPress={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      const { setEventThankYouStatus } = await import('../utils/events');
+                      await setEventThankYouStatus(event.id, 'sent');
+                      await loadAllEvents(); // refresh events after update
+                    } catch {}
+                  }}
+                >
+                  <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>✔️ Mark as Sent</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      const { setEventThankYouStatus } = await import('../utils/events');
+                      await setEventThankYouStatus(event.id, 'skipped');
+                      await loadAllEvents(); // refresh events after update
+                    } catch {}
+                  }}
+                >
+                  <Text style={[styles.linkText, { color: colorScheme.colors.textSecondary }]}>Skip</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    setEmailApplication(app);
+                    setEmailType('thank-you');
+                    // store linked event for modal
+                    setEmailLinkedEvent(event);
+                    setShowEmailModal(true);
+                  }}
+                >
+                  <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>✉️ Send Thank You</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
                           </TouchableOpacity>
                           <TouchableOpacity
                             onPress={() => handleUnlinkEvent(app.id, eventId)}
@@ -1659,18 +1774,19 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                     })}
                   </View>
                 )}
-                {app.status === 'interview' && (
-                  <View style={styles.eventActionsContainer}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setCreatingEventForApplication(app);
-                        setShowEventModal(true);
-                      }}
-                    >
-                      <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
-                        ➕ Add Interview Event
-                      </Text>
-                    </TouchableOpacity>
+                {/* Interview Event Actions - Show for all applications */}
+                <View style={styles.eventActionsContainer}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setCreatingEventForApplication(app);
+                      setShowEventModal(true);
+                    }}
+                  >
+                    <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
+                      ➕ Schedule Interview
+                    </Text>
+                  </TouchableOpacity>
+                  {app.status === 'interview' && (
                     <TouchableOpacity
                       onPress={() => {
                         setLinkingEventForApplication(app);
@@ -1681,14 +1797,23 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                         🔗 Link to Existing Event
                       </Text>
                     </TouchableOpacity>
-                  </View>
-                )}
+                  )}
+                </View>
                 {onCreateOffer && (
                   <TouchableOpacity
                     onPress={() => onCreateOffer(app.id)}
                   >
                     <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
                       🎁 Create Offer
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                {onCreateReference && (
+                  <TouchableOpacity
+                    onPress={() => onCreateReference(app.id)}
+                  >
+                    <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
+                      📞 Add Reference
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -1722,15 +1847,41 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                       </TouchableOpacity>
                     )}
                     {app.status === 'interview' && (
+                      <>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setEmailApplication(app);
+                            setEmailType('acceptance');
+                            setShowEmailModal(true);
+                          }}
+                        >
+                          <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
+                            ✅ Accept Offer
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setEmailApplication(app);
+                            setEmailType('decline-offer');
+                            setShowEmailModal(true);
+                          }}
+                        >
+                          <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
+                            🙏 Decline Offer (Professional)
+                          </Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+                    {app.status === 'rejected' && (
                       <TouchableOpacity
                         onPress={() => {
                           setEmailApplication(app);
-                          setEmailType('decline-offer');
+                          setEmailType('rejection-response');
                           setShowEmailModal(true);
                         }}
                       >
                         <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
-                          🙏 Decline Offer (Professional)
+                          📝 Respond to Rejection
                         </Text>
                       </TouchableOpacity>
                     )}
@@ -2380,16 +2531,20 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
           onClose={() => {
             setShowEmailModal(false);
             setEmailApplication(null);
+            setEmailLinkedEvent(null);
           }}
           application={emailApplication}
           emailType={emailType}
           linkedEvent={
-            emailApplication.eventIds && emailApplication.eventIds.length > 0
-              ? allEvents.find(e => e.id === emailApplication.eventIds![0] && e.type === 'interview')
-              : undefined
+            emailLinkedEvent
+              ? emailLinkedEvent
+              : (emailApplication.eventIds && emailApplication.eventIds.length > 0
+                  ? allEvents.find(e => e.id === emailApplication.eventIds![0] && e.type === 'interview')
+                  : undefined)
           }
           onEmailSent={() => {
             loadApplications(); // Reload to show updated email tracking
+            loadAllEvents();
           }}
         />
       )}
@@ -2704,6 +2859,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8C6A4A',
     marginTop: 4,
+  },
+  rejectionReasonContainer: {
+    marginTop: 12,
+    marginBottom: 8,
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderWidth: 1,
+  },
+  rejectionReasonLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  rejectionReasonText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
   notesText: {
     fontSize: 14,
@@ -3081,22 +3253,43 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
+  },
+  modalOverlayTouchable: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  modalContentContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
   },
   modalContent: {
     backgroundColor: '#E7D7C1',
     borderRadius: 12,
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
     width: '80%',
     maxWidth: 400,
+    overflow: 'hidden',
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#4A3A2A',
-    marginBottom: 8,
   },
   modalInput: {
     backgroundColor: '#f5f5dc',
@@ -3111,17 +3304,22 @@ const styles = StyleSheet.create({
   },
   modalActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
+    marginTop: 20,
+    paddingTop: 4,
   },
   modalButton: {
     flex: 1,
-    padding: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
+    minHeight: 40,
   },
   modalButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   sentEmailsContainer: {
@@ -3359,7 +3557,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
     justifyContent: 'center',
     alignItems: 'center',
   },

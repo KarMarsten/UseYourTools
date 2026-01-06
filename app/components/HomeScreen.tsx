@@ -19,6 +19,7 @@ interface HomeScreenProps {
   onNavigateToDailyPlanner: (date?: Date) => void;
   onNavigateToApplications: () => void;
   onNavigateToOffers: () => void;
+  onNavigateToReferences: () => void;
   onNavigateToReports: () => void;
   onNavigateToInterviewPrep: () => void;
   onNavigateToSettings: () => void;
@@ -31,6 +32,7 @@ export default function HomeScreen({
   onNavigateToDailyPlanner,
   onNavigateToApplications,
   onNavigateToOffers,
+  onNavigateToReferences,
   onNavigateToReports,
   onNavigateToInterviewPrep,
   onNavigateToSettings,
@@ -142,6 +144,13 @@ export default function HomeScreen({
       description: 'Compare and contrast job offers',
       icon: '🎁',
       onPress: onNavigateToOffers,
+    },
+    {
+      id: 'references',
+      title: 'References',
+      description: 'Manage your professional references',
+      icon: '📞',
+      onPress: onNavigateToReferences,
     },
   ];
 

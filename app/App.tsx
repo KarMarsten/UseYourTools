@@ -8,6 +8,7 @@ import ReportsScreen from './components/ReportsScreen';
 import ViewReportScreen from './components/ViewReportScreen';
 import ApplicationsScreen from './components/ApplicationsScreen';
 import OffersScreen from './components/OffersScreen';
+import ReferencesScreen from './components/ReferencesScreen';
 import AboutScreen from './components/AboutScreen';
 import InterviewPrepScreen from './components/InterviewPrepScreen';
 import { PreferencesProvider } from './context/PreferencesContext';
@@ -72,7 +73,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-type Screen = 'home' | 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport' | 'applications' | 'offers' | 'about' | 'interviewPrep';
+type Screen = 'home' | 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport' | 'applications' | 'offers' | 'references' | 'about' | 'interviewPrep';
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
@@ -145,6 +146,10 @@ function AppContent() {
     setCurrentScreen('offers');
   };
 
+  const handleViewReferences = () => {
+    setCurrentScreen('references');
+  };
+
 
   const handleNavigateToDailyPlanner = (date?: Date) => {
     // Set to provided date or today's date and navigate to daily planner
@@ -165,6 +170,7 @@ function AppContent() {
       onNavigateToDailyPlanner={handleNavigateToDailyPlanner}
         onNavigateToApplications={handleViewApplications}
         onNavigateToOffers={handleViewOffers}
+        onNavigateToReferences={handleViewReferences}
         onNavigateToReports={handleViewReports}
       onNavigateToInterviewPrep={() => setCurrentScreen('interviewPrep')}
       onNavigateToSettings={handleViewSettings}
@@ -223,6 +229,10 @@ function AppContent() {
           setSelectedApplicationId(applicationId);
           setCurrentScreen('offers');
         }}
+        onCreateReference={(applicationId: string) => {
+          setSelectedApplicationId(applicationId);
+          setCurrentScreen('references');
+        }}
       />
     );
   }
@@ -230,6 +240,22 @@ function AppContent() {
   if (currentScreen === 'offers') {
     return (
       <OffersScreen
+        onBack={() => {
+          setSelectedApplicationId(undefined);
+          handleBackToHome();
+        }}
+        onViewApplication={(applicationId: string) => {
+          setSelectedApplicationId(applicationId);
+          setCurrentScreen('applications');
+        }}
+        initialApplicationId={selectedApplicationId}
+      />
+    );
+  }
+
+  if (currentScreen === 'references') {
+    return (
+      <ReferencesScreen
         onBack={() => {
           setSelectedApplicationId(undefined);
           handleBackToHome();
@@ -258,6 +284,7 @@ function AppContent() {
       onNavigateToDailyPlanner={handleNavigateToDailyPlanner}
         onNavigateToApplications={handleViewApplications}
         onNavigateToOffers={handleViewOffers}
+        onNavigateToReferences={handleViewReferences}
         onNavigateToReports={handleViewReports}
       onNavigateToInterviewPrep={() => setCurrentScreen('interviewPrep')}
       onNavigateToSettings={handleViewSettings}

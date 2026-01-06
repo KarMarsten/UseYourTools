@@ -82,6 +82,13 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           </View>
 
           <View style={styles.subsection}>
+            <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>✉️ Email Templates & Communication</Text>
+            <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
+              Professional email templates for thank you notes, follow-ups, acceptance letters, rejection responses, and declining offers. Templates include variable placeholders for personalization. Quick send opens your email client with pre-filled content. Track all emails sent for each application. Automatic reminders to send thank you notes after interviews.
+            </Text>
+          </View>
+
+          <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>📄 Resumes & Cover Letters</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
               Keep all your documents organized. Preview, share, and manage multiple versions. Mark them as active or inactive for easy organization. Link documents to job applications.
@@ -149,6 +156,12 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           </Text>
           <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
             • Long-press the About or Settings icons for helpful tooltips
+          </Text>
+          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
+            • Use email templates to send professional follow-up emails and thank you notes
+          </Text>
+          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
+            • Create interview events from any job application to keep everything organized
           </Text>
         </View>
 

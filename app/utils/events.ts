@@ -8,7 +8,9 @@ export interface Event {
   startTime: string; // Format: "HH:MM"
   endTime?: string; // Format: "HH:MM" - optional for reminders
   type: 'interview' | 'appointment' | 'reminder';
-  notificationId?: string; // ID for scheduled notification
+  notificationId?: string; // ID for scheduled notification (10 min before event)
+  thankYouNoteReminderId?: string; // ID for scheduled thank you note reminder
+  thankYouNoteStatus?: 'pending' | 'sent' | 'skipped'; // Thank-you note tracking for interview events
   calendarEventId?: string; // ID for synced calendar event
   applicationId?: string; // ID of the linked job application (if type is 'interview')
   // Optional fields for appointments/interviews
@@ -29,6 +31,8 @@ export const saveEvent = async (event: Event, skipBidirectionalUpdate = false): 
     const existingEvent = await getEventById(event.id);
     const previousApplicationId = existingEvent?.applicationId;
     const newApplicationId = event.applicationId;
+    const isNewEvent = !existingEvent;
+    const isNewInterview = isNewEvent && event.type === 'interview';
 
     // Sync to calendar if enabled
     if (event.calendarEventId) {
@@ -39,6 +43,22 @@ export const saveEvent = async (event: Event, skipBidirectionalUpdate = false): 
       const calendarEventId = await createCalendarEvent(event);
       if (calendarEventId) {
         event.calendarEventId = calendarEventId;
+      }
+    }
+
+    // Schedule thank you note reminder for new interview events
+    if (isNewInterview) {
+    // Initialize thank-you note status as pending
+    event.thankYouNoteStatus = 'pending';
+      const { scheduleThankYouNoteReminder } = await import('./eventNotifications');
+      const { loadPreferences } = await import('./preferences');
+      const preferences = await loadPreferences();
+      const reminderId = await scheduleThankYouNoteReminder(
+        event,
+        preferences.followUpDaysAfterInterview
+      );
+      if (reminderId) {
+        event.thankYouNoteReminderId = reminderId;
       }
     }
 
@@ -111,6 +131,18 @@ export const deleteEvent = async (eventId: string): Promise<void> => {
       // Delete from calendar if it exists
       if (event.calendarEventId) {
         await deleteCalendarEvent(event.calendarEventId);
+      }
+
+      // Cancel thank you note reminder if it exists
+      if (event.thankYouNoteReminderId) {
+        const { cancelEventNotification } = await import('./eventNotifications');
+        await cancelEventNotification(event.thankYouNoteReminderId);
+      }
+
+      // Cancel event notification if it exists
+      if (event.notificationId) {
+        const { cancelEventNotification } = await import('./eventNotifications');
+        await cancelEventNotification(event.notificationId);
       }
     }
 
@@ -188,6 +220,36 @@ export const unlinkEventFromApplication = async (eventId: string): Promise<void>
     }
   } catch (error) {
     console.error('Error unlinking event from application:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update thank-you note status for an interview event.
+ * If marking as sent or skipped, cancel any scheduled thank-you reminder.
+ */
+export const setEventThankYouStatus = async (
+  eventId: string,
+  status: 'pending' | 'sent' | 'skipped'
+): Promise<void> => {
+  try {
+    const event = await getEventById(eventId);
+    if (!event) {
+      throw new Error(`Event ${eventId} not found`);
+    }
+    if (event.type !== 'interview') {
+      throw new Error('Thank-you note status is only applicable to interview events');
+    }
+    event.thankYouNoteStatus = status;
+    // Cancel reminder when resolved
+    if ((status === 'sent' || status === 'skipped') && event.thankYouNoteReminderId) {
+      const { cancelEventNotification } = await import('./eventNotifications');
+      await cancelEventNotification(event.thankYouNoteReminderId);
+      event.thankYouNoteReminderId = undefined;
+    }
+    await saveEvent(event);
+  } catch (error) {
+    console.error('Error updating thank-you note status:', error);
     throw error;
   }
 };

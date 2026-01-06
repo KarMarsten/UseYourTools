@@ -89,13 +89,16 @@ Comprehensive tracking system for all your applications:
 - **Duplicate detection**: Warns if you try to apply to the same position twice
 - **Quick links**: Tap to open the original job posting
 - **Filter**: View applications by status
-- **Create interview events**: Easily create interview events from applications with company and position pre-filled
+- **Create interview events**: Easily create interview events from any application with company and position pre-filled (available for all application statuses) (available for all applications)
 - **Link to existing events**: Link applications to existing interview or appointment events
 - **View linked events**: See all events linked to an application with date, time, and contact name
 - **Unlink events**: Remove links between applications and events as needed
 - **Create offers**: Direct access to create job offers from the application edit screen
 - **Create references**: Easily create references linked to job applications
 - **Follow-up reminders**: Automatic reminders configured in settings for following up after applications and interviews
+- **Email templates**: Professional email templates for thank you notes, follow-ups, acceptance, rejection responses, and declining offers
+- **Email tracking**: Track all emails sent for each application with date, recipient, and template used
+- **Thank you note reminders**: Automatic reminders to send thank you notes after interviews (configurable timing)
 
 ### 🎁 Job Offers
 
@@ -172,6 +175,29 @@ Comprehensive interview preparation toolkit:
 - Random question selection to keep practice fresh
 - Track your practice time to improve response speed
 - Get comfortable with timing your responses
+
+### ✉️ Email Templates & Professional Communication
+
+Professional follow-up emails and thank you notes to improve your job search success:
+
+**Email Templates:**
+- Pre-written templates for common scenarios:
+  - **Thank You Notes** - After interviews
+  - **Follow-Up Emails** - Check on application status
+  - **Acceptance Letters** - Accepting job offers
+  - **Rejection Responses** - Professional responses to rejections
+  - **Decline Offers** - Politely declining job offers
+- Customizable templates with variable placeholders (company name, position, date, interviewer name, your name, applied date)
+- Template library organized by purpose for easy selection
+
+**Email Features:**
+- **Quick send**: Opens your email client (Gmail or default) with pre-filled content
+- **Email tracking**: Track all emails sent for each application with date, recipient, and template used
+- **Email history**: View sent email history directly in application details
+- **Automatic reminders**: Get reminded to send thank you notes after interviews (configurable timing in settings)
+- **Context-aware**: Email buttons appear based on application status (thank you for interviews, follow-up for applied, etc.)
+
+**Impact**: Professional communication significantly improves response rates and leaves a positive impression.
 
 ### 📄 Resumes & Cover Letters
 

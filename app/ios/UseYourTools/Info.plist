@@ -67,6 +67,9 @@
       <string>monster</string>
       <string>ziprecruiter</string>
       <string>dice</string>
+      <string>googlegmail</string>
+      <string>ms-outlook</string>
+      <string>ymail</string>
     </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>

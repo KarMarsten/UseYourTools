@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -17,11 +17,10 @@ import { loadPreferences } from '../utils/preferences';
 import {
   EmailTemplate,
   EmailTemplateType,
-  getAllTemplates,
   getTemplatesByType,
   replaceVariables,
-  EMAIL_VARIABLES,
 } from '../utils/emailTemplates';
+import TemplateEditorModal from './TemplateEditorModal';
 import { JobApplication } from '../utils/applications';
 import { Event } from '../utils/events';
 import { recordEmailSent } from '../utils/applications';
@@ -51,6 +50,10 @@ export default function EmailTemplateModal({
   const [body, setBody] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
+  const bodyInputRef = useRef<any>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (visible) {
@@ -59,29 +62,36 @@ export default function EmailTemplateModal({
   }, [visible, emailType]);
 
   useEffect(() => {
-    if (selectedTemplate && application) {
-      // Build variables from application and event data
-      const variables: Record<string, string> = {
-        company: application.company || '',
-        position: application.positionTitle || '',
-        appliedDate: new Date(application.appliedDate).toLocaleDateString(),
-        date: new Date().toLocaleDateString(),
-        yourName: '', // User can fill this in manually or we could get from preferences
-      };
+    const processTemplate = async () => {
+      if (selectedTemplate && application) {
+        // Build variables from application and event data
+        const variables: Record<string, string> = {
+          company: application.company || '',
+          position: application.positionTitle || '',
+          appliedDate: new Date(application.appliedDate).toLocaleDateString(),
+          date: new Date().toLocaleDateString(),
+          yourName: '', // User can fill this in manually or we could get from preferences
+        };
 
-      // Add interviewer name if we have a linked event
-      if (linkedEvent?.contactName) {
-        variables.interviewerName = linkedEvent.contactName;
-      } else {
-        variables.interviewerName = 'Hiring Manager';
+        // Add interviewer name if we have a linked event
+        if (linkedEvent?.contactName) {
+          variables.interviewerName = linkedEvent.contactName;
+        } else {
+          variables.interviewerName = 'Hiring Manager';
+        }
+
+        // Replace variables in subject and body
+        // Ensure template has content (safety check for corrupted/empty templates)
+        const templateSubject = selectedTemplate.subject || '';
+        const templateBody = selectedTemplate.body || '';
+        
+        // Replace variables in subject and body
+        const processedSubject = replaceVariables(templateSubject, variables);
+        const processedBody = replaceVariables(templateBody, variables);
+
+        setSubject(processedSubject);
+        setBody(processedBody);
       }
-
-      // Replace variables in subject and body
-      const processedSubject = replaceVariables(selectedTemplate.subject, variables);
-      const processedBody = replaceVariables(selectedTemplate.body, variables);
-
-      setSubject(processedSubject);
-      setBody(processedBody);
 
       // Try to get recipient email from event or leave empty
       if (linkedEvent?.email) {
@@ -89,7 +99,9 @@ export default function EmailTemplateModal({
       } else {
         setRecipientEmail('');
       }
-    }
+    };
+
+    processTemplate();
   }, [selectedTemplate, application, linkedEvent]);
 
   const loadTemplates = async () => {
@@ -106,6 +118,23 @@ export default function EmailTemplateModal({
       Alert.alert('Error', 'Failed to load email templates');
     }
   };
+
+
+  const handleTemplateSaved = () => {
+    loadTemplates();
+  };
+
+
+  const handleCreateTemplate = () => {
+    setEditingTemplate(null);
+    setShowTemplateEditor(true);
+  };
+
+  const handleEditTemplate = (template: EmailTemplate) => {
+    setEditingTemplate(template);
+    setShowTemplateEditor(true);
+  };
+
 
   const handleSendEmail = async () => {
     if (!subject.trim() || !body.trim()) {
@@ -126,13 +155,11 @@ export default function EmailTemplateModal({
               text: 'OK',
               onPress: async () => {
                 try {
-                  const { Clipboard } = await import('expo-clipboard');
+                  const Clipboard = await import('expo-clipboard');
                   const emailContent = `Subject: ${subject}\n\n${body}`;
                   await Clipboard.setStringAsync(emailContent);
-                  onClose();
                 } catch (error) {
                   console.error('Error copying to clipboard:', error);
-                  onClose();
                 }
               },
             },
@@ -167,6 +194,7 @@ export default function EmailTemplateModal({
       
       // Try to open the preferred email client
       try {
+        // Check if we can open the URL (this requires the scheme to be in LSApplicationQueriesSchemes)
         const canOpen = await Linking.canOpenURL(emailUrl);
         if (canOpen) {
           await Linking.openURL(emailUrl);
@@ -183,17 +211,48 @@ export default function EmailTemplateModal({
                 [{ text: 'OK' }]
               );
             } else {
-              Alert.alert('Error', 'No email client found on this device');
+              // Fallback to clipboard if no email client is available
+              const Clipboard = await import('expo-clipboard');
+              const emailContent = `Subject: ${subject}\n\n${body}`;
+              await Clipboard.setStringAsync(emailContent);
+              Alert.alert(
+                'No Email Client',
+                'No email client found. Email content has been copied to your clipboard.',
+                [{ text: 'OK' }]
+              );
+              setLoading(false);
               return;
             }
           } else {
-            Alert.alert('Error', 'No email client found on this device');
+            // Fallback to clipboard if no email client is available
+            const Clipboard = await import('expo-clipboard');
+            const emailContent = `Subject: ${subject}\n\n${body}`;
+            await Clipboard.setStringAsync(emailContent);
+            Alert.alert(
+              'No Email Client',
+              'No email client found. Email content has been copied to your clipboard.',
+              [{ text: 'OK' }]
+            );
+            setLoading(false);
             return;
           }
         }
       } catch (error) {
         console.error('Error opening email client:', error);
-        Alert.alert('Error', 'Failed to open email client');
+        // Fallback to clipboard on error
+        try {
+          const Clipboard = await import('expo-clipboard');
+          const emailContent = `Subject: ${subject}\n\n${body}`;
+          await Clipboard.setStringAsync(emailContent);
+          Alert.alert(
+            'Error Opening Email',
+            'Failed to open email client. Email content has been copied to your clipboard.',
+            [{ text: 'OK' }]
+          );
+        } catch (clipboardError) {
+          Alert.alert('Error', 'Failed to open email client and copy to clipboard');
+        }
+        setLoading(false);
         return;
       }
 
@@ -204,6 +263,15 @@ export default function EmailTemplateModal({
         recipientEmail,
         selectedTemplate?.id
       );
+      // If this is a thank-you email linked to an interview event, mark thank-you as sent
+      try {
+        if (emailType === 'thank-you' && linkedEvent?.id) {
+          const { setEventThankYouStatus } = await import('../utils/events');
+          await setEventThankYouStatus(linkedEvent.id, 'sent');
+        }
+      } catch (e) {
+        // non-fatal
+      }
 
       Alert.alert(
         'Email Opened',
@@ -228,7 +296,7 @@ export default function EmailTemplateModal({
 
   const handleCopyToClipboard = async () => {
     try {
-      const { Clipboard } = await import('expo-clipboard');
+      const Clipboard = await import('expo-clipboard');
       const emailContent = `Subject: ${subject}\n\n${body}`;
       await Clipboard.setStringAsync(emailContent);
       Alert.alert('Copied', 'Email content copied to clipboard');
@@ -248,6 +316,8 @@ export default function EmailTemplateModal({
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.modalContainer}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        enabled={Platform.OS === 'ios'}
       >
         <View style={[styles.modalContent, { backgroundColor: colorScheme.colors.surface }]}>
           <View style={[styles.modalHeader, { borderBottomColor: colorScheme.colors.border }]}>
@@ -255,18 +325,38 @@ export default function EmailTemplateModal({
               {emailType === 'thank-you' && 'Send Thank You Note'}
               {emailType === 'follow-up' && 'Send Follow-Up Email'}
               {emailType === 'decline-offer' && 'Decline Job Offer'}
+              {emailType === 'acceptance' && 'Accept Job Offer'}
+              {emailType === 'rejection-response' && 'Respond to Rejection'}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Text style={[styles.closeButtonText, { color: colorScheme.colors.text }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.contentContainer}>
+            <ScrollView 
+              ref={scrollViewRef}
+              style={styles.scrollView} 
+              contentContainerStyle={styles.scrollContent}
+              nestedScrollEnabled={true}
+              scrollEventThrottle={16}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              showsVerticalScrollIndicator={true}
+            >
             {/* Template Selection */}
-            {templates.length > 0 && (
-              <View style={styles.section}>
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
                 <Text style={[styles.label, { color: colorScheme.colors.text }]}>Email Template</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templateScroll}>
+                <TouchableOpacity
+                  onPress={handleCreateTemplate}
+                  style={[styles.addButton, { backgroundColor: colorScheme.colors.primary }]}
+                >
+                  <Text style={styles.addButtonText}>+ New</Text>
+                </TouchableOpacity>
+              </View>
+              {templates.length > 0 && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   {templates.map((template) => (
                     <TouchableOpacity
                       key={template.id}
@@ -284,6 +374,7 @@ export default function EmailTemplateModal({
                         },
                       ]}
                       onPress={() => setSelectedTemplate(template)}
+                      onLongPress={() => !template.isDefault && handleEditTemplate(template)}
                     >
                       <Text
                         style={[
@@ -301,8 +392,8 @@ export default function EmailTemplateModal({
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
-              </View>
-            )}
+              )}
+            </View>
 
             {/* Recipient Email */}
             <View style={styles.section}>
@@ -323,12 +414,18 @@ export default function EmailTemplateModal({
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                returnKeyType="next"
+                editable={true}
+                enablesReturnKeyAutomatically={true}
               />
             </View>
 
             {/* Subject */}
             <View style={styles.section}>
               <Text style={[styles.label, { color: colorScheme.colors.text }]}>Subject</Text>
+              <Text style={[styles.helpText, { color: colorScheme.colors.textSecondary }]}>
+                You can edit this before sending
+              </Text>
               <TextInput
                 style={[
                   styles.input,
@@ -342,31 +439,62 @@ export default function EmailTemplateModal({
                 onChangeText={setSubject}
                 placeholder="Email subject"
                 placeholderTextColor={colorScheme.colors.textSecondary}
+                returnKeyType="next"
+                editable={true}
+                enablesReturnKeyAutomatically={true}
               />
             </View>
 
-            {/* Body */}
-            <View style={styles.section}>
+            </ScrollView>
+
+            {/* Body - Outside ScrollView for better scrolling */}
+            <View style={[
+              styles.bodySection,
+              { borderTopColor: colorScheme.colors.border },
+            ]}>
               <Text style={[styles.label, { color: colorScheme.colors.text }]}>Body</Text>
-              <TextInput
-                style={[
-                  styles.textArea,
-                  {
-                    backgroundColor: colorScheme.colors.background,
-                    borderColor: colorScheme.colors.border,
-                    color: colorScheme.colors.text,
-                  },
-                ]}
-                value={body}
-                onChangeText={setBody}
-                placeholder="Email body"
-                placeholderTextColor={colorScheme.colors.textSecondary}
-                multiline
-                numberOfLines={10}
-                textAlignVertical="top"
-              />
+              <Text style={[styles.helpText, { color: colorScheme.colors.textSecondary }]}>
+                You can edit this before sending
+              </Text>
+              <View style={[
+                styles.textAreaContainer,
+                {
+                  borderColor: colorScheme.colors.border,
+                  backgroundColor: colorScheme.colors.background,
+                },
+              ]}>
+                <ScrollView
+                  style={styles.textAreaScrollView}
+                  contentContainerStyle={styles.textAreaScrollContent}
+                  nestedScrollEnabled={true}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={true}
+                >
+                  <TextInput
+                    ref={bodyInputRef}
+                    style={[
+                      styles.textArea,
+                      {
+                        backgroundColor: colorScheme.colors.background,
+                        color: colorScheme.colors.text,
+                      },
+                    ]}
+                    value={body}
+                    onChangeText={setBody}
+                    placeholder="Email body"
+                    placeholderTextColor={colorScheme.colors.textSecondary}
+                    multiline
+                    textAlignVertical="top"
+                    blurOnSubmit={false}
+                    scrollEnabled={false}
+                    returnKeyType="default"
+                    editable={true}
+                    enablesReturnKeyAutomatically={false}
+                  />
+                </ScrollView>
+              </View>
             </View>
-          </ScrollView>
+          </View>
 
           {/* Action Buttons */}
           <View style={[styles.actionBar, { borderTopColor: colorScheme.colors.border }]}>
@@ -393,6 +521,19 @@ export default function EmailTemplateModal({
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Template Editor Modal */}
+      <TemplateEditorModal
+        visible={showTemplateEditor}
+        onClose={() => {
+          setShowTemplateEditor(false);
+          setEditingTemplate(null);
+        }}
+        template={editingTemplate}
+        templateType={emailType}
+        onSave={handleTemplateSaved}
+      />
+
     </Modal>
   );
 }
@@ -427,22 +568,71 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
-  scrollView: {
+  contentContainer: {
     flex: 1,
+    flexDirection: 'column',
+  },
+  scrollView: {
+    flexShrink: 1,
   },
   scrollContent: {
     padding: 16,
+    paddingBottom: 16,
+  },
+  bodySection: {
+    padding: 16,
+    paddingTop: 0,
+    flexShrink: 0,
+    borderTopWidth: 1,
+    borderTopColor: 'transparent', // Will be set dynamically
+  },
+  textAreaContainer: {
+    borderWidth: 1,
+    borderRadius: 8,
+    height: 300,
+    overflow: 'hidden',
+    marginTop: 8,
+  },
+  textAreaScrollView: {
+    flex: 1,
+  },
+  textAreaScrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
   },
   section: {
     marginBottom: 20,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
   label: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  templateScroll: {
-    marginTop: 8,
+  helpText: {
+    fontSize: 12,
+    marginBottom: 8,
+    fontStyle: 'italic',
+  },
+  addButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   templateOption: {
     paddingHorizontal: 16,
@@ -455,6 +645,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  toneOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginRight: 12,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  toneOptionText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
   input: {
     borderWidth: 1,
     borderRadius: 8,
@@ -462,11 +667,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   textArea: {
-    borderWidth: 1,
-    borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    minHeight: 200,
+    textAlignVertical: 'top',
+    minHeight: 300,
   },
   actionBar: {
     flexDirection: 'row',

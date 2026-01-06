@@ -373,6 +373,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_NULLABILITY_COMPLETENESS = NO;
 				CODE_SIGN_ENTITLEMENTS = UseYourTools/UseYourTools.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = UAHR3JWC24;
@@ -388,6 +389,10 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-Wno-nullability-completeness",
+				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -410,6 +415,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_NULLABILITY_COMPLETENESS = NO;
 				CODE_SIGN_ENTITLEMENTS = UseYourTools/UseYourTools.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = UAHR3JWC24;
@@ -420,6 +426,10 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-Wno-nullability-completeness",
+				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",

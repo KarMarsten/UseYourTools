@@ -92,6 +92,70 @@ export const cancelEventNotification = async (notificationId: string): Promise<v
 };
 
 /**
+ * Schedule a reminder to send a thank you note after an interview
+ * @param event - The interview event
+ * @param daysAfterInterview - Number of days after interview to send reminder (default from preferences)
+ */
+export const scheduleThankYouNoteReminder = async (
+  event: Event,
+  daysAfterInterview: number = 2
+): Promise<string | null> => {
+  try {
+    if (event.type !== 'interview') {
+      console.warn('Can only schedule thank you note reminders for interview events');
+      return null;
+    }
+
+    // Parse event date and time
+    const [year, month, day] = event.dateKey.split('-').map(Number);
+    const [hours, minutes] = event.startTime.split(':').map(Number);
+    
+    // Create event date using local time components
+    const eventDate = new Date(year, month - 1, day, hours, minutes);
+    
+    // Calculate reminder time (X days after interview, at 9 AM)
+    const reminderDate = new Date(eventDate);
+    reminderDate.setDate(reminderDate.getDate() + daysAfterInterview);
+    reminderDate.setHours(9, 0, 0, 0); // 9 AM
+    
+    const now = new Date();
+    
+    // Don't schedule if the reminder time is in the past
+    if (reminderDate <= now) {
+      console.warn('Cannot schedule reminder in the past');
+      return null;
+    }
+
+    // Request permissions
+    const hasPermission = await requestNotificationPermissions();
+    if (!hasPermission) {
+      console.warn('Notification permissions not granted');
+      return null;
+    }
+
+    // Schedule notification
+    const notificationId = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '📧 Send Thank You Note',
+        body: `Don't forget to send a thank you note for your interview at ${event.company || 'the company'}!`,
+        sound: true,
+        data: { 
+          eventId: event.id,
+          applicationId: event.applicationId,
+          type: 'thank-you-reminder'
+        },
+      },
+      trigger: reminderDate,
+    });
+
+    return notificationId;
+  } catch (error) {
+    console.error('Error scheduling thank you note reminder:', error);
+    return null;
+  }
+};
+
+/**
  * Cancel all notifications (useful for cleanup)
  */
 

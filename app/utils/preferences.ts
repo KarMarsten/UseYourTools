@@ -20,6 +20,9 @@ export interface UserPreferences {
   showZenQuotes: boolean; // Show daily zen quotes in Daily Planner (default: true)
   enableEmailTemplates: boolean; // Enable email template functionality (default: true)
   emailClient: 'default' | 'gmail'; // Preferred email client (default: 'default')
+  aiToneRewriting: 'none' | 'openai' | 'gemini'; // AI service for tone rewriting (default: 'none')
+  openaiApiKey?: string; // OpenAI API key (stored securely)
+  geminiApiKey?: string; // Google Gemini API key (stored securely)
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -40,6 +43,9 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   showZenQuotes: true, // Default: show zen quotes
   enableEmailTemplates: true, // Default: enable email templates
   emailClient: 'default', // Default: use default email client
+  aiToneRewriting: 'none', // Default: no AI rewriting (use hardcoded rules)
+  openaiApiKey: undefined,
+  geminiApiKey: undefined,
 };
 
 const PREFERENCES_KEY = 'planner_preferences';
