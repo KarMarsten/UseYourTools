@@ -5,12 +5,16 @@
     <key>EXUpdatesCheckOnLaunch</key>
     <string>ERROR_RECOVERY_ONLY</string>
     <key>EXUpdatesEnabled</key>
-    <true/>
+    <false/>
     <key>EXUpdatesLaunchWaitMs</key>
     <integer>0</integer>
     <key>EXUpdatesRuntimeVersion</key>
     <string>1.0.0</string>
     <key>EXUpdatesURL</key>
     <string>https://u.expo.dev/43ad00a3-7e94-43eb-9462-340003fc7e70</string>
+    <key>EXDevClientDisableStatusCheck</key>
+    <true/>
+    <key>EXDevClientDisableAutoConnect</key>
+    <true/>
   </dict>
 </plist>

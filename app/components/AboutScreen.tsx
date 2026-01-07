@@ -56,7 +56,7 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>💼 Job Applications</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Track every application with position details, status, and notes. Add rejection reasons for unemployment reporting. Search and filter to stay organized. Create interview events directly from applications or link to existing events. Bi-directional linking keeps your data synchronized. Application dates automatically reflect interview dates when progressing through the interview process.
+              Track every application with position details, status, and notes. Add rejection reasons for unemployment reporting. Search and filter by status or week to stay organized. Week filtering respects your applied date for accurate results. Create interview events directly from applications or link to existing events. Bi-directional linking keeps your data synchronized. Application dates automatically reflect interview dates when progressing through the interview process.
             </Text>
           </View>
 

@@ -28,7 +28,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>useyourtools</string>
-          <string>com.kmarsten.useyourtools</string>
+          <string>com.useyourtools.app</string>
         </array>
       </dict>
       <dict>

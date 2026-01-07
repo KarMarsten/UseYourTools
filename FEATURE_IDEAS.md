@@ -1,6 +1,6 @@
 # Feature Ideas for UseYourTools 🎯
 
-**Last Updated**: Current brainstorming session
+**Last Updated**: January 7, 2025
 
 ## Current Features Summary
 - ✅ Job application tracking (Applied, Rejected, Interview statuses with rejection reasons)
@@ -23,13 +23,14 @@
 - ✅ Modern color palette with dark mode support
 - ✅ Multiple color scheme options (Earth-Tone, Cheerful Nature, Sunny Sky, Imagination, Modern)
 - ✅ Reference Management (contact database, link to applications, quick actions for email/call)
-- ✅ **Email Templates & Thank You Notes** (NEW):
+- ✅ **Email Templates & Thank You Notes**:
   - Pre-written templates (thank-you, follow-up, acceptance, rejection-response, decline-offer)
   - Variable placeholders (company, position, interviewer name, date, etc.)
   - Quick send to email client (Gmail or default)
   - Email tracking per application
   - Automatic thank you note reminders after interviews
   - Template library organized by purpose
+- ✅ **Week Filter for Applications**: Filter applications by week (All Weeks, This Week, Last Week, 2 Weeks Ago, 3 Weeks Ago) with accurate date-based filtering that respects the applied date
 
 ---
 

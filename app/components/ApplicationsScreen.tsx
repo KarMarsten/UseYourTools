@@ -147,10 +147,13 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
   // Helper function to get the start of a week (Sunday)
   const getWeekStart = (date: Date): Date => {
     const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day; // Subtract days to get to Sunday
-    const weekStart = new Date(d.setDate(diff));
-    weekStart.setHours(0, 0, 0, 0);
+    // Extract date components to avoid timezone issues
+    const year = d.getFullYear();
+    const month = d.getMonth();
+    const dayOfMonth = d.getDate();
+    const dayOfWeek = d.getDay();
+    const diff = dayOfMonth - dayOfWeek; // Subtract days to get to Sunday
+    const weekStart = new Date(year, month, diff, 0, 0, 0, 0);
     return weekStart;
   };
 
@@ -662,9 +665,14 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
       if (selectedWeek) {
         const weekStart = getWeekStart(selectedWeek);
         allApps = allApps.filter(app => {
-          const appliedDate = new Date(app.appliedDate);
-          // Normalize to midnight to ensure accurate date comparison
-          appliedDate.setHours(0, 0, 0, 0);
+          // Extract date components to avoid timezone issues
+          const appliedDateUTC = new Date(app.appliedDate);
+          const appliedDate = new Date(
+            appliedDateUTC.getFullYear(),
+            appliedDateUTC.getMonth(),
+            appliedDateUTC.getDate(),
+            0, 0, 0, 0
+          );
           return isDateInWeek(appliedDate, weekStart);
         });
       }
@@ -698,9 +706,14 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
       if (selectedWeek) {
         const weekStart = getWeekStart(selectedWeek);
         results = results.filter(app => {
-          const appliedDate = new Date(app.appliedDate);
-          // Normalize to midnight to ensure accurate date comparison
-          appliedDate.setHours(0, 0, 0, 0);
+          // Extract date components to avoid timezone issues
+          const appliedDateUTC = new Date(app.appliedDate);
+          const appliedDate = new Date(
+            appliedDateUTC.getFullYear(),
+            appliedDateUTC.getMonth(),
+            appliedDateUTC.getDate(),
+            0, 0, 0, 0
+          );
           return isDateInWeek(appliedDate, weekStart);
         });
       }

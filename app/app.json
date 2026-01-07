@@ -17,7 +17,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kmarsten.useyourtools",
+      "bundleIdentifier": "com.useyourtools.app",
       "config": {
         "usesNonExemptEncryption": false
       },
