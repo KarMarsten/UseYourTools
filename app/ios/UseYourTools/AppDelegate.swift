@@ -1,11 +1,11 @@
 import Expo
 import React
 import ReactAppDependencyProvider
-import UIKit
 
-@main
+@UIApplicationMain
 public class AppDelegate: ExpoAppDelegate {
   var window: UIWindow?
+
   var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
 
@@ -22,21 +22,15 @@ public class AppDelegate: ExpoAppDelegate {
     bindReactNativeFactory(factory)
 
 #if os(iOS) || os(tvOS)
-    // Create window (UIScene not enabled in Info.plist, so use traditional window)
-    if window == nil {
-      window = UIWindow(frame: UIScreen.main.bounds)
-    }
-    if let window = window {
-      factory.startReactNative(
-        withModuleName: "main",
-        in: window,
-        launchOptions: launchOptions)
-    }
+    window = UIWindow(frame: UIScreen.main.bounds)
+    factory.startReactNative(
+      withModuleName: "main",
+      in: window,
+      launchOptions: launchOptions)
 #endif
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
-
 
   // Linking API
   public override func application(
@@ -74,4 +68,3 @@ class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
 #endif
   }
 }
-
