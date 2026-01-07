@@ -35,9 +35,12 @@ import { getAllApplications, JobApplication } from '../utils/applications';
 
 interface InterviewPrepScreenProps {
   onBack: () => void;
+  initialCompanyName?: string;
+  initialApplicationId?: string;
+  onNavigateToApplication?: (applicationId: string) => void;
 }
 
-export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps) {
+export default function InterviewPrepScreen({ onBack, initialCompanyName, initialApplicationId, onNavigateToApplication }: InterviewPrepScreenProps) {
   const { colorScheme } = usePreferences();
   const statusBarHeight = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0;
 
@@ -72,7 +75,9 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
   const [researchWebsite, setResearchWebsite] = useState<string>('');
   const [researchLinkedIn, setResearchLinkedIn] = useState<string>('');
   const [researchGlassdoor, setResearchGlassdoor] = useState<string>('');
-  const [selectedApplicationForResearch, setSelectedApplicationForResearch] = useState<string | undefined>(undefined);
+  const [selectedApplicationsForResearch, setSelectedApplicationsForResearch] = useState<string[]>([]);
+  const [showApplicationSelector, setShowApplicationSelector] = useState<boolean>(false);
+  const [hasAutoPopulated, setHasAutoPopulated] = useState<boolean>(false);
   
   // Interview Feedback form state
   const [showFeedbackForm, setShowFeedbackForm] = useState<boolean>(false);
@@ -89,6 +94,67 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
     loadInterviewPrepData();
     loadApplications();
   }, []);
+
+  // Auto-navigate to research view if company name is provided
+  useEffect(() => {
+    if (initialCompanyName && initialApplicationId) {
+      // Wait for data to load before checking
+      if (applications.length === 0 || companyResearch === undefined) {
+        return;
+      }
+      
+      // Check if research already exists for this company/application
+      const existingResearch = companyResearch.find(
+        r => r.companyName.toLowerCase() === initialCompanyName.toLowerCase() && r.applicationId === initialApplicationId
+      );
+      
+      if (existingResearch) {
+        // Navigate to research view and show existing research
+        setInterviewPrepView('research');
+      } else {
+        // Navigate to research view and pre-fill form
+        setInterviewPrepView('research');
+        setResearchCompanyName(initialCompanyName);
+        setSelectedApplicationsForResearch([initialApplicationId]);
+        // Find the application to get position title
+        const app = applications.find(a => a.id === initialApplicationId);
+        if (app) {
+          setResearchPositionTitle(app.positionTitle);
+        }
+        setShowResearchForm(true);
+      }
+    }
+  }, [initialCompanyName, initialApplicationId, applications, companyResearch]);
+
+  // Auto-populate company URLs when company name is entered
+  useEffect(() => {
+    if (showResearchForm && researchCompanyName.trim() && !editingResearch && !hasAutoPopulated) {
+      // Only auto-populate once when company name is first entered and fields are empty
+      const companySlug = researchCompanyName
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      
+      const companyDomain = companySlug.replace(/-/g, '');
+      
+      // Only populate if fields are currently empty
+      if (!researchLinkedIn.trim() && !researchGlassdoor.trim() && !researchWebsite.trim() && companySlug) {
+        // Auto-populate LinkedIn URL
+        setResearchLinkedIn(`https://www.linkedin.com/company/${companySlug}`);
+        
+        // Auto-populate Glassdoor URL (search URL format)
+        setResearchGlassdoor(`https://www.glassdoor.com/Search/results.htm?keyword=${encodeURIComponent(researchCompanyName.trim())}`);
+        
+        // Auto-populate website URL (simple .com guess)
+        if (companyDomain) {
+          setResearchWebsite(`https://www.${companyDomain}.com`);
+        }
+        
+        setHasAutoPopulated(true);
+      }
+    }
+  }, [researchCompanyName, showResearchForm, editingResearch, hasAutoPopulated, researchLinkedIn, researchGlassdoor, researchWebsite]);
 
   useEffect(() => {
     if (interviewPrepView !== 'practice') {
@@ -219,9 +285,10 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
     setResearchWebsite('');
     setResearchLinkedIn('');
     setResearchGlassdoor('');
-    setSelectedApplicationForResearch(undefined);
+    setSelectedApplicationsForResearch([]);
     setEditingResearch(null);
     setShowResearchForm(false);
+    setHasAutoPopulated(false);
   };
 
   const handleEditResearch = (research: CompanyResearch) => {
@@ -232,7 +299,8 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
     setResearchWebsite(research.website || '');
     setResearchLinkedIn(research.linkedinUrl || '');
     setResearchGlassdoor(research.glassdoorUrl || '');
-    setSelectedApplicationForResearch(research.applicationId);
+    setSelectedApplicationsForResearch(research.applicationIds || []);
+    setHasAutoPopulated(true); // Prevent auto-population when editing
     setShowResearchForm(true);
   };
 
@@ -241,19 +309,15 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
       Alert.alert('Error', 'Please enter a company name');
       return;
     }
-    if (!selectedApplicationForResearch) {
-      Alert.alert('Error', 'Please select a job application');
-      return;
-    }
-    if (!researchNotes.trim()) {
-      Alert.alert('Error', 'Please enter research notes');
+    if (selectedApplicationsForResearch.length === 0) {
+      Alert.alert('Error', 'Please select at least one job application');
       return;
     }
 
     try {
       const research: CompanyResearch = {
         id: editingResearch?.id || '',
-        applicationId: selectedApplicationForResearch!,
+        applicationIds: selectedApplicationsForResearch,
         companyName: researchCompanyName.trim(),
         positionTitle: researchPositionTitle.trim(),
         researchNotes: researchNotes.trim(),
@@ -388,6 +452,21 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
   const getApplicationDisplay = (appId: string) => {
     const app = applications.find(a => a.id === appId);
     return app ? `${app.positionTitle} at ${app.company}` : 'Unknown Application';
+  };
+
+  const formatDateShort = (isoDate: string): string => {
+    const date = new Date(isoDate);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const getEffectiveApplicationDate = (app: JobApplication): Date => {
+    // If the application was rejected and has interview events, use the latest interview date
+    if (app.status === 'rejected' && app.eventIds && app.eventIds.length > 0) {
+      // For now, just use appliedDate - we'd need to load events to get interview dates
+      return new Date(app.appliedDate);
+    }
+    // Otherwise use the appliedDate
+    return new Date(app.appliedDate);
   };
 
   return (
@@ -628,7 +707,39 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
                 >
                   <Text style={[styles.researchCompany, { color: colorScheme.colors.text }]}>{research.companyName}</Text>
                   <Text style={[styles.researchPosition, { color: colorScheme.colors.textSecondary }]}>{research.positionTitle}</Text>
-                  <Text style={[styles.researchNotes, { color: colorScheme.colors.text }]}>{research.researchNotes}</Text>
+                  {research.applicationIds && research.applicationIds.length > 0 && (
+                    <View style={styles.linkedApplicationsContainer}>
+                      <Text style={[styles.linkedApplicationsLabel, { color: colorScheme.colors.textSecondary }]}>
+                        Linked Applications:
+                      </Text>
+                      {research.applicationIds.map((appId) => {
+                        const app = applications.find(a => a.id === appId);
+                        if (app) {
+                          const appliedDate = getEffectiveApplicationDate(app);
+                          return (
+                            <TouchableOpacity
+                              key={appId}
+                              onPress={() => {
+                                if (onNavigateToApplication) {
+                                  onNavigateToApplication(appId);
+                                }
+                              }}
+                              style={styles.applicationLink}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={[styles.applicationLinkText, { color: colorScheme.colors.primary }]}>
+                                📋 {app.positionTitle} • Applied {formatDateShort(appliedDate.toISOString())}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        }
+                        return null;
+                      })}
+                    </View>
+                  )}
+                  {research.researchNotes && research.researchNotes.trim() && (
+                    <Text style={[styles.researchNotes, { color: colorScheme.colors.text }]}>{research.researchNotes}</Text>
+                  )}
                   <View style={styles.researchLinks}>
                     {research.website && (
                       <TouchableOpacity onPress={() => Linking.openURL(research.website!)}>
@@ -1016,7 +1127,10 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
               keyboardShouldPersistTaps="handled"
             >
               <View style={styles.starFormGroup}>
-                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Job Application *</Text>
+                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Job Applications *</Text>
+                <Text style={[styles.helperText, { color: colorScheme.colors.textSecondary, marginBottom: 8 }]}>
+                  Select one or more applications for this company
+                </Text>
                 <TouchableOpacity
                   style={[styles.pickerButton, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}
                   onPress={() => {
@@ -1024,27 +1138,37 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
                       Alert.alert('No Applications', 'Please add a job application first');
                       return;
                     }
-                    const options = applications.map(app => getApplicationDisplay(app.id));
-                    const currentIndex = selectedApplicationForResearch
-                      ? applications.findIndex(app => app.id === selectedApplicationForResearch)
-                      : -1;
-                    Alert.alert(
-                      'Select Application',
-                      '',
-                      options.map((name, index) => ({
-                        text: name,
-                        onPress: () => setSelectedApplicationForResearch(applications[index].id),
-                        style: index === currentIndex ? 'default' : undefined,
-                      }))
-                    );
+                    setShowApplicationSelector(true);
                   }}
                 >
-                  <Text style={[styles.pickerButtonText, { color: selectedApplicationForResearch ? colorScheme.colors.text : colorScheme.colors.textSecondary }]}>
-                    {selectedApplicationForResearch
-                      ? getApplicationDisplay(selectedApplicationForResearch)
-                      : 'Select an application...'}
+                  <Text style={[styles.pickerButtonText, { color: selectedApplicationsForResearch.length > 0 ? colorScheme.colors.text : colorScheme.colors.textSecondary }]}>
+                    {selectedApplicationsForResearch.length > 0
+                      ? `${selectedApplicationsForResearch.length} application${selectedApplicationsForResearch.length > 1 ? 's' : ''} selected`
+                      : 'Select applications...'}
                   </Text>
                 </TouchableOpacity>
+                {selectedApplicationsForResearch.length > 0 && (
+                  <View style={styles.selectedApplicationsList}>
+                    {selectedApplicationsForResearch.map((appId) => {
+                      const app = applications.find(a => a.id === appId);
+                      return app ? (
+                        <View key={appId} style={[styles.selectedApplicationChip, { backgroundColor: colorScheme.colors.primary + '20', borderColor: colorScheme.colors.primary }]}>
+                          <Text style={[styles.selectedApplicationChipText, { color: colorScheme.colors.primary }]}>
+                            {app.positionTitle}
+                          </Text>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setSelectedApplicationsForResearch(prev => prev.filter(id => id !== appId));
+                            }}
+                            style={styles.removeApplicationButton}
+                          >
+                            <Text style={[styles.removeApplicationButtonText, { color: colorScheme.colors.primary }]}>×</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ) : null;
+                    })}
+                  </View>
+                )}
               </View>
 
               <View style={styles.starFormGroup}>
@@ -1056,6 +1180,11 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
                   placeholder="Enter company name"
                   placeholderTextColor={colorScheme.colors.textSecondary}
                 />
+                {researchCompanyName.trim() && !editingResearch && (
+                  <Text style={[styles.helperText, { color: colorScheme.colors.textSecondary }]}>
+                    URLs will be auto-populated below
+                  </Text>
+                )}
               </View>
 
               <View style={styles.starFormGroup}>
@@ -1070,7 +1199,7 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
               </View>
 
               <View style={styles.starFormGroup}>
-                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Research Notes *</Text>
+                <Text style={[styles.starFormLabel, { color: colorScheme.colors.text }]}>Research Notes (Optional)</Text>
                 <TextInput
                   style={[styles.starFormTextArea, { backgroundColor: colorScheme.colors.surface, color: colorScheme.colors.text, borderColor: colorScheme.colors.border }]}
                   value={researchNotes}
@@ -1122,6 +1251,86 @@ export default function InterviewPrepScreen({ onBack }: InterviewPrepScreenProps
                 />
               </View>
               <View style={{ height: 40 }} />
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </Modal>
+      )}
+
+      {/* Application Selector Modal */}
+      {showApplicationSelector && (
+        <Modal
+          visible={showApplicationSelector}
+          animationType="slide"
+          transparent={false}
+          onRequestClose={() => setShowApplicationSelector(false)}
+        >
+          <KeyboardAvoidingView
+            style={[styles.modalContainer, { backgroundColor: colorScheme.colors.background }]}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+            <View style={[styles.modalHeader, { backgroundColor: colorScheme.colors.surface, borderBottomColor: colorScheme.colors.border }]}>
+              <TouchableOpacity onPress={() => setShowApplicationSelector(false)} style={styles.modalBackButton}>
+                <Text style={[styles.modalBackButtonText, { color: colorScheme.colors.primary }]}>← Cancel</Text>
+              </TouchableOpacity>
+              <Text style={[styles.modalTitle, { color: colorScheme.colors.text }]}>
+                Select Applications
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowApplicationSelector(false)}
+                style={styles.modalSaveButton}
+              >
+                <Text style={[styles.modalSaveButtonText, { color: colorScheme.colors.primary }]}>Done</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.modalScrollView}
+              contentContainerStyle={styles.modalContent}
+            >
+              {applications.length === 0 ? (
+                <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
+                  No applications available
+                </Text>
+              ) : (
+                applications.map((app) => {
+                  const isSelected = selectedApplicationsForResearch.includes(app.id);
+                  return (
+                    <TouchableOpacity
+                      key={app.id}
+                      style={[
+                        styles.applicationSelectorItem,
+                        {
+                          backgroundColor: colorScheme.colors.surface,
+                          borderColor: colorScheme.colors.border,
+                        },
+                        isSelected && {
+                          backgroundColor: colorScheme.colors.primary + '20',
+                          borderColor: colorScheme.colors.primary,
+                        },
+                      ]}
+                      onPress={() => {
+                        if (isSelected) {
+                          setSelectedApplicationsForResearch(prev => prev.filter(id => id !== app.id));
+                        } else {
+                          setSelectedApplicationsForResearch(prev => [...prev, app.id]);
+                        }
+                      }}
+                    >
+                      <Text style={[styles.applicationSelectorCheckbox, { color: isSelected ? colorScheme.colors.primary : colorScheme.colors.border }]}>
+                        {isSelected ? '✓' : '○'}
+                      </Text>
+                      <View style={styles.applicationSelectorContent}>
+                        <Text style={[styles.applicationSelectorTitle, { color: colorScheme.colors.text }]}>
+                          {app.positionTitle}
+                        </Text>
+                        <Text style={[styles.applicationSelectorCompany, { color: colorScheme.colors.textSecondary }]}>
+                          {app.company}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
+              )}
             </ScrollView>
           </KeyboardAvoidingView>
         </Modal>
@@ -1479,6 +1688,80 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textDecorationLine: 'underline',
   },
+  applicationLink: {
+    marginTop: 8,
+    marginBottom: 8,
+    paddingVertical: 4,
+  },
+  linkedApplicationsContainer: {
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  linkedApplicationsLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  applicationLinkText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  selectedApplicationsList: {
+    marginTop: 8,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  selectedApplicationChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  selectedApplicationChipText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginRight: 6,
+  },
+  removeApplicationButton: {
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeApplicationButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    lineHeight: 18,
+  },
+  applicationSelectorItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  applicationSelectorCheckbox: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginRight: 12,
+    width: 24,
+    textAlign: 'center',
+  },
+  applicationSelectorContent: {
+    flex: 1,
+  },
+  applicationSelectorTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  applicationSelectorCompany: {
+    fontSize: 14,
+  },
   researchActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -1687,6 +1970,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
+  },
+  helperText: {
+    fontSize: 12,
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   selectQuestionContainer: {
     marginBottom: 8,

@@ -15,11 +15,11 @@
 - ✅ Interview Prep tools:
   - Interview question bank (by category/industry/role)
   - STAR method responses (Situation, Task, Action, Result)
-  - Company research notes (with website, LinkedIn, Glassdoor links)
+  - Company research notes (with website, LinkedIn, Glassdoor links, multi-application linking)
   - Interview feedback (strengths, areas for improvement)
   - Practice mode with timer
 - ✅ Bi-directional linking between job applications and events
-- ✅ Follow-up reminder settings (configurable days after application/interview)
+- ✅ Follow-up reminder settings (configurable days after application/interview, excludes rejected applications)
 - ✅ Modern color palette with dark mode support
 - ✅ Multiple color scheme options (Earth-Tone, Cheerful Nature, Sunny Sky, Imagination, Modern)
 - ✅ Reference Management (contact database, link to applications, quick actions for email/call)
@@ -28,9 +28,13 @@
   - Variable placeholders (company, position, interviewer name, date, etc.)
   - Quick send to email client (Gmail or default)
   - Email tracking per application
-  - Automatic thank you note reminders after interviews
+  - Automatic thank you note reminders after interviews (configurable timing)
   - Template library organized by purpose
+  - Dedicated Thank You Notes screen
+  - Overdue notes banner on home screen
 - ✅ **Week Filter for Applications**: Filter applications by week (All Weeks, This Week, Last Week, 2 Weeks Ago, 3 Weeks Ago) with accurate date-based filtering that respects the applied date
+- ✅ **Company Research Navigation**: Tap company name in applications to navigate to company research page
+- ✅ **Overdue Notes Tracking**: Banner on home screen showing count of overdue thank you notes and follow-up reminders (only pending items after due dates, excludes rejected applications)
 
 ---
 
@@ -39,7 +43,7 @@
 ### ✅ **Email Templates & Thank You Notes** ✉️
 **Why**: Professional follow-up emails and thank you notes significantly improve response rates and leave a positive impression.
 
-**Status**: ✅ **Fully Implemented** - Complete email template system with reminders
+**Status**: ✅ **Fully Implemented** - Complete email template system with reminders and overdue tracking
 
 **Features**:
 - ✅ Pre-written email templates (follow-up, thank you after interview, acceptance, rejection response, decline offer)
@@ -50,8 +54,51 @@
 - ✅ Automatic reminder to send thank you notes after interviews (configurable timing in settings)
 - ✅ Email history display in application details
 - ✅ Context-aware email buttons based on application status
+- ✅ Dedicated Thank You Notes screen with pending notes list
+- ✅ Overdue notes banner on home screen
+- ✅ Thank you notes only shown after interview date has passed
+- ✅ Excludes rejected applications from reminders
 
 **Impact**: High - Professional communication is crucial for job search success
+
+---
+
+### ✅ **Thank You Note Tracking** 💌
+**Why**: Following up after interviews with thank you notes is best practice, but easy to forget.
+
+**Status**: ✅ **Fully Implemented** - Integrated into email templates with automatic reminders and overdue tracking
+
+**Features**:
+- ✅ Automatic prompt after interview events (configurable timing: days after interview, default 1 day)
+- ✅ Track thank you note status per interview (Sent, Pending, Skipped)
+- ✅ Link to email templates for thank you notes
+- ✅ Reminder list of pending thank you notes (dedicated Thank You Notes screen)
+- ✅ Quick action: "Mark as Sent" or "Skip"
+- ✅ Overdue tracking banner on home screen
+- ✅ Only shows thank you notes after interview date has passed
+- ✅ Excludes rejected applications from reminders
+- ✅ Navigation from reminders to associated job applications
+
+**Impact**: Medium-High - Professional follow-up improves outcomes
+
+---
+
+### ✅ **Company Research** 🏢
+**Why**: Researching companies before interviews is essential.
+
+**Status**: ✅ **Fully Implemented** - Company Research form in Interview Prep screen with navigation and multi-application linking
+
+**Features**:
+- ✅ Company profiles (linked to multiple applications - many-to-one relationship)
+- ✅ Research notes (optional, with company name, position, website, LinkedIn, Glassdoor links)
+- ✅ Auto-population of URLs when company name is entered
+- ✅ Navigation from applications: Tap company name to navigate to company research
+- ✅ Application links: View all linked applications with position title and applied date
+- ✅ Navigation back to applications from research page
+- ✅ Clickable links to access company information
+- ✅ Edit and delete research entries as needed
+
+**Impact**: Medium-High - Better interview preparation
 
 ---
 
@@ -66,20 +113,6 @@
 - Visual indicators for urgent deadlines
 
 **Impact**: Medium-High - Prevents missed opportunities
-
----
-
-### NEW: **Thank You Note Tracking** 💌
-**Why**: Following up after interviews with thank you notes is best practice, but easy to forget.
-
-**Features**:
-- Automatic prompt after interview events (configurable timing: same day, next day)
-- Track thank you note status per interview (Sent, Pending, Skipped)
-- Link to email templates for thank you notes
-- Reminder list of pending thank you notes
-- Quick action: "Mark as Sent"
-
-**Impact**: Medium-High - Professional follow-up improves outcomes
 
 ---
 
@@ -161,14 +194,17 @@
 ### 2. **Follow-Up Reminders** ⏰
 **Why**: Following up on applications is crucial but easy to forget.
 
-**Status**: ⏳ **Partially Implemented** - Settings allow configuring follow-up days, but no auto-creation of reminders yet
+**Status**: ✅ **Fully Implemented** - Automatic reminders with configurable timing, excludes rejected applications
 
 **Features**:
 - ✅ Customizable follow-up timing in settings (days after application/interview)
-- ⏳ Auto-create follow-up reminders when application status is "Applied"
-- ⏳ Smart suggestions: "Follow up on [Company] application from [Date]"
-- ⏳ Quick action: "Mark as Followed Up" button
-- ⏳ Track follow-up history per application
+- ✅ Auto-create follow-up reminders when application status is "Applied" or after interviews
+- ✅ Smart suggestions: "Follow up on [Company] application from [Date]"
+- ✅ Quick action: "Mark as Followed Up" button
+- ✅ Track follow-up history per application
+- ✅ Overdue tracking banner on home screen
+- ✅ Excludes rejected applications from reminders
+- ✅ Navigation from reminders to associated job applications
 
 **Impact**: High - Improves application success rates
 
@@ -182,7 +218,7 @@
 **Features**:
 - ✅ Add salary range/offer amount to applications
 - ✅ Track benefits (health insurance, PTO, 401k, etc.)
-- ✅ Work location tracking (remote/hybrid/onsite)
+- ✅ Track work location (remote/hybrid/onsite)
 - ✅ Notes on negotiation conversations
 - ⏳ Compare offers side-by-side
 - ⏳ Calculate total compensation value
@@ -199,10 +235,11 @@
 **Features**:
 - ✅ Interview question bank (common questions by role/industry with categories)
 - ✅ STAR method template for behavioral questions (Situation, Task, Action, Result)
-- ✅ Company research notes section (linked to applications)
+- ✅ Company research notes section (linked to multiple applications)
 - ✅ Interview feedback/notes after interviews (with strengths, areas for improvement)
 - ✅ Practice mode with timer
 - ✅ Link to company website, LinkedIn, Glassdoor reviews
+- ✅ Navigation from applications to company research
 
 **Impact**: High - Directly improves interview performance
 
@@ -268,40 +305,7 @@
 
 ---
 
-### 9. **Company Research & Notes** 🏢
-**Why**: Researching companies before interviews is essential.
-
-**Status**: ✅ **Implemented** - Company Research form in Interview Prep screen
-
-**Features**:
-- ✅ Company profiles (linked to applications)
-- ✅ Research notes (with company name, position, website, LinkedIn, Glassdoor links)
-- ⏳ Employee reviews summary
-- ⏳ Interview questions specific to company
-- ⏳ Salary ranges for company/role
-- ⏳ Company size, industry, location
-- ⏳ "Companies I'm Interested In" list (even without applications)
-
-**Impact**: Medium-High - Better interview preparation
-
----
-
-### 10. **Application Templates & Quick Apply** ⚡
-**Why**: Many applications ask for the same information repeatedly.
-
-**Features**:
-- Save common application fields (previous employers, education, references)
-- Auto-fill forms with saved information
-- Quick apply mode (pre-fill from templates)
-- Reference contact management
-- Education history tracker
-- Work history tracker with dates
-
-**Impact**: High - Saves significant time
-
----
-
-### 11. **Interview Feedback & Reflection** 📝
+### 9. **Interview Feedback & Reflection** 📝
 **Why**: Learning from each interview improves future performance.
 
 **Status**: ✅ **Implemented** - Interview Feedback form in Interview Prep screen
@@ -320,7 +324,22 @@
 
 ---
 
-### 12. **Job Search Timeline & Milestones** 📅
+### 10. **Application Templates & Quick Apply** ⚡
+**Why**: Many applications ask for the same information repeatedly.
+
+**Features**:
+- Save common application fields (previous employers, education, references)
+- Auto-fill forms with saved information
+- Quick apply mode (pre-fill from templates)
+- Reference contact management
+- Education history tracker
+- Work history tracker with dates
+
+**Impact**: High - Saves significant time
+
+---
+
+### 11. **Job Search Timeline & Milestones** 📅
 **Why**: Visualizing progress helps maintain motivation.
 
 **Features**:
@@ -334,7 +353,7 @@
 
 ---
 
-### 13. **Expense Tracking** 💳
+### 12. **Expense Tracking** 💳
 **Why**: Job searching can be expensive (travel, professional services, etc.).
 
 **Features**:
@@ -348,7 +367,7 @@
 
 ---
 
-### 14. **Rejection Analysis & Learning** 📉
+### 13. **Rejection Analysis & Learning** 📉
 **Why**: Understanding why applications are rejected helps improve.
 
 **Features**:
@@ -362,7 +381,7 @@
 
 ---
 
-### 15. **Integration with Job Boards** 🔗
+### 14. **Integration with Job Boards** 🔗
 **Why**: Automating application tracking saves time.
 
 **Features**:
@@ -380,15 +399,15 @@
 ### **Quick Wins** (1-2 weeks each):
 1. ✅ **Email Templates & Thank You Notes** - ✅ **COMPLETED** - High impact, fully implemented
 2. **Application Deadline Reminders** - Medium-high impact, builds on existing reminder system
-3. ✅ **Thank You Note Tracking** - ✅ **COMPLETED** - Integrated into email templates with automatic reminders
-4. **Follow-Up Reminders** - High impact, relatively simple (settings exist, need auto-creation logic)
+3. ✅ **Thank You Note Tracking** - ✅ **COMPLETED** - Integrated into email templates with automatic reminders and overdue tracking
+4. ✅ **Follow-Up Reminders** - ✅ **COMPLETED** - Automatic reminders with configurable timing, excludes rejected applications
 
 ### **Medium-Term** (2-4 weeks each):
 1. **Networking Contact Management** - High impact, moderate complexity
-3. **Interview Prep Checklist** - Medium impact, simple but useful
-4. **Application Tags & Custom Notes** - Medium impact, enhances existing features
-5. **Salary Negotiation Helper** - Medium-high impact, useful tool
-6. **Application Analytics Dashboard** - Good insights, requires data aggregation
+2. **Interview Prep Checklist** - Medium impact, simple but useful
+3. **Application Tags & Custom Notes** - Medium impact, enhances existing features
+4. **Salary Negotiation Helper** - Medium-high impact, useful tool
+5. **Application Analytics Dashboard** - Good insights, requires data aggregation
 
 ### **Long-Term** (1-2 months):
 1. **Job Board Integration** - High impact but complex (API limitations)
@@ -414,4 +433,3 @@
 3. What would make users recommend the app to others?
 4. Which features differentiate from competitors?
 5. What's the minimum viable version of each feature?
-

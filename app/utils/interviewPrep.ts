@@ -22,9 +22,9 @@ export interface STARResponse {
 
 export interface CompanyResearch {
   id: string;
-  applicationId: string; // Link to job application
+  applicationIds: string[]; // Links to job applications (can have multiple)
   companyName: string;
-  positionTitle: string;
+  positionTitle: string; // Primary position title (for display)
   researchNotes: string;
   website?: string;
   linkedinUrl?: string;
@@ -307,7 +307,15 @@ export const getAllCompanyResearch = async (): Promise<CompanyResearch[]> => {
       const key = `${COMPANY_RESEARCH_KEY_PREFIX}${id}`;
       const stored = await AsyncStorage.getItem(key);
       if (stored) {
-        research.push(JSON.parse(stored) as CompanyResearch);
+        const parsed = JSON.parse(stored) as CompanyResearch;
+        // Migrate old data: convert applicationId to applicationIds array
+        if ('applicationId' in parsed && !('applicationIds' in parsed)) {
+          parsed.applicationIds = [parsed.applicationId];
+          delete (parsed as any).applicationId;
+          // Save migrated data
+          await AsyncStorage.setItem(key, JSON.stringify(parsed));
+        }
+        research.push(parsed);
       }
     }
     return research.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
@@ -317,13 +325,13 @@ export const getAllCompanyResearch = async (): Promise<CompanyResearch[]> => {
   }
 };
 
-export const getCompanyResearchByApplicationId = async (applicationId: string): Promise<CompanyResearch | null> => {
+export const getCompanyResearchByApplicationId = async (applicationId: string): Promise<CompanyResearch[]> => {
   try {
     const allResearch = await getAllCompanyResearch();
-    return allResearch.find(r => r.applicationId === applicationId) || null;
+    return allResearch.filter(r => r.applicationIds && r.applicationIds.includes(applicationId));
   } catch (error) {
     console.error('Error getting company research by application ID:', error);
-    return null;
+    return [];
   }
 };
 

@@ -34,6 +34,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
   const [showGoogleCalendarPicker, setShowGoogleCalendarPicker] = useState(false);
   const [followUpDaysAfterApplication, setFollowUpDaysAfterApplication] = useState('7');
   const [followUpDaysAfterInterview, setFollowUpDaysAfterInterview] = useState('2');
+  const [thankYouNoteDaysAfterInterview, setThankYouNoteDaysAfterInterview] = useState('1');
   const [loading, setLoading] = useState(true);
   const [showTimeBlockDropdown, setShowTimeBlockDropdown] = useState<number | null>(null); // Index of the time block being edited
   const { refreshPreferences } = usePreferences();
@@ -135,6 +136,9 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
       setTimezone(prefs.timezone ?? '');
       setCalendarSyncProvider(prefs.calendarSyncProvider ?? 'none');
       setGoogleCalendarId(prefs.googleCalendarId);
+      setFollowUpDaysAfterApplication(String(prefs.followUpDaysAfterApplication ?? 7));
+      setFollowUpDaysAfterInterview(String(prefs.followUpDaysAfterInterview ?? 2));
+      setThankYouNoteDaysAfterInterview(String(prefs.thankYouNoteDaysAfterInterview ?? 1));
     } catch (error) {
       console.error('Error loading preferences:', error);
     } finally {
@@ -230,6 +234,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         googleCalendarId: calendarSyncProvider === 'google' ? googleCalendarId : undefined,
         followUpDaysAfterApplication: parseInt(followUpDaysAfterApplication, 10) || 7,
         followUpDaysAfterInterview: parseInt(followUpDaysAfterInterview, 10) || 2,
+        thankYouNoteDaysAfterInterview: parseInt(thankYouNoteDaysAfterInterview, 10) || 1,
       };
       await savePreferences(preferences);
       await refreshPreferences(); // Refresh preferences context
@@ -996,6 +1001,35 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
               value={followUpDaysAfterInterview}
               onChangeText={setFollowUpDaysAfterInterview}
               placeholder="2"
+              placeholderTextColor={currentColorScheme.colors.textSecondary}
+              keyboardType="numeric"
+            />
+          </View>
+          <View style={[styles.settingRow, {
+            backgroundColor: currentColorScheme.colors.surface,
+            borderColor: currentColorScheme.colors.border,
+            marginTop: 12,
+          }]}>
+            <View style={styles.settingContent}>
+              <Text style={[styles.settingLabel, { color: currentColorScheme.colors.text }]}>
+                Days After Interview (Thank You Note)
+              </Text>
+              <Text style={[styles.settingDescription, { color: currentColorScheme.colors.textSecondary }]}>
+                Days after an interview to remind you to send a thank you note
+              </Text>
+            </View>
+            <TextInput
+              style={[
+                styles.followUpInput,
+                {
+                  backgroundColor: currentColorScheme.colors.background,
+                  borderColor: currentColorScheme.colors.border,
+                  color: currentColorScheme.colors.text,
+                }
+              ]}
+              value={thankYouNoteDaysAfterInterview}
+              onChangeText={setThankYouNoteDaysAfterInterview}
+              placeholder="1"
               placeholderTextColor={currentColorScheme.colors.textSecondary}
               keyboardType="numeric"
             />

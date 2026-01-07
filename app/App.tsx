@@ -11,6 +11,7 @@ import OffersScreen from './components/OffersScreen';
 import ReferencesScreen from './components/ReferencesScreen';
 import AboutScreen from './components/AboutScreen';
 import InterviewPrepScreen from './components/InterviewPrepScreen';
+import ThankYouNotesScreen from './components/ThankYouNotesScreen';
 import { PreferencesProvider } from './context/PreferencesContext';
 import { loadPreferences } from './utils/preferences';
 
@@ -73,7 +74,12 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-type Screen = 'home' | 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport' | 'applications' | 'offers' | 'references' | 'about' | 'interviewPrep';
+type Screen = 'home' | 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport' | 'applications' | 'offers' | 'references' | 'about' | 'interviewPrep' | 'thankYouNotes';
+
+interface InterviewPrepParams {
+  companyName?: string;
+  applicationId?: string;
+}
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
@@ -82,6 +88,7 @@ function AppContent() {
   const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
   const [reportHtml, setReportHtml] = useState<string>('');
   const [reportTitle, setReportTitle] = useState<string>('');
+  const [interviewPrepParams, setInterviewPrepParams] = useState<InterviewPrepParams>({});
 
   useEffect(() => {
     checkSetupStatus();
@@ -138,7 +145,10 @@ function AppContent() {
     setCurrentScreen('reports');
   };
 
-  const handleViewApplications = () => {
+  const handleViewApplications = (applicationId?: string) => {
+    if (applicationId) {
+      setSelectedApplicationId(applicationId);
+    }
     setCurrentScreen('applications');
   };
 
@@ -173,6 +183,7 @@ function AppContent() {
         onNavigateToReferences={handleViewReferences}
         onNavigateToReports={handleViewReports}
       onNavigateToInterviewPrep={() => setCurrentScreen('interviewPrep')}
+      onNavigateToThankYouNotes={() => setCurrentScreen('thankYouNotes')}
       onNavigateToSettings={handleViewSettings}
       onNavigateToAbout={() => setCurrentScreen('about')}
     />
@@ -216,6 +227,7 @@ function AppContent() {
           setSelectedDate(newDate);
         }}
         initialApplicationId={selectedApplicationId}
+        onNavigateToApplication={handleViewApplications}
       />
     );
   }
@@ -233,6 +245,11 @@ function AppContent() {
           setSelectedApplicationId(applicationId);
           setCurrentScreen('references');
         }}
+        onNavigateToInterviewPrep={(companyName?: string, applicationId?: string) => {
+          setInterviewPrepParams({ companyName, applicationId });
+          setCurrentScreen('interviewPrep');
+        }}
+        initialApplicationId={selectedApplicationId}
       />
     );
   }
@@ -274,7 +291,24 @@ function AppContent() {
   }
 
   if (currentScreen === 'interviewPrep') {
-    return <InterviewPrepScreen onBack={handleBackToHome} />;
+    return (
+      <InterviewPrepScreen
+        onBack={() => {
+          setInterviewPrepParams({});
+          handleBackToHome();
+        }}
+        initialCompanyName={interviewPrepParams.companyName}
+        initialApplicationId={interviewPrepParams.applicationId}
+        onNavigateToApplication={(applicationId: string) => {
+          setSelectedApplicationId(applicationId);
+          setCurrentScreen('applications');
+        }}
+      />
+    );
+  }
+
+  if (currentScreen === 'thankYouNotes') {
+    return <ThankYouNotesScreen onBack={handleBackToHome} />;
   }
 
   // Fallback to home if no screen matches (should never happen)
@@ -287,6 +321,7 @@ function AppContent() {
         onNavigateToReferences={handleViewReferences}
         onNavigateToReports={handleViewReports}
       onNavigateToInterviewPrep={() => setCurrentScreen('interviewPrep')}
+      onNavigateToThankYouNotes={() => setCurrentScreen('thankYouNotes')}
       onNavigateToSettings={handleViewSettings}
       onNavigateToAbout={() => setCurrentScreen('about')}
     />

@@ -7,8 +7,9 @@ import { loadPreferences } from '../utils/preferences';
 import { generateTimeBlocks, GeneratedTimeBlock } from '../utils/timeBlockGenerator';
 import { usePreferences } from '../context/PreferencesContext';
 import { formatTimeRange, formatTime12Hour } from '../utils/timeFormatter';
-import { Event, loadEventsForDate, saveEvent, deleteEvent } from '../utils/events';
-import { getApplicationById } from '../utils/applications';
+import { Event, loadEventsForDate, saveEvent, deleteEvent, getAllEvents } from '../utils/events';
+import { getApplicationById, getAllApplications } from '../utils/applications';
+import { getAllFollowUpReminders, FollowUpReminder } from '../utils/followUpReminders';
 import { scheduleEventNotification, cancelEventNotification } from '../utils/eventNotifications';
 import { openAddressInMaps, openPhoneNumber, openEmail } from '../utils/eventActions';
 import { getDateKey } from '../utils/timeFormatter';
@@ -19,16 +20,19 @@ interface DailyPlannerScreenProps {
   onBack: () => void;
   onDateChange?: (newDate: Date) => void;
   initialApplicationId?: string;
+  onNavigateToApplication?: (applicationId: string) => void;
 }
 
 interface DayEntries {
   [timeBlockId: string]: string;
 }
 
-export default function DailyPlannerScreen({ date, onBack, onDateChange, initialApplicationId }: DailyPlannerScreenProps) {
+export default function DailyPlannerScreen({ date, onBack, onDateChange, initialApplicationId, onNavigateToApplication }: DailyPlannerScreenProps) {
   const [entries, setEntries] = useState<DayEntries>({});
   const [timeBlocks, setTimeBlocks] = useState<GeneratedTimeBlock[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [pendingThankYouNotes, setPendingThankYouNotes] = useState<Event[]>([]);
+  const [followUpReminders, setFollowUpReminders] = useState<FollowUpReminder[]>([]);
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | undefined>(undefined);
   const [viewingEvent, setViewingEvent] = useState<Event | undefined>(undefined);
@@ -140,8 +144,96 @@ export default function DailyPlannerScreen({ date, onBack, onDateChange, initial
     try {
       const loadedEvents = await loadEventsForDate(dateKey);
       setEvents(loadedEvents);
+      
+      // Load pending thank you notes for this date
+      await loadPendingThankYouNotes();
+      
+      // Load follow-up reminders for this date
+      await loadFollowUpReminders();
     } catch (error) {
       console.error('Error loading events:', error);
+    }
+  };
+
+  const loadPendingThankYouNotes = async () => {
+    try {
+      const allEvents = await getAllEvents();
+      const allApplications = await getAllApplications();
+      const prefs = preferences || await loadPreferences();
+      const daysAfterInterview = prefs.thankYouNoteDaysAfterInterview || 1; // Default to 1 day
+      
+      // Create a map of application IDs to their status for quick lookup
+      const applicationStatusMap = new Map<string, string>();
+      allApplications.forEach(app => {
+        applicationStatusMap.set(app.id, app.status);
+      });
+      
+      const pendingNotes = allEvents.filter(e => {
+        if (e.type !== 'interview') {
+          return false;
+        }
+        
+        // Check if thank you note status is pending (undefined or 'pending')
+        // If it's 'sent' or 'skipped', don't show it
+        if (e.thankYouNoteStatus && e.thankYouNoteStatus !== 'pending') {
+          return false;
+        }
+        
+        // Skip if the linked application is rejected
+        if (e.applicationId) {
+          const appStatus = applicationStatusMap.get(e.applicationId);
+          if (appStatus === 'rejected') {
+            return false;
+          }
+        }
+        
+        // Calculate when the thank you note is due (interview date + daysAfterInterview)
+        const [year, month, day] = e.dateKey.split('-').map(Number);
+        const interviewDate = new Date(year, month - 1, day);
+        interviewDate.setHours(0, 0, 0, 0);
+        const dueDate = new Date(interviewDate);
+        dueDate.setDate(dueDate.getDate() + daysAfterInterview);
+        const dueDateKey = getDateKey(dueDate);
+        
+        // Show ONLY if due on the exact date being viewed
+        return dueDateKey === dateKey;
+      });
+      
+      setPendingThankYouNotes(pendingNotes);
+    } catch (error) {
+      console.error('Error loading pending thank you notes:', error);
+    }
+  };
+
+  const loadFollowUpReminders = async () => {
+    try {
+      const allReminders = await getAllFollowUpReminders();
+      const allApplications = await getAllApplications();
+      
+      // Create a map of application IDs to their status for quick lookup
+      const applicationStatusMap = new Map<string, string>();
+      allApplications.forEach(app => {
+        applicationStatusMap.set(app.id, app.status);
+      });
+      
+      const remindersForDate = allReminders.filter(reminder => {
+        if (reminder.completed) return false;
+        
+        // Skip if the linked application is rejected
+        const appStatus = applicationStatusMap.get(reminder.applicationId);
+        if (appStatus === 'rejected') {
+          return false;
+        }
+        
+        const reminderDate = new Date(reminder.dueDate);
+        const reminderDateKey = getDateKey(reminderDate);
+        
+        // Show ONLY if due on the exact date being viewed
+        return reminderDateKey === dateKey;
+      });
+      setFollowUpReminders(remindersForDate);
+    } catch (error) {
+      console.error('Error loading follow-up reminders:', error);
     }
   };
 
@@ -296,9 +388,90 @@ export default function DailyPlannerScreen({ date, onBack, onDateChange, initial
         <View style={[styles.divider, dynamicStyles.divider]} />
 
         {/* Display Events */}
-        {events.length > 0 && (
+        {(events.length > 0 || pendingThankYouNotes.length > 0 || followUpReminders.length > 0) && (
           <View style={styles.eventsSection}>
             <Text style={[styles.sectionTitle, { color: colorScheme.colors.text }]}>Events</Text>
+            {/* Display pending thank you notes */}
+            {pendingThankYouNotes.map((event) => (
+              <TouchableOpacity
+                key={`thankyou-${event.id}`}
+                style={[
+                  styles.eventCard,
+                  {
+                    backgroundColor: colorScheme.colors.surface,
+                    borderColor: '#FFA500', // Orange border for pending thank you notes
+                    borderWidth: 2,
+                  },
+                ]}
+                onPress={() => {
+                  // Navigate to application if linked, otherwise show event
+                  if (event.applicationId && onNavigateToApplication) {
+                    onNavigateToApplication(event.applicationId);
+                  } else {
+                    handleViewEvent(event);
+                  }
+                }}
+              >
+                <View style={styles.eventContent}>
+                  <View style={styles.eventHeader}>
+                    <Text style={[styles.eventTitle, { color: colorScheme.colors.text }]}>
+                      💌 Send Thank You Note: {event.title}
+                    </Text>
+                  </View>
+                  <Text style={[styles.eventTime, { color: '#FFA500' }]}>
+                    Pending Thank You Note
+                  </Text>
+                  {event.company && (
+                    <Text style={[styles.eventDetailText, { color: colorScheme.colors.textSecondary }]}>
+                      🏢 {event.company}
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))}
+            {/* Display follow-up reminders */}
+            {followUpReminders.map((reminder) => (
+              <TouchableOpacity
+                key={`followup-${reminder.id}`}
+                style={[
+                  styles.eventCard,
+                  {
+                    backgroundColor: colorScheme.colors.surface,
+                    borderColor: '#4CAF50', // Green border for follow-up reminders
+                    borderWidth: 2,
+                  },
+                ]}
+                onPress={() => {
+                  // Navigate to application screen
+                  if (reminder.applicationId && onNavigateToApplication) {
+                    onNavigateToApplication(reminder.applicationId);
+                  } else {
+                    Alert.alert(
+                      'Follow-Up Reminder',
+                      `${reminder.type === 'interview' ? 'Interview' : 'Application'} follow-up for ${reminder.company}`,
+                      [
+                        { text: 'OK', style: 'default' },
+                      ]
+                    );
+                  }
+                }}
+              >
+                <View style={styles.eventContent}>
+                  <View style={styles.eventHeader}>
+                    <Text style={[styles.eventTitle, { color: colorScheme.colors.text }]}>
+                      {reminder.type === 'interview' ? '💼' : '📋'} Follow-Up: {reminder.company}
+                    </Text>
+                  </View>
+                  <Text style={[styles.eventTime, { color: '#4CAF50' }]}>
+                    {reminder.type === 'interview' ? 'Interview' : 'Application'} Follow-Up Reminder
+                  </Text>
+                  <Text style={[styles.eventDetailText, { color: colorScheme.colors.textSecondary }]}>
+                    💼 {reminder.positionTitle}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+            {/* Display regular events */}
             {events.map((event) => (
               <TouchableOpacity
                 key={event.id}

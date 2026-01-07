@@ -1,5 +1,3 @@
-<p align="center"><img width="400" height="400" alt="UseYourTools App Icon" src="https://github.com/KarMarsten/UseYourTools/blob/main/app/assets/icon.png" /></p>
-
 # UseYourTools 🎯
 
 **Tools for Job Hunters**
@@ -14,7 +12,8 @@ A comprehensive mobile app built specifically for job seekers. Organize your job
 
 The central hub providing quick access to all tools:
 - **Job Sites** sidebar: Quick links to popular job search platforms (Indeed, LinkedIn, Glassdoor, Monster, ZipRecruiter, Dice)
-- **Tools** section: Access to Daily Planner, Calendar, Job Applications, Job Offers, Interview Prep, References, and Reports
+- **Tools** section: Access to Daily Planner, Calendar, Job Applications, Job Offers, Interview Prep, References, Thank You Notes, and Reports
+- **Overdue Notes Banner**: Prominent banner at the top showing count of overdue thank you notes and follow-up reminders (only shows pending items after due dates)
 - Clean, modern interface that adapts to your chosen color theme
 - Tooltips: Long-press the About (ℹ️) or Settings (⚙️) icons for helpful tooltips
 - Upcoming events: See events scheduled in the next 24 hours at a glance
@@ -23,7 +22,7 @@ The central hub providing quick access to all tools:
 
 **Calendar View:**
 - Monthly calendar showing all events and planned activities
-- Visual indicators for days with entries, events, and reminders
+- Visual indicators for days with entries, events, thank you notes, and follow-up reminders
 - Quick navigation to any date with month scrolling
 - Tap any date to open the daily planner for that day
 
@@ -33,6 +32,8 @@ The central hub providing quick access to all tools:
 - Persistent notes saved automatically for each time block
 - Full integration with calendar events
 - **Swipe navigation**: Swipe left/right to navigate between days effortlessly
+- **Thank You Notes & Follow-ups**: See pending thank you notes and follow-up reminders for the selected date, with direct navigation to associated job applications
+- Events filtered by exact due date (only shows items due on the selected day)
 
 **Event Management:**
 
@@ -45,6 +46,7 @@ Create three types of events:
    - Start and end times (end time defaults to 30 minutes after start)
    - Notes section
    - **Bi-directional linking**: Link to job applications and vice versa
+   - **Thank you note tracking**: Automatic reminders to send thank you notes after interviews (configurable timing)
 
 2. **Appointments** 📍 - For networking meetings, career fairs, or scheduled activities
    - Same features as interviews
@@ -82,6 +84,7 @@ Comprehensive tracking system for all your applications:
 - Link resumes and cover letters to applications
 - **Bi-directional linking**: Link multiple interview events to a single application
 - **Smart date tracking**: Application date reflects interview date when moving from applied → interview → rejected
+- **Company Research Navigation**: Tap company name to navigate directly to company research page
 
 **Smart Features:**
 - **Search**: Find applications by company, position, or source
@@ -90,16 +93,17 @@ Comprehensive tracking system for all your applications:
 - **Quick links**: Tap to open the original job posting
 - **Filter**: View applications by status (All, Applied, Rejected, Interview)
 - **Week filter**: Filter applications by week (All Weeks, This Week, Last Week, 2 Weeks Ago, 3 Weeks Ago) - respects the applied date for accurate filtering
-- **Create interview events**: Easily create interview events from any application with company and position pre-filled (available for all application statuses) (available for all applications)
+- **Create interview events**: Easily create interview events from any application with company and position pre-filled (available for all application statuses)
 - **Link to existing events**: Link applications to existing interview or appointment events
 - **View linked events**: See all events linked to an application with date, time, and contact name
 - **Unlink events**: Remove links between applications and events as needed
 - **Create offers**: Direct access to create job offers from the application edit screen
 - **Create references**: Easily create references linked to job applications
-- **Follow-up reminders**: Automatic reminders configured in settings for following up after applications and interviews
+- **Follow-up reminders**: Automatic reminders configured in settings for following up after applications and interviews (excludes rejected applications)
 - **Email templates**: Professional email templates for thank you notes, follow-ups, acceptance, rejection responses, and declining offers
 - **Email tracking**: Track all emails sent for each application with date, recipient, and template used
-- **Thank you note reminders**: Automatic reminders to send thank you notes after interviews (configurable timing)
+- **Thank you note reminders**: Automatic reminders to send thank you notes after interviews (configurable timing, excludes rejected applications)
+- **Navigation from reminders**: Click thank you note or follow-up reminders to navigate directly to the associated job application
 
 ### 🎁 Job Offers
 
@@ -156,11 +160,15 @@ Comprehensive interview preparation toolkit:
 
 **Company Research:**
 - Store research notes about companies you're interviewing with
-- Link research to specific job applications
+- **Multi-application linking**: Link research to multiple job applications (many-to-one relationship)
+- **Auto-population**: Automatically generates LinkedIn, Glassdoor, and Website URLs when company name is entered
+- **Navigation from applications**: Tap company name in job application to navigate directly to company research
+- **Application links**: View all linked applications with position title and applied date, with navigation back to applications
 - Save website URLs, LinkedIn profiles, and Glassdoor reviews for quick access
 - Clickable links to access company information
 - Keep all your research organized in one place
 - Edit and delete research entries as needed
+- Research notes are optional (not required)
 
 **Interview Feedback:**
 - Record feedback and notes after interviews
@@ -197,6 +205,8 @@ Professional follow-up emails and thank you notes to improve your job search suc
 - **Email history**: View sent email history directly in application details
 - **Automatic reminders**: Get reminded to send thank you notes after interviews (configurable timing in settings)
 - **Context-aware**: Email buttons appear based on application status (thank you for interviews, follow-up for applied, etc.)
+- **Thank You Notes Screen**: Dedicated screen listing all pending thank you notes with quick actions
+- **Overdue tracking**: Banner on home screen shows count of overdue thank you notes and follow-up reminders
 
 **Impact**: Professional communication significantly improves response rates and leaves a positive impression.
 
@@ -245,6 +255,7 @@ Choose from five beautiful color schemes:
 - Device timezone or custom timezone
 - Calendar sync with Apple Calendar or Google Calendar
 - **Follow-up reminders**: Configure days after application and days after interview for automatic follow-up reminders
+- **Thank you note reminders**: Configure days after interview for automatic thank you note reminders (default: 1 day)
 - **Dark mode**: Available for the Modern color scheme (toggle in settings)
 
 **Interface:**
@@ -342,11 +353,13 @@ Then press `i` for iOS simulator, or scan the QR code with Expo Go app on your d
 4. **Start Tracking**: Begin adding job applications, events, and organizing your job search
 
 ### Daily Workflow
-1. **Morning**: Check the Home screen for upcoming events and follow-up reminders
+1. **Morning**: Check the Home screen for upcoming events, overdue notes banner, and follow-up reminders
 2. **Planning**: Use the Daily Planner to plan your day with time blocks
 3. **Applications**: Track new applications and update statuses as you progress
 4. **Events**: Create interview and appointment events directly from applications or calendar, and link them bi-directionally
-5. **Preparation**: Use Interview Prep tools to prepare for upcoming interviews
+5. **Thank You Notes**: Check the Thank You Notes screen or overdue banner for pending thank you notes after interviews
+6. **Follow-ups**: Review follow-up reminders in the daily planner or calendar
+7. **Preparation**: Use Interview Prep tools to prepare for upcoming interviews
 
 ### Tips & Best Practices
 - **Use swipe navigation** in the daily planner to quickly move between days
@@ -360,6 +373,10 @@ Then press `i` for iOS simulator, or scan the QR code with Expo Go app on your d
 - **Long-press icons**: Get helpful tooltips by long-pressing the About and Settings icons
 - **Smart date tracking**: Application dates automatically reflect interview dates when applications progress through interview to rejection
 - **Manage references**: Keep your reference contacts organized and linked to applications for easy access when applying
+- **Company research**: Tap company names in applications to quickly navigate to company research
+- **Thank you notes**: Send thank you notes promptly after interviews using the dedicated Thank You Notes screen
+- **Follow-up reminders**: Set up automatic follow-up reminders in settings to never miss a follow-up opportunity
+- **Overdue banner**: Keep an eye on the overdue notes banner on the home screen to stay on top of pending items
 
 ---
 

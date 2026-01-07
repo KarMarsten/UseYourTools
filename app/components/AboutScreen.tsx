@@ -49,14 +49,14 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>📅 Calendar & Daily Planner</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Plan your week with customizable time blocks and daily themes. Select time blocks for each position (fixed blocks like Morning Routine and Lunch cannot be changed). Create interviews, appointments, and reminders. Swipe between days to navigate quickly. All events sync with your device calendar. Link events to job applications for seamless organization.
+              Plan your week with customizable time blocks and daily themes. Select time blocks for each position (fixed blocks like Morning Routine and Lunch cannot be changed). Create interviews, appointments, and reminders. Swipe between days to navigate quickly. All events sync with your device calendar. Link events to job applications for seamless organization. See pending thank you notes and follow-up reminders for each day (only shows items due on that exact date, excludes rejected applications). Navigate directly to job applications from reminder cards.
             </Text>
           </View>
 
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>💼 Job Applications</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Track every application with position details, status, and notes. Add rejection reasons for unemployment reporting. Search and filter by status or week to stay organized. Week filtering respects your applied date for accurate results. Create interview events directly from applications or link to existing events. Bi-directional linking keeps your data synchronized. Application dates automatically reflect interview dates when progressing through the interview process.
+              Track every application with position details, status, and notes. Add rejection reasons for unemployment reporting. Search and filter by status or week to stay organized. Week filtering respects your applied date for accurate results. Create interview events directly from applications or link to existing events. Bi-directional linking keeps your data synchronized. Application dates automatically reflect interview dates when progressing through the interview process. Tap company names to navigate directly to company research. Automatic follow-up reminders help you stay on top of applications (excludes rejected applications).
             </Text>
           </View>
 
@@ -77,14 +77,14 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>🎤 Interview Preparation</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Prepare for interviews with a question bank, STAR method templates (select questions from the bank or type your own), company research notes, interview feedback tracking, and practice mode with timer.
+              Prepare for interviews with a question bank, STAR method templates (select questions from the bank or type your own), company research notes (link to multiple applications, auto-populate URLs), interview feedback tracking, and practice mode with timer. Navigate to company research directly from job applications by tapping the company name.
             </Text>
           </View>
 
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>✉️ Email Templates & Communication</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Professional email templates for thank you notes, follow-ups, acceptance letters, rejection responses, and declining offers. Templates include variable placeholders for personalization. Quick send opens your email client with pre-filled content. Track all emails sent for each application. Automatic reminders to send thank you notes after interviews.
+              Professional email templates for thank you notes, follow-ups, acceptance letters, rejection responses, and declining offers. Templates include variable placeholders for personalization. Quick send opens your email client with pre-filled content. Track all emails sent for each application. Automatic reminders to send thank you notes after interviews (configurable timing). Dedicated Thank You Notes screen lists all pending notes. Overdue notes banner on home screen shows count of overdue thank you notes and follow-up reminders (only pending items after due dates, excludes rejected applications). Navigate directly to job applications from reminder cards.
             </Text>
           </View>
 

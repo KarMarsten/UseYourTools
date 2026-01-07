@@ -29,7 +29,7 @@ import { openEmail } from '../utils/eventActions';
 interface EmailTemplateModalProps {
   visible: boolean;
   onClose: () => void;
-  application: JobApplication;
+  application?: JobApplication; // Optional - can be undefined if only event is provided
   emailType: EmailTemplateType;
   linkedEvent?: Event; // For thank-you emails, can link to interview event
   onEmailSent?: () => void;
@@ -63,12 +63,12 @@ export default function EmailTemplateModal({
 
   useEffect(() => {
     const processTemplate = async () => {
-      if (selectedTemplate && application) {
+      if (selectedTemplate && (application || linkedEvent)) {
         // Build variables from application and event data
         const variables: Record<string, string> = {
-          company: application.company || '',
-          position: application.positionTitle || '',
-          appliedDate: new Date(application.appliedDate).toLocaleDateString(),
+          company: application?.company || linkedEvent?.company || '',
+          position: application?.positionTitle || linkedEvent?.jobTitle || '',
+          appliedDate: application ? new Date(application.appliedDate).toLocaleDateString() : '',
           date: new Date().toLocaleDateString(),
           yourName: '', // User can fill this in manually or we could get from preferences
         };
@@ -256,13 +256,15 @@ export default function EmailTemplateModal({
         return;
       }
 
-      // Record that email was sent
-      await recordEmailSent(
-        application.id,
-        emailType,
-        recipientEmail,
-        selectedTemplate?.id
-      );
+      // Record that email was sent (if application exists)
+      if (application) {
+        await recordEmailSent(
+          application.id,
+          emailType,
+          recipientEmail,
+          selectedTemplate?.id
+        );
+      }
       // If this is a thank-you email linked to an interview event, mark thank-you as sent
       try {
         if (emailType === 'thank-you' && linkedEvent?.id) {

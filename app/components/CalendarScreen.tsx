@@ -2,7 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, BackHandler, Platform, Alert } from 'react-native';
 import { getDayThemeForDate, getDayName } from '../utils/plannerData';
 import { hasEntriesForDate } from '../utils/entryChecker';
-import { loadEventsForDate, Event } from '../utils/events';
+import { loadEventsForDate, Event, getAllEvents } from '../utils/events';
+import { getAllFollowUpReminders } from '../utils/followUpReminders';
+import { loadPreferences } from '../utils/preferences';
+import { getAllApplications } from '../utils/applications';
 import { usePreferences } from '../context/PreferencesContext';
 import { formatTimeRange, formatTime12Hour, getDateKey } from '../utils/timeFormatter';
 import { openAddressInMaps, openPhoneNumber, openEmail } from '../utils/eventActions';
@@ -19,6 +22,8 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
   const [daysWithEntries, setDaysWithEntries] = useState<Set<string>>(new Set());
   const [daysWithEvents, setDaysWithEvents] = useState<Set<string>>(new Set());
   const [daysWithReminders, setDaysWithReminders] = useState<Set<string>>(new Set());
+  const [daysWithThankYouNotes, setDaysWithThankYouNotes] = useState<Set<string>>(new Set());
+  const [daysWithFollowUps, setDaysWithFollowUps] = useState<Set<string>>(new Set());
 
   const handleExit = () => {
     if (Platform.OS === 'android') {
@@ -65,6 +70,8 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
   useEffect(() => {
     checkEntriesForMonth();
     checkEventsForMonth();
+    checkThankYouNotesForMonth();
+    checkFollowUpsForMonth();
   }, [currentDate, refreshTrigger]);
 
   useEffect(() => {
@@ -117,6 +124,103 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
     
     setDaysWithEvents(eventsSet);
     setDaysWithReminders(remindersSet);
+  };
+
+  const checkThankYouNotesForMonth = async () => {
+    const days = getDaysInMonth(currentDate);
+    const thankYouSet = new Set<string>();
+    
+    try {
+      const allEvents = await getAllEvents();
+      const allApplications = await getAllApplications();
+      const prefs = preferences || await loadPreferences();
+      const daysAfterInterview = prefs.thankYouNoteDaysAfterInterview || 1; // Default to 1 day
+      
+      // Create a map of application IDs to their status for quick lookup
+      const applicationStatusMap = new Map<string, string>();
+      allApplications.forEach(app => {
+        applicationStatusMap.set(app.id, app.status);
+      });
+      
+      for (const day of days) {
+        if (day.getMonth() === currentDate.getMonth()) {
+          const dateKey = getDateKey(day);
+          // Check if any interview has a thank you note due on this date
+          const hasPendingThankYou = allEvents.some(e => {
+            if (e.type !== 'interview' || (e.thankYouNoteStatus && e.thankYouNoteStatus !== 'pending')) {
+              return false;
+            }
+            
+            // Skip if the linked application is rejected
+            if (e.applicationId) {
+              const appStatus = applicationStatusMap.get(e.applicationId);
+              if (appStatus === 'rejected') {
+                return false;
+              }
+            }
+            
+            // Calculate when the thank you note is due (interview date + daysAfterInterview)
+            const [year, month, day] = e.dateKey.split('-').map(Number);
+            const interviewDate = new Date(year, month - 1, day);
+            const dueDate = new Date(interviewDate);
+            dueDate.setDate(dueDate.getDate() + daysAfterInterview);
+            const dueDateKey = getDateKey(dueDate);
+            
+            // Show ONLY on the exact due date
+            return dueDateKey === dateKey;
+          });
+          if (hasPendingThankYou) {
+            thankYouSet.add(dateKey);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking thank you notes:', error);
+    }
+    
+    setDaysWithThankYouNotes(thankYouSet);
+  };
+
+  const checkFollowUpsForMonth = async () => {
+    const days = getDaysInMonth(currentDate);
+    const followUpsSet = new Set<string>();
+    
+    try {
+      const allReminders = await getAllFollowUpReminders();
+      const allApplications = await getAllApplications();
+      
+      // Create a map of application IDs to their status for quick lookup
+      const applicationStatusMap = new Map<string, string>();
+      allApplications.forEach(app => {
+        applicationStatusMap.set(app.id, app.status);
+      });
+      
+      for (const day of days) {
+        if (day.getMonth() === currentDate.getMonth()) {
+          const dateKey = getDateKey(day);
+          const hasFollowUp = allReminders.some(reminder => {
+            if (reminder.completed) return false;
+            
+            // Skip if the linked application is rejected
+            const appStatus = applicationStatusMap.get(reminder.applicationId);
+            if (appStatus === 'rejected') {
+              return false;
+            }
+            
+            const reminderDate = new Date(reminder.dueDate);
+            const reminderDateKey = getDateKey(reminderDate);
+            return reminderDateKey === dateKey;
+          });
+          if (hasFollowUp) {
+            followUpsSet.add(dateKey);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking follow-ups:', error);
+    }
+    
+    setDaysWithFollowUps(followUpsSet);
   };
 
   const loadSelectedDayEvents = async () => {
@@ -275,6 +379,8 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
           const hasEntries = daysWithEntries.has(dateKey);
           const hasEvents = daysWithEvents.has(dateKey);
           const hasReminders = daysWithReminders.has(dateKey);
+          const hasThankYouNotes = daysWithThankYouNotes.has(dateKey);
+          const hasFollowUps = daysWithFollowUps.has(dateKey);
           const isSelected = selectedDate && dateKey === getDateKey(selectedDate);
 
           return (
@@ -307,7 +413,7 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
                     {isCurrentMonthDate ? dayNumber : ''}
                   </Text>
                 </View>
-                {isCurrentMonthDate && (hasEntries || hasEvents || hasReminders) && (
+                {isCurrentMonthDate && (hasEntries || hasEvents || hasReminders || hasThankYouNotes || hasFollowUps) && (
                   <View style={styles.indicatorsContainer}>
                     {hasEntries && (
                       <Text style={styles.indicatorIcon}>✏️</Text>
@@ -317,6 +423,12 @@ export default function CalendarScreen({ onSelectDate, onBack, onSettings, refre
                     )}
                     {hasReminders && (
                       <Text style={styles.indicatorIcon}>🔔</Text>
+                    )}
+                    {hasThankYouNotes && (
+                      <Text style={styles.indicatorIcon}>💌</Text>
+                    )}
+                    {hasFollowUps && (
+                      <Text style={styles.indicatorIcon}>📋</Text>
                     )}
                   </View>
                 )}

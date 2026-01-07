@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Keyboard,
+  findNodeHandle,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePreferences } from '../context/PreferencesContext';
@@ -69,9 +70,11 @@ interface ApplicationsScreenProps {
   onSelectDate?: (date: Date, applicationId?: string) => void;
   onCreateOffer?: (applicationId: string) => void;
   onCreateReference?: (applicationId: string) => void;
+  onNavigateToInterviewPrep?: (companyName?: string, applicationId?: string) => void;
+  initialApplicationId?: string;
 }
 
-export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer, onCreateReference }: ApplicationsScreenProps) {
+export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer, onCreateReference, onNavigateToInterviewPrep, initialApplicationId }: ApplicationsScreenProps) {
   const [activeTab, setActiveTab] = useState<'applications' | 'resumes' | 'coverLetters'>('applications');
   
   const [applications, setApplications] = useState<JobApplication[]>([]);
@@ -95,6 +98,9 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
   const [emailType, setEmailType] = useState<'thank-you' | 'follow-up' | 'decline-offer' | 'acceptance' | 'rejection-response'>('thank-you');
   const [emailApplication, setEmailApplication] = useState<JobApplication | null>(null);
   const [emailLinkedEvent, setEmailLinkedEvent] = useState<Event | null>(null);
+  const [expandedApplicationId, setExpandedApplicationId] = useState<string | null>(null);
+  const applicationsScrollViewRef = useRef<ScrollView>(null);
+  const applicationRefs = useRef<Map<string, View>>(new Map());
 
   // Form state
   const [positionTitle, setPositionTitle] = useState('');
@@ -235,7 +241,15 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
     loadAllEvents();
     loadResumesAndCoverLetters();
     loadFollowUpReminders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Handle scrolling to initial application when it's provided
+  useEffect(() => {
+    if (initialApplicationId && applications.length > 0) {
+      setExpandedApplicationId(initialApplicationId);
+    }
+  }, [initialApplicationId, applications.length]);
 
   // Persist week filter when it changes
   useEffect(() => {
@@ -1631,7 +1645,11 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
       </View>
 
       {/* Applications List */}
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.listContent}>
+      <ScrollView 
+        ref={applicationsScrollViewRef}
+        style={styles.scrollView} 
+        contentContainerStyle={styles.listContent}
+      >
         {applications.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={[styles.emptyText, { color: colorScheme.colors.textSecondary }]}>
@@ -1642,7 +1660,40 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
           applications.map((app) => (
             <View
               key={app.id}
-              style={[styles.applicationCard, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}
+              ref={(ref) => {
+                if (ref) {
+                  applicationRefs.current.set(app.id, ref);
+                } else {
+                  applicationRefs.current.delete(app.id);
+                }
+              }}
+              onLayout={() => {
+                // Scroll to initial application after layout
+                if (initialApplicationId === app.id && applicationsScrollViewRef.current) {
+                  setTimeout(() => {
+                    const ref = applicationRefs.current.get(app.id);
+                    if (ref && applicationsScrollViewRef.current) {
+                      ref.measureLayout(
+                        applicationsScrollViewRef.current as any,
+                        (x, y) => {
+                          if (applicationsScrollViewRef.current) {
+                            applicationsScrollViewRef.current.scrollTo({ y: Math.max(0, y - 20), animated: true });
+                          }
+                        },
+                        () => {}
+                      );
+                    }
+                  }, 200);
+                }
+              }}
+              style={[
+                styles.applicationCard, 
+                { 
+                  backgroundColor: colorScheme.colors.surface, 
+                  borderColor: initialApplicationId === app.id ? colorScheme.colors.primary : colorScheme.colors.border,
+                  borderWidth: initialApplicationId === app.id ? 2 : 1,
+                }
+              ]}
             >
               <View style={styles.applicationHeader}>
                 <View style={styles.applicationTitleRow}>
@@ -1678,9 +1729,18 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                     </Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={[styles.companyName, { color: colorScheme.colors.primary }]}>
-                  {app.company}
-                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (onNavigateToInterviewPrep) {
+                      onNavigateToInterviewPrep(app.company, app.id);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.companyName, { color: colorScheme.colors.primary }]}>
+                    {app.company}
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               <View style={styles.applicationDetails}>

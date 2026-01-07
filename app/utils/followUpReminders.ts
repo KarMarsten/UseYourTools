@@ -101,6 +101,48 @@ export const getActiveFollowUpReminders = async (): Promise<FollowUpReminder[]> 
 };
 
 /**
+ * Get count of overdue follow-up reminders (past due date, still pending)
+ */
+export const getOverdueFollowUpRemindersCount = async (): Promise<number> => {
+  try {
+    const allReminders = await getAllFollowUpReminders();
+    const { getAllApplications } = await import('./applications');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Load all applications to check for rejected status
+    const allApplications = await getAllApplications();
+    const applicationStatusMap = new Map<string, string>();
+    allApplications.forEach(app => {
+      applicationStatusMap.set(app.id, app.status);
+    });
+    
+    return allReminders.filter(r => {
+      if (r.completed) {
+        return false;
+      }
+      
+      // Skip if the linked application is rejected
+      if (r.applicationId) {
+        const appStatus = applicationStatusMap.get(r.applicationId);
+        if (appStatus === 'rejected') {
+          return false;
+        }
+      }
+      
+      const dueDate = new Date(r.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
+      
+      // Only count if due date is in the past
+      return dueDate < today;
+    }).length;
+  } catch (error) {
+    console.error('Error getting overdue follow-up reminders count:', error);
+    return 0;
+  }
+};
+
+/**
  * Get follow-up reminders for a specific application
  */
 export const getFollowUpRemindersForApplication = async (applicationId: string): Promise<FollowUpReminder[]> => {

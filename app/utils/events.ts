@@ -55,7 +55,7 @@ export const saveEvent = async (event: Event, skipBidirectionalUpdate = false): 
       const preferences = await loadPreferences();
       const reminderId = await scheduleThankYouNoteReminder(
         event,
-        preferences.followUpDaysAfterInterview
+        preferences.thankYouNoteDaysAfterInterview || 1
       );
       if (reminderId) {
         event.thankYouNoteReminderId = reminderId;
@@ -165,6 +165,82 @@ export const getEventById = async (eventId: string): Promise<Event | null> => {
   } catch (error) {
     console.error('Error getting event:', error);
     return null;
+  }
+};
+
+/**
+ * Get count of pending thank you notes
+ */
+export const getPendingThankYouNotesCount = async (): Promise<number> => {
+  try {
+    const allEvents = await getAllEvents();
+    return allEvents.filter(
+      e => e.type === 'interview' && 
+      (!e.thankYouNoteStatus || e.thankYouNoteStatus === 'pending')
+    ).length;
+  } catch (error) {
+    console.error('Error getting pending thank you notes count:', error);
+    return 0;
+  }
+};
+
+/**
+ * Get count of overdue thank you notes (past due date, still pending)
+ */
+export const getOverdueThankYouNotesCount = async (): Promise<number> => {
+  try {
+    const allEvents = await getAllEvents();
+    const { loadPreferences } = await import('./preferences');
+    const { getDateKey } = await import('./timeFormatter');
+    const { getAllApplications } = await import('./applications');
+    const prefs = await loadPreferences();
+    const daysAfterInterview = prefs.thankYouNoteDaysAfterInterview || 1;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayKey = getDateKey(today);
+    
+    // Load all applications to check for rejected status
+    const allApplications = await getAllApplications();
+    const applicationStatusMap = new Map<string, string>();
+    allApplications.forEach(app => {
+      applicationStatusMap.set(app.id, app.status);
+    });
+    
+    return allEvents.filter(e => {
+      if (e.type !== 'interview') {
+        return false;
+      }
+      
+      // Check if thank you note status is pending (undefined or 'pending')
+      // If it's 'sent' or 'skipped', don't count it
+      if (e.thankYouNoteStatus && e.thankYouNoteStatus !== 'pending') {
+        return false;
+      }
+      
+      // Skip if the linked application is rejected
+      if (e.applicationId) {
+        const appStatus = applicationStatusMap.get(e.applicationId);
+        if (appStatus === 'rejected') {
+          return false;
+        }
+      }
+      
+      // Calculate when the thank you note is due (interview date + daysAfterInterview)
+      const [year, month, day] = e.dateKey.split('-').map(Number);
+      const interviewDate = new Date(year, month - 1, day);
+      interviewDate.setHours(0, 0, 0, 0);
+      const dueDate = new Date(interviewDate);
+      dueDate.setDate(dueDate.getDate() + daysAfterInterview);
+      dueDate.setHours(0, 0, 0, 0);
+      const dueDateKey = getDateKey(dueDate);
+      
+      // Only count if interview has happened (interview date is in the past) AND due date is in the past
+      const interviewDateKey = getDateKey(interviewDate);
+      return interviewDateKey < todayKey && dueDateKey < todayKey;
+    }).length;
+  } catch (error) {
+    console.error('Error getting overdue thank you notes count:', error);
+    return 0;
   }
 };
 

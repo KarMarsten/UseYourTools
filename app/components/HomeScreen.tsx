@@ -10,8 +10,8 @@ import {
   StatusBar,
 } from 'react-native';
 import { usePreferences } from '../context/PreferencesContext';
-import { getAllEvents, Event } from '../utils/events';
-import { getActiveFollowUpReminders, FollowUpReminder } from '../utils/followUpReminders';
+import { getAllEvents, Event, getPendingThankYouNotesCount, getOverdueThankYouNotesCount } from '../utils/events';
+import { getActiveFollowUpReminders, FollowUpReminder, getOverdueFollowUpRemindersCount } from '../utils/followUpReminders';
 import { getDateKey } from '../utils/timeFormatter';
 
 interface HomeScreenProps {
@@ -22,6 +22,7 @@ interface HomeScreenProps {
   onNavigateToReferences: () => void;
   onNavigateToReports: () => void;
   onNavigateToInterviewPrep: () => void;
+  onNavigateToThankYouNotes: () => void;
   onNavigateToSettings: () => void;
   onNavigateToAbout: () => void;
   onViewReport?: (html: string, title: string) => void;
@@ -35,6 +36,7 @@ export default function HomeScreen({
   onNavigateToReferences,
   onNavigateToReports,
   onNavigateToInterviewPrep,
+  onNavigateToThankYouNotes,
   onNavigateToSettings,
   onNavigateToAbout,
 }: HomeScreenProps) {
@@ -43,13 +45,40 @@ export default function HomeScreen({
   const [upcomingItems, setUpcomingItems] = useState<Array<{ type: 'event' | 'followup'; data: Event | FollowUpReminder; dateTime: Date }>>([]);
   const [showAboutTooltip, setShowAboutTooltip] = useState(false);
   const [showSettingsTooltip, setShowSettingsTooltip] = useState(false);
+  const [pendingThankYouCount, setPendingThankYouCount] = useState<number>(0);
+  const [overdueCount, setOverdueCount] = useState<number>(0);
 
   useEffect(() => {
     loadUpcomingItems();
+    loadPendingThankYouCount();
+    loadOverdueCount();
     // Refresh every minute to update the banner
-    const interval = setInterval(loadUpcomingItems, 60000);
+    const interval = setInterval(() => {
+      loadUpcomingItems();
+      loadPendingThankYouCount();
+      loadOverdueCount();
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  const loadPendingThankYouCount = async () => {
+    try {
+      const count = await getPendingThankYouNotesCount();
+      setPendingThankYouCount(count);
+    } catch (error) {
+      console.error('Error loading pending thank you notes count:', error);
+    }
+  };
+
+  const loadOverdueCount = async () => {
+    try {
+      const overdueThankYous = await getOverdueThankYouNotesCount();
+      const overdueFollowUps = await getOverdueFollowUpRemindersCount();
+      setOverdueCount(overdueThankYous + overdueFollowUps);
+    } catch (error) {
+      console.error('Error loading overdue count:', error);
+    }
+  };
 
   const loadUpcomingItems = async () => {
     try {
@@ -151,6 +180,14 @@ export default function HomeScreen({
       description: 'Manage your professional references',
       icon: '📞',
       onPress: onNavigateToReferences,
+    },
+    {
+      id: 'thankYouNotes',
+      title: 'Thank You Notes',
+      description: pendingThankYouCount > 0 ? `${pendingThankYouCount} pending` : 'Send thank you notes after interviews',
+      icon: '💌',
+      onPress: onNavigateToThankYouNotes,
+      badge: pendingThankYouCount > 0 ? pendingThankYouCount : undefined,
     },
   ];
 
@@ -292,6 +329,17 @@ export default function HomeScreen({
           </TouchableOpacity>
         </View>
       </View>
+      {/* Overdue Notes Banner */}
+      {overdueCount > 0 && (
+        <TouchableOpacity
+          style={[styles.overdueBanner, { backgroundColor: colorScheme.colors.border, borderBottomColor: colorScheme.colors.border, borderLeftColor: colorScheme.colors.border, borderLeftWidth: 4 }]}
+          onPress={onNavigateToThankYouNotes}
+        >
+          <Text style={[styles.overdueBannerText, { color: colorScheme.colors.text }]}>
+            ⚠️ {overdueCount} overdue note{overdueCount !== 1 ? 's' : ''} pending
+          </Text>
+        </TouchableOpacity>
+      )}
       {/* Tooltips rendered at container level to ensure they appear above all content */}
       {(showAboutTooltip || showSettingsTooltip) && (
         <View style={styles.tooltipContainer} pointerEvents="none">
@@ -433,9 +481,16 @@ export default function HomeScreen({
                   activeOpacity={0.7}
                 >
                   <View style={styles.menuCardContent}>
-                    <Text style={[styles.menuTitle, { color: colorScheme.colors.text }]} numberOfLines={1}>
-                      {item.title}
-                    </Text>
+                    <View style={styles.menuTitleRow}>
+                      <Text style={[styles.menuTitle, { color: colorScheme.colors.text }]} numberOfLines={1}>
+                        {item.title}
+                      </Text>
+                      {item.badge && item.badge > 0 && (
+                        <View style={[styles.badge, { backgroundColor: colorScheme.colors.primary }]}>
+                          <Text style={styles.badgeText}>{item.badge}</Text>
+                        </View>
+                      )}
+                    </View>
                     <View style={styles.menuCardBottom}>
                       <Text style={styles.menuIcon}>{item.icon}</Text>
                       <Text style={[styles.menuDescription, { color: colorScheme.colors.textSecondary }]}>
@@ -476,6 +531,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     overflow: 'visible',
     zIndex: 100,
+  },
+  overdueBanner: {
+    padding: 12,
+    borderBottomWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  overdueBannerText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
   headerContent: {
     flex: 1,
@@ -629,11 +694,31 @@ const styles = StyleSheet.create({
   menuCardContent: {
     padding: 16,
   },
+  menuTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
   menuTitle: {
     fontSize: 14,
     fontWeight: '600',
-    marginBottom: 12,
     textAlign: 'left',
+    flex: 1,
+  },
+  badge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   menuCardBottom: {
     flexDirection: 'row',
