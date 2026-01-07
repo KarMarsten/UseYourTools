@@ -12,5 +12,7 @@
     <string>https://u.expo.dev/43ad00a3-7e94-43eb-9462-340003fc7e70</string>
     <key>EXUpdatesRuntimeVersion</key>
     <string>1.0.0</string>
+    <key>EXUpdatesChannel</key>
+    <string>production</string>
   </dict>
 </plist>

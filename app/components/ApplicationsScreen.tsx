@@ -169,6 +169,34 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
     return date >= weekStart && date <= weekEnd;
   };
 
+  // Helper function to get the week start date for a given label
+  const getWeekForLabel = (label: string): Date | null => {
+    if (label === 'All Weeks') {
+      return null;
+    }
+    
+    const today = new Date();
+    const currentWeekStart = getWeekStart(today);
+    
+    if (label === 'This Week') {
+      return currentWeekStart;
+    } else if (label === 'Last Week') {
+      const lastWeekStart = new Date(currentWeekStart);
+      lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+      return lastWeekStart;
+    } else if (label === '2 Weeks Ago') {
+      const twoWeeksAgoStart = new Date(currentWeekStart);
+      twoWeeksAgoStart.setDate(twoWeeksAgoStart.getDate() - 14);
+      return twoWeeksAgoStart;
+    } else if (label === '3 Weeks Ago') {
+      const threeWeeksAgoStart = new Date(currentWeekStart);
+      threeWeeksAgoStart.setDate(threeWeeksAgoStart.getDate() - 21);
+      return threeWeeksAgoStart;
+    }
+    
+    return null;
+  };
+
   // Load persisted week filter
   const loadPersistedWeekFilter = async () => {
     try {
@@ -635,6 +663,8 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
         const weekStart = getWeekStart(selectedWeek);
         allApps = allApps.filter(app => {
           const appliedDate = new Date(app.appliedDate);
+          // Normalize to midnight to ensure accurate date comparison
+          appliedDate.setHours(0, 0, 0, 0);
           return isDateInWeek(appliedDate, weekStart);
         });
       }
@@ -669,6 +699,8 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
         const weekStart = getWeekStart(selectedWeek);
         results = results.filter(app => {
           const appliedDate = new Date(app.appliedDate);
+          // Normalize to midnight to ensure accurate date comparison
+          appliedDate.setHours(0, 0, 0, 0);
           return isDateInWeek(appliedDate, weekStart);
         });
       }
