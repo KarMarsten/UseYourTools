@@ -107,6 +107,7 @@ export const getOverdueFollowUpRemindersCount = async (): Promise<number> => {
   try {
     const allReminders = await getAllFollowUpReminders();
     const { getAllApplications } = await import('./applications');
+    const { getAllEvents } = await import('./events');
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -115,6 +116,17 @@ export const getOverdueFollowUpRemindersCount = async (): Promise<number> => {
     const applicationStatusMap = new Map<string, string>();
     allApplications.forEach(app => {
       applicationStatusMap.set(app.id, app.status);
+    });
+    
+    // Load all events to check for thank you notes (pending or sent)
+    const allEvents = await getAllEvents();
+    const applicationsWithThankYouNotes = new Set<string>();
+    allEvents.forEach(event => {
+      if (event.type === 'interview' && 
+          event.applicationId && 
+          (event.thankYouNoteStatus === 'sent' || event.thankYouNoteStatus === 'pending')) {
+        applicationsWithThankYouNotes.add(event.applicationId);
+      }
     });
     
     return allReminders.filter(r => {
@@ -126,6 +138,12 @@ export const getOverdueFollowUpRemindersCount = async (): Promise<number> => {
       if (r.applicationId) {
         const appStatus = applicationStatusMap.get(r.applicationId);
         if (appStatus === 'rejected') {
+          return false;
+        }
+        
+        // Skip if a thank you note exists (pending or sent) for this application
+        // This applies to all follow-up reminders (both application and interview types)
+        if (r.applicationId && applicationsWithThankYouNotes.has(r.applicationId)) {
           return false;
         }
       }
@@ -308,15 +326,29 @@ export const createApplicationFollowUp = async (
  * @param company - Company name
  * @param positionTitle - Position title
  * @param daysFromNow - Number of days from now to schedule the reminder
- * @returns The created follow-up reminder
+ * @returns The created follow-up reminder, or null if a thank you note has been sent
  */
 export const createInterviewFollowUp = async (
   applicationId: string,
   company: string,
   positionTitle: string,
   daysFromNow: number
-): Promise<FollowUpReminder> => {
+): Promise<FollowUpReminder | null> => {
   try {
+    // Check if there's a thank you note (pending or sent) for this application
+    const { getAllEvents } = await import('./events');
+    const allEvents = await getAllEvents();
+    const interviewEvents = allEvents.filter(
+      e => e.type === 'interview' && 
+      e.applicationId === applicationId &&
+      (e.thankYouNoteStatus === 'sent' || e.thankYouNoteStatus === 'pending')
+    );
+    
+    // If a thank you note exists (pending or sent), don't create a follow-up reminder
+    if (interviewEvents.length > 0) {
+      return null;
+    }
+
     const now = new Date();
     const dueDate = new Date(now);
     dueDate.setDate(dueDate.getDate() + daysFromNow);

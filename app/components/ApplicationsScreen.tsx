@@ -1549,27 +1549,51 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
       {/* Conditional Content Based on Active Tab */}
       {activeTab === 'applications' && (
         <>
-          {/* Stats */}
+          {/* Stats - Clickable */}
           <View style={[styles.statsContainer, { backgroundColor: colorScheme.colors.surface, borderBottomColor: colorScheme.colors.border }]}>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colorScheme.colors.text }]}>{stats.total}</Text>
-              <Text style={[styles.statLabel, { color: colorScheme.colors.textSecondary }]}>Total</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colorScheme.colors.text }]}>{stats.applied}</Text>
-              <Text style={[styles.statLabel, { color: colorScheme.colors.textSecondary }]}>Applied</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colorScheme.colors.text }]}>{stats.rejected}</Text>
-              <Text style={[styles.statLabel, { color: colorScheme.colors.textSecondary }]}>Rejected</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colorScheme.colors.text }]}>{stats.interview}</Text>
-              <Text style={[styles.statLabel, { color: colorScheme.colors.textSecondary }]}>Interview</Text>
-            </View>
+            <TouchableOpacity 
+              style={[
+                styles.statItem,
+                filterStatus === 'all' && { backgroundColor: colorScheme.colors.primary + '20', borderRadius: 8, padding: 8 }
+              ]}
+              onPress={() => setFilterStatus('all')}
+            >
+              <Text style={[styles.statValue, { color: filterStatus === 'all' ? colorScheme.colors.primary : colorScheme.colors.text }]}>{stats.total}</Text>
+              <Text style={[styles.statLabel, { color: filterStatus === 'all' ? colorScheme.colors.primary : colorScheme.colors.textSecondary }]}>Total</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                styles.statItem,
+                filterStatus === 'applied' && { backgroundColor: colorScheme.colors.primary + '20', borderRadius: 8, padding: 8 }
+              ]}
+              onPress={() => setFilterStatus('applied')}
+            >
+              <Text style={[styles.statValue, { color: filterStatus === 'applied' ? colorScheme.colors.primary : colorScheme.colors.text }]}>{stats.applied}</Text>
+              <Text style={[styles.statLabel, { color: filterStatus === 'applied' ? colorScheme.colors.primary : colorScheme.colors.textSecondary }]}>Applied</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                styles.statItem,
+                filterStatus === 'rejected' && { backgroundColor: colorScheme.colors.primary + '20', borderRadius: 8, padding: 8 }
+              ]}
+              onPress={() => setFilterStatus('rejected')}
+            >
+              <Text style={[styles.statValue, { color: filterStatus === 'rejected' ? colorScheme.colors.primary : colorScheme.colors.text }]}>{stats.rejected}</Text>
+              <Text style={[styles.statLabel, { color: filterStatus === 'rejected' ? colorScheme.colors.primary : colorScheme.colors.textSecondary }]}>Rejected</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                styles.statItem,
+                filterStatus === 'interview' && { backgroundColor: colorScheme.colors.primary + '20', borderRadius: 8, padding: 8 }
+              ]}
+              onPress={() => setFilterStatus('interview')}
+            >
+              <Text style={[styles.statValue, { color: filterStatus === 'interview' ? colorScheme.colors.primary : colorScheme.colors.text }]}>{stats.interview}</Text>
+              <Text style={[styles.statLabel, { color: filterStatus === 'interview' ? colorScheme.colors.primary : colorScheme.colors.textSecondary }]}>Interview</Text>
+            </TouchableOpacity>
           </View>
 
-          {/* Search and Filter */}
+          {/* Search */}
           <View style={[styles.searchContainer, { backgroundColor: colorScheme.colors.surface }]}>
             <TextInput
               style={[styles.searchInput, { backgroundColor: colorScheme.colors.background, color: colorScheme.colors.text, borderColor: colorScheme.colors.border }]}
@@ -1578,33 +1602,6 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
               placeholder="Search by company, position, or source..."
               placeholderTextColor={colorScheme.colors.textSecondary}
             />
-            <View style={styles.filterButtons}>
-          {(['all', 'applied', 'rejected', 'interview'] as const).map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.filterButton,
-                {
-                  backgroundColor: filterStatus === filter ? colorScheme.colors.primary : colorScheme.colors.background,
-                  borderColor: colorScheme.colors.border,
-                },
-              ]}
-              onPress={() => setFilterStatus(filter)}
-            >
-              <Text
-                style={[
-                  styles.filterButtonText,
-                  { color: filterStatus === filter ? '#fff' : colorScheme.colors.text },
-                ]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.8}
-              >
-                {filter === 'all' ? 'All' : getStatusLabel(filter)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
         <View style={styles.weekFilterContainer}>
           <Text style={[styles.weekFilterLabel, { color: colorScheme.colors.textSecondary }]}>Week:</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.weekFilterScroll}>

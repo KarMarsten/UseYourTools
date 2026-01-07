@@ -60,6 +60,22 @@ export const saveEvent = async (event: Event, skipBidirectionalUpdate = false): 
       if (reminderId) {
         event.thankYouNoteReminderId = reminderId;
       }
+      
+      // If there's an application linked, complete any existing follow-up reminders
+      // (both application and interview types) since a thank you note is now pending
+      if (event.applicationId) {
+        try {
+          const { getFollowUpRemindersForApplication, completeFollowUpReminder } = await import('./followUpReminders');
+          const reminders = await getFollowUpRemindersForApplication(event.applicationId);
+          const activeReminders = reminders.filter(r => !r.completed);
+          for (const reminder of activeReminders) {
+            await completeFollowUpReminder(reminder.id);
+          }
+        } catch (error) {
+          console.error('Error completing follow-up reminders:', error);
+          // Don't fail the event save if reminder completion fails
+        }
+      }
     }
 
     const key = `${EVENTS_KEY_PREFIX}${event.id}`;
@@ -323,6 +339,23 @@ export const setEventThankYouStatus = async (
       await cancelEventNotification(event.thankYouNoteReminderId);
       event.thankYouNoteReminderId = undefined;
     }
+    
+    // If thank you note is sent, complete any existing follow-up reminders for this application
+    // (both application and interview types)
+    if (status === 'sent' && event.applicationId) {
+      try {
+        const { getFollowUpRemindersForApplication, completeFollowUpReminder } = await import('./followUpReminders');
+        const reminders = await getFollowUpRemindersForApplication(event.applicationId);
+        const activeReminders = reminders.filter(r => !r.completed);
+        for (const reminder of activeReminders) {
+          await completeFollowUpReminder(reminder.id);
+        }
+      } catch (error) {
+        console.error('Error completing follow-up reminders:', error);
+        // Don't fail the thank you note status update if reminder completion fails
+      }
+    }
+    
     await saveEvent(event);
   } catch (error) {
     console.error('Error updating thank-you note status:', error);

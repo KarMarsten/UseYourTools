@@ -209,11 +209,22 @@ export default function DailyPlannerScreen({ date, onBack, onDateChange, initial
     try {
       const allReminders = await getAllFollowUpReminders();
       const allApplications = await getAllApplications();
+      const allEvents = await getAllEvents();
       
       // Create a map of application IDs to their status for quick lookup
       const applicationStatusMap = new Map<string, string>();
       allApplications.forEach(app => {
         applicationStatusMap.set(app.id, app.status);
+      });
+      
+      // Create a set of applications that have thank you notes (pending or sent)
+      const applicationsWithThankYouNotes = new Set<string>();
+      allEvents.forEach(event => {
+        if (event.type === 'interview' && 
+            event.applicationId && 
+            (event.thankYouNoteStatus === 'sent' || event.thankYouNoteStatus === 'pending')) {
+          applicationsWithThankYouNotes.add(event.applicationId);
+        }
       });
       
       const remindersForDate = allReminders.filter(reminder => {
@@ -222,6 +233,12 @@ export default function DailyPlannerScreen({ date, onBack, onDateChange, initial
         // Skip if the linked application is rejected
         const appStatus = applicationStatusMap.get(reminder.applicationId);
         if (appStatus === 'rejected') {
+          return false;
+        }
+        
+        // Skip if a thank you note exists (pending or sent) for this application
+        // This applies to all follow-up reminders (both application and interview types)
+        if (reminder.applicationId && applicationsWithThankYouNotes.has(reminder.applicationId)) {
           return false;
         }
         
