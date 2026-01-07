@@ -13,6 +13,7 @@ import {
   Modal,
   Keyboard,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePreferences } from '../context/PreferencesContext';
 import {
   JobApplication,
@@ -84,6 +85,7 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingApplication, setEditingApplication] = useState<JobApplication | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'applied' | 'rejected' | 'interview'>('all');
+  const [selectedWeek, setSelectedWeek] = useState<Date | null>(null); // null means "all weeks"
   const [showEventModal, setShowEventModal] = useState(false);
   const [creatingEventForApplication, setCreatingEventForApplication] = useState<JobApplication | null>(null);
   const [allEvents, setAllEvents] = useState<Event[]>([]);
@@ -139,13 +141,75 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
 
   const { colorScheme, preferences } = usePreferences();
 
+  // Week filter persistence key
+  const WEEK_FILTER_KEY = 'applications_week_filter';
+
+  // Helper function to get the start of a week (Sunday)
+  const getWeekStart = (date: Date): Date => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day; // Subtract days to get to Sunday
+    const weekStart = new Date(d.setDate(diff));
+    weekStart.setHours(0, 0, 0, 0);
+    return weekStart;
+  };
+
+  // Helper function to get the end of a week (Saturday)
+  const getWeekEnd = (date: Date): Date => {
+    const weekStart = getWeekStart(date);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+    return weekEnd;
+  };
+
+  // Check if a date falls within a given week
+  const isDateInWeek = (date: Date, weekStart: Date): boolean => {
+    const weekEnd = getWeekEnd(weekStart);
+    return date >= weekStart && date <= weekEnd;
+  };
+
+  // Load persisted week filter
+  const loadPersistedWeekFilter = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(WEEK_FILTER_KEY);
+      if (stored) {
+        const weekDate = new Date(stored);
+        if (!isNaN(weekDate.getTime())) {
+          setSelectedWeek(weekDate);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading persisted week filter:', error);
+    }
+  };
+
+  // Save week filter to persistence
+  const saveWeekFilter = async (week: Date | null) => {
+    try {
+      if (week) {
+        await AsyncStorage.setItem(WEEK_FILTER_KEY, week.toISOString());
+      } else {
+        await AsyncStorage.removeItem(WEEK_FILTER_KEY);
+      }
+    } catch (error) {
+      console.error('Error saving week filter:', error);
+    }
+  };
+
   useEffect(() => {
+    loadPersistedWeekFilter();
     loadApplications();
     loadStats();
     loadAllEvents();
     loadResumesAndCoverLetters();
     loadFollowUpReminders();
   }, []);
+
+  // Persist week filter when it changes
+  useEffect(() => {
+    saveWeekFilter(selectedWeek);
+  }, [selectedWeek]);
 
   const loadFollowUpReminders = async () => {
     try {
@@ -555,7 +619,7 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
     } else {
       loadApplications();
     }
-  }, [searchTerm, filterStatus]);
+  }, [searchTerm, filterStatus, selectedWeek]);
 
   const loadApplications = async () => {
     try {
@@ -564,6 +628,15 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
       // Apply status filter
       if (filterStatus !== 'all') {
         allApps = allApps.filter(app => app.status === filterStatus);
+      }
+      
+      // Apply week filter
+      if (selectedWeek) {
+        const weekStart = getWeekStart(selectedWeek);
+        allApps = allApps.filter(app => {
+          const appliedDate = new Date(app.appliedDate);
+          return isDateInWeek(appliedDate, weekStart);
+        });
       }
       
       setApplications(allApps);
@@ -589,6 +662,15 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
       // Apply status filter
       if (filterStatus !== 'all') {
         results = results.filter(app => app.status === filterStatus);
+      }
+      
+      // Apply week filter
+      if (selectedWeek) {
+        const weekStart = getWeekStart(selectedWeek);
+        results = results.filter(app => {
+          const appliedDate = new Date(app.appliedDate);
+          return isDateInWeek(appliedDate, weekStart);
+        });
       }
       
       // Sort by effective date (newest first)
@@ -1463,6 +1545,43 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
               </Text>
             </TouchableOpacity>
           ))}
+        </View>
+        <View style={styles.weekFilterContainer}>
+          <Text style={[styles.weekFilterLabel, { color: colorScheme.colors.textSecondary }]}>Week:</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.weekFilterScroll}>
+            {['All Weeks', 'This Week', 'Last Week', '2 Weeks Ago', '3 Weeks Ago'].map((weekLabel) => {
+              const weekDate = getWeekForLabel(weekLabel);
+              const isSelected = selectedWeek === null 
+                ? weekLabel === 'All Weeks'
+                : weekDate !== null && selectedWeek.getTime() === weekDate.getTime();
+              
+              return (
+                <TouchableOpacity
+                  key={weekLabel}
+                  style={[
+                    styles.weekFilterButton,
+                    {
+                      backgroundColor: isSelected ? colorScheme.colors.primary : colorScheme.colors.background,
+                      borderColor: colorScheme.colors.border,
+                    },
+                  ]}
+                  onPress={() => setSelectedWeek(weekDate)}
+                >
+                  <Text
+                    style={[
+                      styles.weekFilterButtonText,
+                      { color: isSelected ? '#fff' : colorScheme.colors.text },
+                    ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                  >
+                    {weekLabel}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
       </View>
 
@@ -2798,6 +2917,33 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
     flexShrink: 1,
+  },
+  weekFilterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    gap: 8,
+  },
+  weekFilterLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  weekFilterScroll: {
+    flex: 1,
+  },
+  weekFilterButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weekFilterButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   scrollView: {
     flex: 1,

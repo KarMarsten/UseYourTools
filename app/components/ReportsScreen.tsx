@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { usePreferences } from '../context/PreferencesContext';
 import { getAllEvents } from '../utils/events';
@@ -15,6 +15,41 @@ interface ReportsScreenProps {
 export default function ReportsScreen({ onBack, onViewReport }: ReportsScreenProps) {
   const [selectedWeekDate, setSelectedWeekDate] = useState(new Date());
   const { colorScheme, preferences } = usePreferences();
+
+  // Week filter persistence key (same as ApplicationsScreen)
+  const WEEK_FILTER_KEY = 'applications_week_filter';
+
+  // Load persisted week filter on mount
+  useEffect(() => {
+    const loadPersistedWeekFilter = async () => {
+      try {
+        const stored = await AsyncStorage.getItem(WEEK_FILTER_KEY);
+        if (stored) {
+          const weekDate = new Date(stored);
+          if (!isNaN(weekDate.getTime())) {
+            // Only set if it's a valid date (not null from ApplicationsScreen)
+            setSelectedWeekDate(weekDate);
+          }
+        }
+        // If no stored value or null, ReportsScreen defaults to current week (already set in useState)
+      } catch (error) {
+        console.error('Error loading persisted week filter:', error);
+      }
+    };
+    loadPersistedWeekFilter();
+  }, []);
+
+  // Save week filter when it changes
+  useEffect(() => {
+    const saveWeekFilter = async () => {
+      try {
+        await AsyncStorage.setItem(WEEK_FILTER_KEY, selectedWeekDate.toISOString());
+      } catch (error) {
+        console.error('Error saving week filter:', error);
+      }
+    };
+    saveWeekFilter();
+  }, [selectedWeekDate]);
 
   // Get Sunday of the week for the given date
   const getWeekStart = (date: Date): Date => {
@@ -46,16 +81,19 @@ export default function ReportsScreen({ onBack, onViewReport }: ReportsScreenPro
     const newDate = new Date(selectedWeekDate);
     newDate.setDate(selectedWeekDate.getDate() - 7);
     setSelectedWeekDate(newDate);
+    // Week filter is automatically saved via useEffect
   };
 
   const handleNextWeek = () => {
     const newDate = new Date(selectedWeekDate);
     newDate.setDate(selectedWeekDate.getDate() + 7);
     setSelectedWeekDate(newDate);
+    // Week filter is automatically saved via useEffect
   };
 
   const handleCurrentWeek = () => {
     setSelectedWeekDate(new Date());
+    // Week filter is automatically saved via useEffect
   };
 
   const loadEntriesForWeek = async (weekStart: Date): Promise<Record<string, Record<string, string>>> => {
