@@ -29,7 +29,7 @@
     "react-native-paper": "^5.14.5",
     "react-native-safe-area-context": "5.4.0",
     "react-native-vector-icons": "^10.3.0",
-    "react-native-webview": "13.13.5",
+    "react-native-webview": "13.16.0",
     "tamagui": "^1.141.5"
   },
   "devDependencies": {
