@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, LogBox } from 'react-native';
-import { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
+import { useState, useEffect, Component, ErrorInfo, ReactNode, useMemo, useCallback } from 'react';
 import HomeScreen from './components/HomeScreen';
 import CalendarScreen from './components/CalendarScreen';
 import DailyPlannerScreen from './components/DailyPlannerScreen';
@@ -105,88 +105,165 @@ function AppContent() {
     }
   };
 
-  const handleSelectDate = (date: Date, applicationId?: string) => {
+  // Memoize callbacks to prevent unnecessary re-renders
+  const handleSelectDate = useCallback((date: Date, applicationId?: string) => {
     // Normalize date to start of day
     const normalizedDate = new Date(date);
     normalizedDate.setHours(0, 0, 0, 0);
     setSelectedDate(normalizedDate);
     setSelectedApplicationId(applicationId);
     setCurrentScreen('dailyPlanner');
-  };
+  }, []);
 
-
-  const handleSetupComplete = () => {
+  const handleSetupComplete = useCallback(() => {
     setCurrentScreen('home');
-  };
+  }, []);
 
-  const handleViewSettings = () => {
+  const handleViewSettings = useCallback(() => {
     setCurrentScreen('setup');
-  };
+  }, []);
 
-  const handleBackToHome = () => {
+  const handleBackToHome = useCallback(() => {
     setCurrentScreen('home');
-  };
+  }, []);
 
-  const handleBackToCalendar = () => {
+  const handleBackToCalendar = useCallback(() => {
     setCurrentScreen('calendar');
-  };
+  }, []);
 
-  const handleViewReports = () => {
+  const handleViewReports = useCallback(() => {
     setCurrentScreen('reports');
-  };
+  }, []);
 
-  const handleViewReport = (html: string, title: string) => {
+  const handleViewReport = useCallback((html: string, title: string) => {
     setReportHtml(html);
     setReportTitle(title);
     setCurrentScreen('viewReport');
-  };
+  }, []);
 
-  const handleBackToReports = () => {
+  const handleBackToReports = useCallback(() => {
     setCurrentScreen('reports');
-  };
+  }, []);
 
-  const handleViewApplications = (applicationId?: string) => {
+  const handleViewApplications = useCallback((applicationId?: string) => {
     if (applicationId) {
       setSelectedApplicationId(applicationId);
     }
     setCurrentScreen('applications');
-  };
+  }, []);
 
-  const handleViewOffers = () => {
+  const handleViewOffers = useCallback(() => {
     setCurrentScreen('offers');
-  };
+  }, []);
 
-  const handleViewReferences = () => {
+  const handleViewReferences = useCallback(() => {
     setCurrentScreen('references');
-  };
+  }, []);
 
-
-  const handleNavigateToDailyPlanner = (date?: Date) => {
+  const handleNavigateToDailyPlanner = useCallback((date?: Date) => {
     // Set to provided date or today's date and navigate to daily planner
     const targetDate = date || new Date();
     targetDate.setHours(0, 0, 0, 0);
     setSelectedDate(targetDate);
     setCurrentScreen('dailyPlanner');
-  };
+  }, []);
 
+  // Memoize navigation callbacks
+  const navigateToCalendar = useCallback(() => setCurrentScreen('calendar'), []);
+  const navigateToInterviewPrep = useCallback(() => setCurrentScreen('interviewPrep'), []);
+  const navigateToThankYouNotes = useCallback(() => setCurrentScreen('thankYouNotes'), []);
+  const navigateToAbout = useCallback(() => setCurrentScreen('about'), []);
+
+  // Memoize the daily planner back handler - must be defined before early returns
+  const handleDailyPlannerBack = useCallback(() => {
+    if (!selectedDate) {
+      handleBackToHome();
+      return;
+    }
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isToday = selectedDate.getTime() === today.getTime();
+    
+    if (selectedApplicationId || !isToday) {
+      // Came from calendar/applications (specific date selected)
+      setCurrentScreen('calendar');
+      setCalendarRefreshTrigger(prev => prev + 1);
+    } else {
+      // Came from home (today's planner accessed directly)
+      setCurrentScreen('home');
+    }
+    setSelectedApplicationId(undefined); // Clear application context
+  }, [selectedDate, selectedApplicationId, handleBackToHome]);
+
+  const handleDateChange = useCallback((newDate: Date) => {
+    setSelectedDate(newDate);
+  }, []);
+
+  const handleCreateOffer = useCallback((applicationId: string) => {
+    setSelectedApplicationId(applicationId);
+    setCurrentScreen('offers');
+  }, []);
+
+  const handleCreateReference = useCallback((applicationId: string) => {
+    setSelectedApplicationId(applicationId);
+    setCurrentScreen('references');
+  }, []);
+
+  const handleNavigateToInterviewPrepFromApps = useCallback((companyName?: string, applicationId?: string) => {
+    setInterviewPrepParams({ companyName, applicationId });
+    setCurrentScreen('interviewPrep');
+  }, []);
+
+  const handleOffersBack = useCallback(() => {
+    setSelectedApplicationId(undefined);
+    handleBackToHome();
+  }, [handleBackToHome]);
+
+  const handleViewApplicationFromOffers = useCallback((applicationId: string) => {
+    setSelectedApplicationId(applicationId);
+    setCurrentScreen('applications');
+  }, []);
+
+  const handleReferencesBack = useCallback(() => {
+    setSelectedApplicationId(undefined);
+    handleBackToHome();
+  }, [handleBackToHome]);
+
+  const handleViewApplicationFromReferences = useCallback((applicationId: string) => {
+    setSelectedApplicationId(applicationId);
+    setCurrentScreen('applications');
+  }, []);
+
+  const handleInterviewPrepBack = useCallback(() => {
+    setInterviewPrepParams({});
+    handleBackToHome();
+  }, [handleBackToHome]);
+
+  const handleNavigateToApplicationFromInterviewPrep = useCallback((applicationId: string) => {
+    setSelectedApplicationId(applicationId);
+    setCurrentScreen('applications');
+  }, []);
+
+  // Early returns for different screens
   if (currentScreen === 'setup') {
     return <SetupScreen onComplete={handleSetupComplete} onBack={handleBackToHome} />;
   }
 
   if (currentScreen === 'home') {
     return (
-    <HomeScreen
-      onNavigateToCalendar={() => setCurrentScreen('calendar')}
-      onNavigateToDailyPlanner={handleNavigateToDailyPlanner}
+      <HomeScreen
+        onNavigateToCalendar={navigateToCalendar}
+        onNavigateToDailyPlanner={handleNavigateToDailyPlanner}
         onNavigateToApplications={handleViewApplications}
         onNavigateToOffers={handleViewOffers}
         onNavigateToReferences={handleViewReferences}
         onNavigateToReports={handleViewReports}
-      onNavigateToInterviewPrep={() => setCurrentScreen('interviewPrep')}
-      onNavigateToThankYouNotes={() => setCurrentScreen('thankYouNotes')}
-      onNavigateToSettings={handleViewSettings}
-      onNavigateToAbout={() => setCurrentScreen('about')}
-    />
+        onNavigateToInterviewPrep={navigateToInterviewPrep}
+        onNavigateToThankYouNotes={navigateToThankYouNotes}
+        onNavigateToSettings={handleViewSettings}
+        onNavigateToAbout={navigateToAbout}
+      />
     );
   }
 
@@ -203,29 +280,11 @@ function AppContent() {
   }
 
   if (currentScreen === 'dailyPlanner' && selectedDate) {
-    // Determine where we came from: if selectedApplicationId exists, we came from calendar/applications
-    // Otherwise, if it's today's date, we likely came from home
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const isToday = selectedDate.getTime() === today.getTime();
-    
     return (
       <DailyPlannerScreen
         date={selectedDate}
-        onBack={() => {
-          if (selectedApplicationId || !isToday) {
-            // Came from calendar/applications (specific date selected)
-            setCurrentScreen('calendar');
-            setCalendarRefreshTrigger(prev => prev + 1);
-          } else {
-            // Came from home (today's planner accessed directly)
-            setCurrentScreen('home');
-          }
-          setSelectedApplicationId(undefined); // Clear application context
-        }}
-        onDateChange={(newDate) => {
-          setSelectedDate(newDate);
-        }}
+        onBack={handleDailyPlannerBack}
+        onDateChange={handleDateChange}
         initialApplicationId={selectedApplicationId}
         onNavigateToApplication={handleViewApplications}
       />
@@ -237,18 +296,9 @@ function AppContent() {
       <ApplicationsScreen
         onBack={handleBackToHome}
         onSelectDate={handleSelectDate}
-        onCreateOffer={(applicationId: string) => {
-          setSelectedApplicationId(applicationId);
-          setCurrentScreen('offers');
-        }}
-        onCreateReference={(applicationId: string) => {
-          setSelectedApplicationId(applicationId);
-          setCurrentScreen('references');
-        }}
-        onNavigateToInterviewPrep={(companyName?: string, applicationId?: string) => {
-          setInterviewPrepParams({ companyName, applicationId });
-          setCurrentScreen('interviewPrep');
-        }}
+        onCreateOffer={handleCreateOffer}
+        onCreateReference={handleCreateReference}
+        onNavigateToInterviewPrep={handleNavigateToInterviewPrepFromApps}
         initialApplicationId={selectedApplicationId}
       />
     );
@@ -257,14 +307,8 @@ function AppContent() {
   if (currentScreen === 'offers') {
     return (
       <OffersScreen
-        onBack={() => {
-          setSelectedApplicationId(undefined);
-          handleBackToHome();
-        }}
-        onViewApplication={(applicationId: string) => {
-          setSelectedApplicationId(applicationId);
-          setCurrentScreen('applications');
-        }}
+        onBack={handleOffersBack}
+        onViewApplication={handleViewApplicationFromOffers}
         initialApplicationId={selectedApplicationId}
       />
     );
@@ -273,14 +317,8 @@ function AppContent() {
   if (currentScreen === 'references') {
     return (
       <ReferencesScreen
-        onBack={() => {
-          setSelectedApplicationId(undefined);
-          handleBackToHome();
-        }}
-        onViewApplication={(applicationId: string) => {
-          setSelectedApplicationId(applicationId);
-          setCurrentScreen('applications');
-        }}
+        onBack={handleReferencesBack}
+        onViewApplication={handleViewApplicationFromReferences}
         initialApplicationId={selectedApplicationId}
       />
     );
@@ -293,16 +331,10 @@ function AppContent() {
   if (currentScreen === 'interviewPrep') {
     return (
       <InterviewPrepScreen
-        onBack={() => {
-          setInterviewPrepParams({});
-          handleBackToHome();
-        }}
+        onBack={handleInterviewPrepBack}
         initialCompanyName={interviewPrepParams.companyName}
         initialApplicationId={interviewPrepParams.applicationId}
-        onNavigateToApplication={(applicationId: string) => {
-          setSelectedApplicationId(applicationId);
-          setCurrentScreen('applications');
-        }}
+        onNavigateToApplication={handleNavigateToApplicationFromInterviewPrep}
       />
     );
   }
@@ -314,16 +346,16 @@ function AppContent() {
   // Fallback to home if no screen matches (should never happen)
   return (
     <HomeScreen
-      onNavigateToCalendar={() => setCurrentScreen('calendar')}
+      onNavigateToCalendar={navigateToCalendar}
       onNavigateToDailyPlanner={handleNavigateToDailyPlanner}
-        onNavigateToApplications={handleViewApplications}
-        onNavigateToOffers={handleViewOffers}
-        onNavigateToReferences={handleViewReferences}
-        onNavigateToReports={handleViewReports}
-      onNavigateToInterviewPrep={() => setCurrentScreen('interviewPrep')}
-      onNavigateToThankYouNotes={() => setCurrentScreen('thankYouNotes')}
+      onNavigateToApplications={handleViewApplications}
+      onNavigateToOffers={handleViewOffers}
+      onNavigateToReferences={handleViewReferences}
+      onNavigateToReports={handleViewReports}
+      onNavigateToInterviewPrep={navigateToInterviewPrep}
+      onNavigateToThankYouNotes={navigateToThankYouNotes}
       onNavigateToSettings={handleViewSettings}
-      onNavigateToAbout={() => setCurrentScreen('about')}
+      onNavigateToAbout={navigateToAbout}
     />
   );
 }

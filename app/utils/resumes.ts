@@ -142,9 +142,17 @@ export const saveResume = async (
  */
 export const pickAndSaveResume = async (): Promise<ResumeInfo | null> => {
   try {
+    // On Android, use '*' to allow all file types, or specify MIME types
+    // The document picker will filter by what's available
     const result = await DocumentPicker.getDocumentAsync({
-      type: ['application/pdf', 'application/msword'],
+      type: Platform.OS === 'android' ? '*/*' : [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+        'application/vnd.ms-word.document.macroEnabled.12', // .docm
+      ],
       copyToCacheDirectory: true,
+      multiple: false,
     });
 
     // Check if canceled (newer API format)

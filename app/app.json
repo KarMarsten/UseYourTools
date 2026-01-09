@@ -45,7 +45,13 @@
     "web": {},
     "scheme": "useyourtools",
     "plugins": [
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-document-picker",
+        {
+          "iCloudDocumentScope": "readOnly"
+        }
+      ]
     ],
     "extra": {
       "eas": {
