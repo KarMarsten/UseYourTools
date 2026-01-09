@@ -39,7 +39,7 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
             Tools for Job Hunters
           </Text>
           <Text style={[styles.description, { color: colorScheme.colors.text }]}>
-            A comprehensive mobile app to help you organize your job search. Track applications, manage resumes and cover letters, compare job offers, prepare for interviews, and keep everything in one place.
+            A comprehensive mobile app to help you organize your job search. Track applications, manage resumes and cover letters, compare job offers, prepare for interviews, and keep everything in one place. Available for both iOS and Android.
           </Text>
         </View>
 
@@ -162,6 +162,13 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           </Text>
           <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
             • Create interview events from any job application to keep everything organized
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colorScheme.colors.text }]}>📱 Platform Support</Text>
+          <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
+            UseYourTools is available for both iOS and Android devices. All features work seamlessly across both platforms, including document picker, calendar sync, and notifications.
           </Text>
         </View>
 

@@ -298,7 +298,7 @@ Generate professional PDF reports:
 
 - [Node.js](https://nodejs.org/) installed (v18 or higher recommended)
 - iOS development: Xcode (for iOS builds)
-- Android development: Android Studio (for Android builds) - See [ANDROID_BUILD_GUIDE.md](ANDROID_BUILD_GUIDE.md)
+- Android development: Android Studio (for Android builds) - See [ANDROID_BUILD_GUIDE.md](ANDROID_BUILD_GUIDE.md) or [ANDROID_QUICK_START.md](ANDROID_QUICK_START.md)
 
 ### Installation
 
@@ -341,7 +341,18 @@ npx expo start
 
 Then press `i` for iOS simulator, or scan the QR code with Expo Go app on your device.
 
-> **Note:** Both iOS and Android are supported! See [ANDROID_BUILD_GUIDE.md](ANDROID_BUILD_GUIDE.md) for Android setup instructions.
+**Standalone Android Build:**
+
+For a standalone Android APK (no dev server required):
+
+```bash
+cd app
+./build-android-standalone.sh
+```
+
+The APK will be generated at `android/app/build/outputs/apk/release/app-release.apk`
+
+> **Note:** Both iOS and Android are fully supported! See [ANDROID_BUILD_GUIDE.md](ANDROID_BUILD_GUIDE.md) for detailed Android setup instructions or [ANDROID_QUICK_START.md](ANDROID_QUICK_START.md) for quick reference.
 
 ---
 

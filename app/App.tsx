@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, LogBox } from 'react-native';
-import { useState, useEffect, Component, ErrorInfo, ReactNode, useMemo, useCallback } from 'react';
+import { useState, useEffect, Component, ErrorInfo, ReactNode, useCallback } from 'react';
 import HomeScreen from './components/HomeScreen';
 import CalendarScreen from './components/CalendarScreen';
 import DailyPlannerScreen from './components/DailyPlannerScreen';
