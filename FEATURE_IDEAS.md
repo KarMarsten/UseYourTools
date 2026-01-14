@@ -39,94 +39,9 @@
 
 ---
 
-## 🚀 High-Value Feature Ideas
+## 🚀 Feature Ideas (Not Yet Implemented)
 
-### ✅ **Email Templates & Thank You Notes** ✉️
-**Why**: Professional follow-up emails and thank you notes significantly improve response rates and leave a positive impression.
-
-**Status**: ✅ **Fully Implemented** - Complete email template system with reminders and overdue tracking
-
-**Features**:
-- ✅ Pre-written email templates (follow-up, thank you after interview, acceptance, rejection response, decline offer)
-- ✅ Customizable templates with variable placeholders (company name, position, date, interviewer name, your name, applied date)
-- ✅ Quick send option (opens email client with pre-filled content - supports Gmail and default email clients)
-- ✅ Template library organized by purpose (thank-you, follow-up, decline-offer, acceptance, rejection-response)
-- ✅ Track which emails have been sent for each application (with date, recipient, and template used)
-- ✅ Automatic reminder to send thank you notes after interviews (configurable timing in settings)
-- ✅ Email history display in application details
-- ✅ Context-aware email buttons based on application status
-- ✅ Dedicated Thank You Notes screen with pending notes list
-- ✅ Overdue notes banner on home screen
-- ✅ Thank you notes only shown after interview date has passed
-- ✅ Excludes rejected applications from reminders
-
-**Impact**: High - Professional communication is crucial for job search success
-
----
-
-### ✅ **Thank You Note Tracking** 💌
-**Why**: Following up after interviews with thank you notes is best practice, but easy to forget.
-
-**Status**: ✅ **Fully Implemented** - Integrated into email templates with automatic reminders and overdue tracking
-
-**Features**:
-- ✅ Automatic prompt after interview events (configurable timing: days after interview, default 1 day)
-- ✅ Track thank you note status per interview (Sent, Pending, Skipped)
-- ✅ Link to email templates for thank you notes
-- ✅ Reminder list of pending thank you notes (dedicated Thank You Notes screen)
-- ✅ Quick action: "Mark as Sent" or "Skip"
-- ✅ Overdue tracking banner on home screen
-- ✅ Only shows thank you notes after interview date has passed
-- ✅ Excludes rejected applications from reminders
-- ✅ Navigation from reminders to associated job applications
-
-**Impact**: Medium-High - Professional follow-up improves outcomes
-
----
-
-### ✅ **Company Research** 🏢
-**Why**: Researching companies before interviews is essential.
-
-**Status**: ✅ **Fully Implemented** - Company Research form in Interview Prep screen with navigation and multi-application linking
-
-**Features**:
-- ✅ Company profiles (linked to multiple applications - many-to-one relationship)
-- ✅ Research notes (optional, with company name, position, website, LinkedIn, Glassdoor links)
-- ✅ Auto-population of URLs when company name is entered
-- ✅ Navigation from applications: Tap company name to navigate to company research
-- ✅ Application links: View all linked applications with position title and applied date
-- ✅ Navigation back to applications from research page
-- ✅ Clickable links to access company information
-- ✅ Edit and delete research entries as needed
-
-**Impact**: Medium-High - Better interview preparation
-
----
-
-### ✅ **Kanban Board View** 📋
-**Why**: Visual kanban boards help organize and prioritize job applications more effectively than lists.
-
-**Status**: ✅ **Fully Implemented** - Complete kanban board with drag-and-drop functionality
-
-**Features**:
-- ✅ Toggle between list and kanban views
-- ✅ Four columns: Applied, Interview, Rejected, No Response
-- ✅ Drag-and-drop cards between columns to change status
-- ✅ Cards display company name, position title, and last updated time
-- ✅ Configurable cards per column (default: 5)
-- ✅ Expandable columns ("+X more" to show all cards)
-- ✅ Mobile-friendly with auto-scroll when dragging near screen edges
-- ✅ Column selector modal for easy status changes (appears when tapping or dragging cards)
-- ✅ Edit option in modal for quick access to application details
-- ✅ Cards sorted by date (most recent first)
-- ✅ Search and week filtering work in kanban view
-- ✅ Status change timestamps tracked for accurate sorting
-
-**Impact**: High - Visual organization improves workflow and makes status management intuitive
-
----
-
-### NEW: **Application Deadline Reminders** ⏰
+### 10. **Application Deadline Reminders** ⏰
 **Why**: Missing application deadlines is a common mistake that can be easily avoided.
 
 **Features**:
@@ -140,7 +55,7 @@
 
 ---
 
-### NEW: **Interview Prep Checklist** ✅
+### 11. **Interview Prep Checklist** ✅
 **Why**: Being prepared for interviews reduces anxiety and improves performance.
 
 **Features**:
@@ -154,7 +69,7 @@
 
 ---
 
-### NEW: **Application Tags & Custom Notes** 🏷️
+### 12. **Application Tags & Custom Notes** 🏷️
 **Why**: Organizing applications with custom tags and detailed notes helps track priorities and follow-ups.
 
 **Features**:
@@ -168,7 +83,7 @@
 
 ---
 
-### NEW: **Salary Negotiation Helper** 💰
+### 13. **Salary Negotiation Helper** 💰
 **Why**: Negotiating salary effectively can significantly impact long-term earnings.
 
 **Features**:
@@ -183,7 +98,7 @@
 
 ---
 
-### NEW: **Interview Question Tracker** 📝
+### 14. **Interview Question Tracker** 📝
 **Why**: Building a personal database of interview questions helps prepare for future interviews.
 
 **Features**:
@@ -197,79 +112,7 @@
 
 ---
 
-### 1. **Cover Letter Management** 📝
-**Why**: Job seekers often need multiple cover letter versions, just like resumes.
-
-**Status**: ✅ **Fully Implemented** - Available in Applications screen with full management capabilities
-
-**Features**:
-- ✅ Save multiple cover letter files (PDF/DOC)
-- ✅ Link cover letters to specific job applications
-- ✅ Quick access to cover letters when applying (dropdown selector)
-- ✅ Cover letter management (rename, delete, share, preview, print)
-- ✅ Active/inactive status tracking (similar to resumes)
-- ✅ Template support (can mark cover letters as templates)
-- ⏳ Template variables (company name, position, date auto-fill)
-
-**Impact**: High - Saves time during application process
-
----
-
-### 2. **Follow-Up Reminders** ⏰
-**Why**: Following up on applications is crucial but easy to forget.
-
-**Status**: ✅ **Fully Implemented** - Automatic reminders with configurable timing, excludes rejected applications
-
-**Features**:
-- ✅ Customizable follow-up timing in settings (days after application/interview)
-- ✅ Auto-create follow-up reminders when application status is "Applied" or after interviews
-- ✅ Smart suggestions: "Follow up on [Company] application from [Date]"
-- ✅ Quick action: "Mark as Followed Up" button
-- ✅ Track follow-up history per application
-- ✅ Overdue tracking banner on home screen
-- ✅ Excludes rejected applications from reminders
-- ✅ Navigation from reminders to associated job applications
-
-**Impact**: High - Improves application success rates
-
----
-
-### 3. **Salary & Compensation Tracking** 💰
-**Why**: Job seekers need to track offers and negotiate effectively.
-
-**Status**: ✅ **Implemented** - Offers screen tracks salary, benefits, work location, and notes
-
-**Features**:
-- ✅ Add salary range/offer amount to applications
-- ✅ Track benefits (health insurance, PTO, 401k, etc.)
-- ✅ Track work location (remote/hybrid/onsite)
-- ✅ Notes on negotiation conversations
-- ⏳ Compare offers side-by-side
-- ⏳ Calculate total compensation value
-
-**Impact**: Medium-High - Helps with decision-making
-
----
-
-### 4. **Interview Preparation Tools** 🎤
-**Why**: Preparation is key to interview success.
-
-**Status**: ✅ **Fully Implemented**
-
-**Features**:
-- ✅ Interview question bank (common questions by role/industry with categories)
-- ✅ STAR method template for behavioral questions (Situation, Task, Action, Result)
-- ✅ Company research notes section (linked to multiple applications)
-- ✅ Interview feedback/notes after interviews (with strengths, areas for improvement)
-- ✅ Practice mode with timer
-- ✅ Link to company website, LinkedIn, Glassdoor reviews
-- ✅ Navigation from applications to company research
-
-**Impact**: High - Directly improves interview performance
-
----
-
-### 5. **Networking Contact Management** 👥
+### 1. **Networking Contact Management** 👥
 **Why**: Networking is crucial but contacts get scattered.
 
 **Features**:
@@ -284,7 +127,7 @@
 
 ---
 
-### 6. **Application Analytics Dashboard** 📊
+### 2. **Application Analytics Dashboard** 📊
 **Why**: Data-driven insights help optimize job search strategy.
 
 **Features**:
@@ -299,7 +142,7 @@
 
 ---
 
-### 7. **Job Search Goals & Targets** 🎯
+### 3. **Job Search Goals & Targets** 🎯
 **Why**: Setting goals keeps job seekers motivated and focused.
 
 **Features**:
@@ -314,7 +157,7 @@
 
 ---
 
-### 8. **Skills & Qualifications Tracker** 🛠️
+### 4. **Skills & Qualifications Tracker** 🛠️
 **Why**: Job seekers need to track what skills they have vs what jobs require.
 
 **Features**:
@@ -329,26 +172,7 @@
 
 ---
 
-### 9. **Interview Feedback & Reflection** 📝
-**Why**: Learning from each interview improves future performance.
-
-**Status**: ✅ **Implemented** - Interview Feedback form in Interview Prep screen
-
-**Features**:
-- ✅ Post-interview reflection form
-- ✅ What went well / What to improve (strengths and areas for improvement fields)
-- ✅ Interview date tracking
-- ✅ Linked to job applications
-- ⏳ Questions asked (build personal question bank)
-- ⏳ Interviewer names and roles
-- ⏳ Follow-up actions
-- ⏳ Rating system (1-5 stars) for interview experience
-
-**Impact**: Medium - Helps improve over time
-
----
-
-### 10. **Application Templates & Quick Apply** ⚡
+### 5. **Application Templates & Quick Apply** ⚡
 **Why**: Many applications ask for the same information repeatedly.
 
 **Features**:
@@ -363,7 +187,7 @@
 
 ---
 
-### 11. **Job Search Timeline & Milestones** 📅
+### 6. **Job Search Timeline & Milestones** 📅
 **Why**: Visualizing progress helps maintain motivation.
 
 **Features**:
@@ -377,7 +201,7 @@
 
 ---
 
-### 12. **Expense Tracking** 💳
+### 7. **Expense Tracking** 💳
 **Why**: Job searching can be expensive (travel, professional services, etc.).
 
 **Features**:
@@ -391,7 +215,7 @@
 
 ---
 
-### 13. **Rejection Analysis & Learning** 📉
+### 8. **Rejection Analysis & Learning** 📉
 **Why**: Understanding why applications are rejected helps improve.
 
 **Features**:
@@ -405,7 +229,7 @@
 
 ---
 
-### 14. **Integration with Job Boards** 🔗
+### 9. **Integration with Job Boards** 🔗
 **Why**: Automating application tracking saves time.
 
 **Features**:
@@ -418,26 +242,183 @@
 
 ---
 
+### 15. **Data Export & Backup** 💾
+**Why**: Users need to backup their data and potentially export it for analysis or migration.
+
+**Features**:
+- Export all data to JSON/CSV format
+- Full backup/restore functionality
+- Export specific data types (applications, events, resumes, etc.)
+- Scheduled automatic backups
+- Cloud backup integration (iCloud, Google Drive)
+- Import data from backup files
+
+**Impact**: High - Data security and portability are critical
+
+---
+
+### 16. **Universal Search** 🔍
+**Why**: Finding specific information across all data quickly saves time.
+
+**Features**:
+- Global search across applications, events, notes, company research
+- Search by company name, position, notes content, interviewer name
+- Filter search results by type (applications, events, etc.)
+- Recent searches history
+- Search suggestions/autocomplete
+
+**Impact**: High - Significantly improves usability
+
+---
+
+### 17. **Application Status History & Timeline** 📅
+**Why**: Tracking the progression of applications helps identify patterns and improve strategy.
+
+**Features**:
+- Visual timeline of status changes for each application
+- See when status changed and what triggered it
+- Status change notes (e.g., "Moved to Interview after phone screen")
+- Filter applications by status change date
+- Export status history for analysis
+
+**Impact**: Medium-High - Helps identify what works
+
+---
+
+### 18. **Offer Comparison Tool** ⚖️
+**Why**: Comparing multiple offers side-by-side helps make informed decisions.
+
+**Features**:
+- Side-by-side comparison of 2-4 offers
+- Compare salary, benefits, location, PTO, 401k match
+- Total compensation calculator
+- Pros/cons list per offer
+- Decision matrix/scoring system
+- Export comparison as PDF
+
+**Impact**: Medium-High - Critical for decision-making when multiple offers exist
+
+---
+
+### 19. **Interview Location & Travel Planning** 🗺️
+**Why**: Managing interview locations and travel logistics is important for planning.
+
+**Features**:
+- Map view of all interview locations
+- Calculate travel time/distance
+- Track interview travel expenses
+- Save parking information
+- Directions integration (Apple Maps/Google Maps)
+- Group interviews by location/date
+
+**Impact**: Medium - Helps with logistics planning
+
+---
+
+### 20. **Document Version History** 📚
+**Why**: Tracking changes to resumes and cover letters helps maintain multiple versions.
+
+**Features**:
+- Version history for resumes and cover letters
+- See when documents were updated
+- Compare versions side-by-side
+- Restore previous versions
+- Version notes (what changed and why)
+- Mark versions as "used for [Company]"
+
+**Impact**: Medium - Better document management
+
+---
+
+### 21. **Interviewer Contact Management** 👤
+**Why**: Keeping track of individual interviewers helps with follow-ups and networking.
+
+**Features**:
+- Store interviewer names, titles, email, LinkedIn
+- Link interviewers to specific interviews
+- Track which interviewers you've contacted
+- Notes about each interviewer
+- Quick actions: Email, LinkedIn, Add to Contacts
+- See all interviews with same interviewer
+
+**Impact**: Medium - Better relationship management
+
+---
+
+### 22. **Recurring Reminders** 🔁
+**Why**: Some follow-ups need to happen regularly (e.g., check in with recruiter every 2 weeks).
+
+**Features**:
+- Set up recurring reminders (weekly, bi-weekly, monthly)
+- Link recurring reminders to applications or contacts
+- Automatic creation of reminder instances
+- Mark instances as complete
+- Pause/resume recurring reminders
+
+**Impact**: Medium - Helps maintain ongoing relationships
+
+---
+
+### 23. **Application Priority & Ranking** ⭐
+**Why**: Not all applications are equal - prioritizing helps focus effort.
+
+**Features**:
+- Manual priority ranking (1-5 stars or High/Medium/Low)
+- Filter applications by priority
+- Visual indicators for high-priority applications
+- Sort by priority in lists
+- Priority-based reminders (high priority get more attention)
+
+**Impact**: Medium - Better focus and time management
+
+---
+
+### 24. **Interview Preparation Time Tracker** ⏱️
+**Why**: Understanding how much time you spend preparing helps optimize your process.
+
+**Features**:
+- Start/stop timer for interview prep
+- Track time spent on company research, STAR responses, practice
+- Time spent per interview
+- Weekly/monthly prep time totals
+- Compare prep time vs interview outcomes
+
+**Impact**: Low-Medium - Useful for self-awareness and optimization
+
+---
+
+### 25. **Company Rating & Notes** ⭐
+**Why**: Rating companies based on interview experience helps remember which companies to prioritize.
+
+**Features**:
+- Rate companies (1-5 stars) based on interview experience
+- Notes about company culture, interview process, red flags
+- Filter applications by company rating
+- See ratings when viewing applications
+- Company rating trends over time
+
+**Impact**: Medium - Helps identify best-fit companies
+
+---
+
 ## 🎯 Priority Recommendations
 
 ### **Quick Wins** (1-2 weeks each):
-1. ✅ **Email Templates & Thank You Notes** - ✅ **COMPLETED** - High impact, fully implemented
-2. ✅ **Kanban Board View** - ✅ **COMPLETED** - Visual organization with drag-and-drop, high impact
-3. **Application Deadline Reminders** - Medium-high impact, builds on existing reminder system
-4. ✅ **Thank You Note Tracking** - ✅ **COMPLETED** - Integrated into email templates with automatic reminders and overdue tracking
-5. ✅ **Follow-Up Reminders** - ✅ **COMPLETED** - Automatic reminders with configurable timing, excludes rejected applications
+1. **Application Deadline Reminders** - Medium-high impact, builds on existing reminder system
+2. **Interview Prep Checklist** - Medium impact, simple but useful
+3. **Application Tags & Custom Notes** - Medium impact, enhances existing features
 
 ### **Medium-Term** (2-4 weeks each):
 1. **Networking Contact Management** - High impact, moderate complexity
-2. **Interview Prep Checklist** - Medium impact, simple but useful
-3. **Application Tags & Custom Notes** - Medium impact, enhances existing features
-4. **Salary Negotiation Helper** - Medium-high impact, useful tool
-5. **Application Analytics Dashboard** - Good insights, requires data aggregation
+2. **Salary Negotiation Helper** - Medium-high impact, useful tool
+3. **Application Analytics Dashboard** - Good insights, requires data aggregation
+4. **Interview Question Tracker** - Medium impact, builds database over time
 
 ### **Long-Term** (1-2 months):
 1. **Job Board Integration** - High impact but complex (API limitations)
-2. **Skills Tracker** - Comprehensive feature, requires good UX design
-3. **Interview Question Tracker** - Medium impact, builds database over time
+2. **Skills & Qualifications Tracker** - Comprehensive feature, requires good UX design
+3. **Application Templates & Quick Apply** - High impact, saves significant time
+4. **Job Search Goals & Targets** - Medium impact, improves motivation
 
 ---
 
