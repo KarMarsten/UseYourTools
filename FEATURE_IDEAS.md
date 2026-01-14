@@ -4,7 +4,7 @@
 
 ## 🚀 Feature Ideas (Not Yet Implemented)
 
-### 10. **Application Deadline Reminders** ⏰
+### 1. **Application Deadline Reminders** ⏰
 **Why**: Missing application deadlines is a common mistake that can be easily avoided.
 
 **Features**:
@@ -18,7 +18,7 @@
 
 ---
 
-### 11. **Interview Prep Checklist** ✅
+### 2. **Interview Prep Checklist** ✅
 **Why**: Being prepared for interviews reduces anxiety and improves performance.
 
 **Features**:
@@ -32,7 +32,7 @@
 
 ---
 
-### 12. **Application Tags & Custom Notes** 🏷️
+### 3. **Application Tags & Custom Notes** 🏷️
 **Why**: Organizing applications with custom tags and detailed notes helps track priorities and follow-ups.
 
 **Features**:
@@ -46,7 +46,7 @@
 
 ---
 
-### 13. **Salary Negotiation Helper** 💰
+### 4. **Salary Negotiation Helper** 💰
 **Why**: Negotiating salary effectively can significantly impact long-term earnings.
 
 **Features**:
@@ -61,7 +61,7 @@
 
 ---
 
-### 14. **Interview Question Tracker** 📝
+### 5. **Interview Question Tracker** 📝
 **Why**: Building a personal database of interview questions helps prepare for future interviews.
 
 **Features**:
@@ -75,7 +75,7 @@
 
 ---
 
-### 1. **Networking Contact Management** 👥
+### 6. **Networking Contact Management** 👥
 **Why**: Networking is crucial but contacts get scattered.
 
 **Features**:
@@ -90,7 +90,7 @@
 
 ---
 
-### 2. **Application Analytics Dashboard** 📊
+### 7. **Application Analytics Dashboard** 📊
 **Why**: Data-driven insights help optimize job search strategy.
 
 **Features**:
@@ -105,7 +105,7 @@
 
 ---
 
-### 3. **Job Search Goals & Targets** 🎯
+### 8. **Job Search Goals & Targets** 🎯
 **Why**: Setting goals keeps job seekers motivated and focused.
 
 **Features**:
@@ -120,7 +120,7 @@
 
 ---
 
-### 4. **Skills & Qualifications Tracker** 🛠️
+### 9. **Skills & Qualifications Tracker** 🛠️
 **Why**: Job seekers need to track what skills they have vs what jobs require.
 
 **Features**:
@@ -135,7 +135,7 @@
 
 ---
 
-### 5. **Application Templates & Quick Apply** ⚡
+### 10. **Application Templates & Quick Apply** ⚡
 **Why**: Many applications ask for the same information repeatedly.
 
 **Features**:
@@ -150,7 +150,7 @@
 
 ---
 
-### 6. **Job Search Timeline & Milestones** 📅
+### 11. **Job Search Timeline & Milestones** 📅
 **Why**: Visualizing progress helps maintain motivation.
 
 **Features**:
@@ -164,7 +164,7 @@
 
 ---
 
-### 7. **Expense Tracking** 💳
+### 12. **Expense Tracking** 💳
 **Why**: Job searching can be expensive (travel, professional services, etc.).
 
 **Features**:
@@ -178,7 +178,7 @@
 
 ---
 
-### 8. **Rejection Analysis & Learning** 📉
+### 13. **Rejection Analysis & Learning** 📉
 **Why**: Understanding why applications are rejected helps improve.
 
 **Features**:
@@ -192,7 +192,7 @@
 
 ---
 
-### 9. **Integration with Job Boards** 🔗
+### 14. **Integration with Job Boards** 🔗
 **Why**: Automating application tracking saves time.
 
 **Features**:
