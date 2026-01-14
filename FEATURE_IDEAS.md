@@ -2,43 +2,6 @@
 
 **Last Updated**: January 2025
 
-## Current Features Summary
-- ✅ Job application tracking (Applied, Rejected, Interview statuses with rejection reasons)
-- ✅ Calendar & daily planner with customizable time blocks
-- ✅ Event management (Interviews, Appointments, Reminders with notifications)
-- ✅ Resume management (multiple versions, active/inactive)
-- ✅ Cover letter management (save, link to applications, preview, share, active/inactive tracking)
-- ✅ Job offers tracking (salary, benefits, work location, notes)
-- ✅ Reports (Weekly Schedule, Unemployment with smart date tracking, Job Applications)
-- ✅ Calendar sync (Apple/Google)
-- ✅ Job site quick links (Indeed, LinkedIn, etc.)
-- ✅ Interview Prep tools:
-  - Interview question bank (by category/industry/role)
-  - STAR method responses (Situation, Task, Action, Result)
-  - Company research notes (with website, LinkedIn, Glassdoor links, multi-application linking)
-  - Interview feedback (strengths, areas for improvement)
-  - Practice mode with timer
-- ✅ Bi-directional linking between job applications and events
-- ✅ Follow-up reminder settings (configurable days after application/interview, excludes rejected applications)
-- ✅ Modern color palette with dark mode support
-- ✅ Multiple color scheme options (Earth-Tone, Cheerful Nature, Sunny Sky, Imagination, Modern)
-- ✅ Reference Management (contact database, link to applications, quick actions for email/call)
-- ✅ **Email Templates & Thank You Notes**:
-  - Pre-written templates (thank-you, follow-up, acceptance, rejection-response, decline-offer)
-  - Variable placeholders (company, position, interviewer name, date, etc.)
-  - Quick send to email client (Gmail or default)
-  - Email tracking per application
-  - Automatic thank you note reminders after interviews (configurable timing)
-  - Template library organized by purpose
-  - Dedicated Thank You Notes screen
-  - Overdue notes banner on home screen
-- ✅ **Week Filter for Applications**: Filter applications by week (All Weeks, This Week, Last Week, 2 Weeks Ago, 3 Weeks Ago) with accurate date-based filtering that respects the applied date
-- ✅ **Company Research Navigation**: Tap company name in applications to navigate to company research page
-- ✅ **Overdue Notes Tracking**: Banner on home screen showing count of overdue thank you notes and follow-up reminders (only pending items after due dates, excludes rejected applications)
-- ✅ **Kanban Board View**: Visual kanban board for job applications with drag-and-drop functionality. Toggle between list and kanban views. Cards show company, position title, and last updated time. Drag cards between columns (Applied, Interview, Rejected, No Response) to change status. Configurable cards per column. Mobile-friendly with auto-scroll when dragging near edges. Column selector modal for easy status changes.
-
----
-
 ## 🚀 Feature Ideas (Not Yet Implemented)
 
 ### 10. **Application Deadline Reminders** ⏰
