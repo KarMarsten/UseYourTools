@@ -1,6 +1,6 @@
 # Feature Ideas for UseYourTools 🎯
 
-**Last Updated**: January 7, 2025
+**Last Updated**: January 2025
 
 ## Current Features Summary
 - ✅ Job application tracking (Applied, Rejected, Interview statuses with rejection reasons)
@@ -35,6 +35,7 @@
 - ✅ **Week Filter for Applications**: Filter applications by week (All Weeks, This Week, Last Week, 2 Weeks Ago, 3 Weeks Ago) with accurate date-based filtering that respects the applied date
 - ✅ **Company Research Navigation**: Tap company name in applications to navigate to company research page
 - ✅ **Overdue Notes Tracking**: Banner on home screen showing count of overdue thank you notes and follow-up reminders (only pending items after due dates, excludes rejected applications)
+- ✅ **Kanban Board View**: Visual kanban board for job applications with drag-and-drop functionality. Toggle between list and kanban views. Cards show company, position title, and last updated time. Drag cards between columns (Applied, Interview, Rejected, No Response) to change status. Configurable cards per column. Mobile-friendly with auto-scroll when dragging near edges. Column selector modal for easy status changes.
 
 ---
 
@@ -99,6 +100,29 @@
 - ✅ Edit and delete research entries as needed
 
 **Impact**: Medium-High - Better interview preparation
+
+---
+
+### ✅ **Kanban Board View** 📋
+**Why**: Visual kanban boards help organize and prioritize job applications more effectively than lists.
+
+**Status**: ✅ **Fully Implemented** - Complete kanban board with drag-and-drop functionality
+
+**Features**:
+- ✅ Toggle between list and kanban views
+- ✅ Four columns: Applied, Interview, Rejected, No Response
+- ✅ Drag-and-drop cards between columns to change status
+- ✅ Cards display company name, position title, and last updated time
+- ✅ Configurable cards per column (default: 5)
+- ✅ Expandable columns ("+X more" to show all cards)
+- ✅ Mobile-friendly with auto-scroll when dragging near screen edges
+- ✅ Column selector modal for easy status changes (appears when tapping or dragging cards)
+- ✅ Edit option in modal for quick access to application details
+- ✅ Cards sorted by date (most recent first)
+- ✅ Search and week filtering work in kanban view
+- ✅ Status change timestamps tracked for accurate sorting
+
+**Impact**: High - Visual organization improves workflow and makes status management intuitive
 
 ---
 
@@ -398,9 +422,10 @@
 
 ### **Quick Wins** (1-2 weeks each):
 1. ✅ **Email Templates & Thank You Notes** - ✅ **COMPLETED** - High impact, fully implemented
-2. **Application Deadline Reminders** - Medium-high impact, builds on existing reminder system
-3. ✅ **Thank You Note Tracking** - ✅ **COMPLETED** - Integrated into email templates with automatic reminders and overdue tracking
-4. ✅ **Follow-Up Reminders** - ✅ **COMPLETED** - Automatic reminders with configurable timing, excludes rejected applications
+2. ✅ **Kanban Board View** - ✅ **COMPLETED** - Visual organization with drag-and-drop, high impact
+3. **Application Deadline Reminders** - Medium-high impact, builds on existing reminder system
+4. ✅ **Thank You Note Tracking** - ✅ **COMPLETED** - Integrated into email templates with automatic reminders and overdue tracking
+5. ✅ **Follow-Up Reminders** - ✅ **COMPLETED** - Automatic reminders with configurable timing, excludes rejected applications
 
 ### **Medium-Term** (2-4 weeks each):
 1. **Networking Contact Management** - High impact, moderate complexity

@@ -56,7 +56,7 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>💼 Job Applications</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-              Track every application with position details, status, and notes. Add rejection reasons for unemployment reporting. Search and filter by status or week to stay organized. Week filtering respects your applied date for accurate results. Create interview events directly from applications or link to existing events. Bi-directional linking keeps your data synchronized. Application dates automatically reflect interview dates when progressing through the interview process. Tap company names to navigate directly to company research. Automatic follow-up reminders help you stay on top of applications (excludes rejected applications).
+              Track every application with position details, status, and notes. Add rejection reasons for unemployment reporting. Search and filter by status or week to stay organized. Week filtering respects your applied date for accurate results. Toggle between list and kanban board views - the kanban board lets you drag and drop cards between columns (Applied, Interview, Rejected, No Response) to change status visually. Cards show company, position title, and last updated time. Create interview events directly from applications or link to existing events. Bi-directional linking keeps your data synchronized. Application dates automatically reflect interview dates when progressing through the interview process. Tap company names to navigate directly to company research. Automatic follow-up reminders help you stay on top of applications (excludes rejected applications).
             </Text>
           </View>
 
@@ -162,6 +162,9 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           </Text>
           <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
             • Create interview events from any job application to keep everything organized
+          </Text>
+          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
+            • Use the kanban board view to visually organize applications - drag cards between columns to change status
           </Text>
         </View>
 

@@ -80,11 +80,24 @@ Comprehensive tracking system for all your applications:
   - **Applied** (newly submitted)
   - **Rejected** (with optional rejection reason for unemployment reporting)
   - **Interview** (application has progressed)
+  - **No Response** (no response received)
 - Notes section
 - Link resumes and cover letters to applications
 - **Bi-directional linking**: Link multiple interview events to a single application
 - **Smart date tracking**: Application date reflects interview date when moving from applied → interview → rejected
 - **Company Research Navigation**: Tap company name to navigate directly to company research page
+
+**Kanban Board View:**
+- **Toggle views**: Switch between list and kanban board views
+- **Visual organization**: Four columns (Applied, Interview, Rejected, No Response) for easy status management
+- **Drag-and-drop**: Drag cards between columns to change application status
+- **Card details**: Each card shows company name, position title, and last updated time
+- **Configurable display**: Set how many cards to show per column (default: 5)
+- **Expandable columns**: Click "+X more" to see all cards in a column
+- **Mobile-friendly**: Auto-scrolls when dragging cards near screen edges
+- **Quick actions**: Tap a card to open modal with Edit and Move options
+- **Column selector**: Easy status changes via dropdown modal
+- **Search & filter**: Search and week filtering work seamlessly in kanban view
 
 **Smart Features:**
 - **Search**: Find applications by company, position, or source
@@ -93,6 +106,7 @@ Comprehensive tracking system for all your applications:
 - **Quick links**: Tap to open the original job posting
 - **Filter**: View applications by status (All, Applied, Rejected, Interview)
 - **Week filter**: Filter applications by week (All Weeks, This Week, Last Week, 2 Weeks Ago, 3 Weeks Ago) - respects the applied date for accurate filtering
+- **Kanban board**: Visual kanban board with drag-and-drop for intuitive status management
 - **Create interview events**: Easily create interview events from any application with company and position pre-filled (available for all application statuses)
 - **Link to existing events**: Link applications to existing interview or appointment events
 - **View linked events**: See all events linked to an application with date, time, and contact name
@@ -382,6 +396,7 @@ The APK will be generated at `android/app/build/outputs/apk/release/app-release.
 - **Track rejection reasons**: Help with unemployment reporting and identifying patterns
 - **Use filters**: Filter applications by status or week to focus on what needs attention
 - **Week filtering**: Use the week filter to see applications from specific time periods based on when you applied
+- **Kanban board**: Use the kanban board view for visual organization - drag cards between columns to change status
 - **Long-press icons**: Get helpful tooltips by long-pressing the About and Settings icons
 - **Smart date tracking**: Application dates automatically reflect interview dates when applications progress through interview to rejection
 - **Manage references**: Keep your reference contacts organized and linked to applications for easy access when applying

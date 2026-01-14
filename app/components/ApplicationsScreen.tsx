@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,6 +13,9 @@ import {
   Modal,
   Keyboard,
   findNodeHandle,
+  PanResponder,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePreferences } from '../context/PreferencesContext';
@@ -56,6 +59,7 @@ import {
   getAllFollowUpReminders, 
   getFollowUpRemindersForApplication,
   completeFollowUpReminder,
+  completeFollowUpReminderAndCreateNext,
   FollowUpReminder,
   deleteFollowUpRemindersForApplication 
 } from '../utils/followUpReminders';
@@ -74,10 +78,218 @@ interface ApplicationsScreenProps {
   initialApplicationId?: string;
 }
 
+interface DraggableKanbanCardProps {
+  app: JobApplication;
+  currentStatus: string;
+  statusChangeTime: Date;
+  timezone?: string;
+  use12Hour: boolean;
+  draggedCard: { app: JobApplication; status: string } | null;
+  dragPosition: { x: number; y: number };
+  columnRefs: React.MutableRefObject<Map<string, View>>;
+  cardRefs: React.MutableRefObject<Map<string, { x: number; y: number; width: number; height: number }>>;
+  colorScheme: any;
+  onDragStart: (app: JobApplication, status: string) => void;
+  onDragMove: (x: number, y: number) => void;
+  onDragEnd: (x: number, y: number) => void;
+  onPress: () => void;
+}
+
+const DraggableKanbanCard: React.FC<DraggableKanbanCardProps> = ({
+  app,
+  currentStatus,
+  statusChangeTime,
+  timezone,
+  use12Hour,
+  draggedCard,
+  dragPosition,
+  columnRefs,
+  cardRefs,
+  colorScheme,
+  onDragStart,
+  onDragMove,
+  onDragEnd,
+  onPress,
+}) => {
+  const isDragging = draggedCard?.app.id === app.id;
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const touchStartTime = useRef<number>(0);
+  
+  const panResponder = useMemo(() => {
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => {
+        touchStartTime.current = Date.now();
+        return false;
+      },
+      onStartShouldSetPanResponderCapture: () => {
+        // Don't capture on start - let ScrollView handle initial scrolling
+        touchStartTime.current = Date.now();
+        return false;
+      },
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // If already dragging, always capture
+        if (draggedCard?.app.id === app.id) {
+          return true;
+        }
+        
+        const timeSinceStart = Date.now() - touchStartTime.current;
+        const moved = Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
+        
+        // Capture if long press (200ms) OR moved (5px) - low threshold for quick response
+        if (timeSinceStart > 200 || moved) {
+          return true;
+        }
+        
+        return false;
+      },
+      onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+        // If already dragging, always capture
+        if (draggedCard?.app.id === app.id) {
+          return true;
+        }
+        
+        const timeSinceStart = Date.now() - touchStartTime.current;
+        const moved = Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
+        
+        // Capture if long press or moved - this prevents ScrollView from scrolling
+        return timeSinceStart > 200 || moved;
+      },
+      onPanResponderGrant: (evt) => {
+        touchStartTime.current = Date.now();
+        // Set a timer for long press to start drag
+        longPressTimer.current = setTimeout(() => {
+          if (!draggedCard) {
+            onDragStart(app, currentStatus);
+          }
+        }, 200);
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        // Clear long press timer if user moves
+        if (longPressTimer.current) {
+          clearTimeout(longPressTimer.current);
+          longPressTimer.current = null;
+        }
+        
+        const timeSinceStart = Date.now() - touchStartTime.current;
+        const moved = Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
+        
+        // Start dragging if: long press (200ms) OR moved (5px)
+        const shouldStartDrag = !draggedCard && (timeSinceStart > 200 || moved);
+        if (shouldStartDrag) {
+          onDragStart(app, currentStatus);
+          // Immediately update drag position after starting
+          onDragMove(evt.nativeEvent.pageX, evt.nativeEvent.pageY);
+        } else if (draggedCard?.app.id === app.id) {
+          // Update drag position if already dragging
+          onDragMove(evt.nativeEvent.pageX, evt.nativeEvent.pageY);
+        }
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        // Clear long press timer
+        if (longPressTimer.current) {
+          clearTimeout(longPressTimer.current);
+          longPressTimer.current = null;
+        }
+        
+        // If it was a quick tap and not a drag, trigger onPress
+        const timeSinceStart = Date.now() - touchStartTime.current;
+        const moved = Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
+        
+        if (!draggedCard && !moved && timeSinceStart < 500) {
+          // It was a tap, trigger onPress
+          setTimeout(() => {
+            onPress();
+          }, 50);
+          return;
+        }
+        
+        if (draggedCard?.app.id === app.id) {
+          // Only call onDragEnd if there was actual movement (not just a tap)
+          const moved = Math.abs(gestureState.dx) > 10 || Math.abs(gestureState.dy) > 10;
+          if (moved) {
+            onDragEnd(evt.nativeEvent.pageX, evt.nativeEvent.pageY);
+          }
+          // If it was just a tap, the modal is already shown via onPress
+        }
+      },
+      onPanResponderTerminate: () => {
+        // Clear long press timer
+        if (longPressTimer.current) {
+          clearTimeout(longPressTimer.current);
+          longPressTimer.current = null;
+        }
+        // Reset if drag is terminated
+        if (draggedCard?.app.id === app.id) {
+          onDragEnd(0, 0);
+        }
+      },
+    });
+  }, [app, currentStatus, draggedCard, onDragStart, onDragMove, onDragEnd, onPress]);
+
+  return (
+    <Animated.View
+      {...panResponder.panHandlers}
+      onLayout={(event) => {
+        const { x, y, width, height } = event.nativeEvent.layout;
+        // Get absolute position
+        event.target.measure((fx, fy, fwidth, fheight, pageX, pageY) => {
+          cardRefs.current.set(app.id, { x: pageX, y: pageY, width, height });
+        });
+      }}
+      style={[
+        styles.kanbanCard,
+        {
+          backgroundColor: colorScheme.colors.background,
+          borderColor: isDragging ? colorScheme.colors.primary : colorScheme.colors.border,
+          borderWidth: isDragging ? 2 : 1,
+          opacity: isDragging ? 0.7 : 1,
+          transform: isDragging && dragPosition.x > 0 && dragPosition.y > 0 ? [
+            { translateX: dragPosition.x - 150 }, // Approximate card center offset
+            { translateY: dragPosition.y - 50 },
+          ] : [],
+          zIndex: isDragging ? 1000 : 1,
+          position: isDragging ? 'absolute' : 'relative',
+        }
+      ]}
+    >
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() => {
+          if (!draggedCard) {
+            onPress();
+          }
+        }}
+        disabled={!!draggedCard}
+      >
+        <Text style={[styles.kanbanCardCompany, { color: colorScheme.colors.text }]} numberOfLines={1}>
+          {app.company}
+        </Text>
+        <Text style={[styles.kanbanCardTitle, { color: colorScheme.colors.textSecondary }]} numberOfLines={2}>
+          {app.positionTitle}
+        </Text>
+        <Text style={[styles.kanbanCardDate, { color: colorScheme.colors.textSecondary }]}>
+          Updated: {statusChangeTime.toLocaleDateString('en-US', {
+            timeZone: timezone,
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          })} {statusChangeTime.toLocaleTimeString('en-US', {
+            timeZone: timezone,
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: use12Hour,
+          })}
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
 export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer, onCreateReference, onNavigateToInterviewPrep, initialApplicationId }: ApplicationsScreenProps) {
   const [activeTab, setActiveTab] = useState<'applications' | 'resumes' | 'coverLetters'>('applications');
   
   const [applications, setApplications] = useState<JobApplication[]>([]);
+  const [allApplications, setAllApplications] = useState<JobApplication[]>([]); // Store all applications for kanban view
   const [searchTerm, setSearchTerm] = useState('');
   const [stats, setStats] = useState<ApplicationStats>({
     total: 0,
@@ -89,7 +301,27 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
   const [editingApplication, setEditingApplication] = useState<JobApplication | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'applied' | 'rejected' | 'interview'>('all');
   const [selectedWeek, setSelectedWeek] = useState<Date | null>(null); // null means "all weeks"
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list'); // View mode: list or kanban
+  const [expandedKanbanColumns, setExpandedKanbanColumns] = useState<Set<string>>(new Set()); // Track which kanban columns are expanded
+  const [draggedCard, setDraggedCard] = useState<{ app: JobApplication; status: string } | null>(null);
+  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+  const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0, cardX: 0, cardY: 0 });
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const [showColumnSelector, setShowColumnSelector] = useState(false);
+  const columnRefs = useRef<Map<string, View>>(new Map());
+  const columnPositions = useRef<Map<string, { x: number; y: number; width: number; height: number }>>(new Map());
+  const cardRefs = useRef<Map<string, { x: number; y: number; width: number; height: number }>>(new Map());
+  const kanbanScrollViewRef = useRef<ScrollView>(null);
+  const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const kanbanScrollX = useRef(0);
   const [showEventModal, setShowEventModal] = useState(false);
+  const [showAddNoteModal, setShowAddNoteModal] = useState(false);
+  const [addNoteApplication, setAddNoteApplication] = useState<JobApplication | null>(null);
+  const [newNoteText, setNewNoteText] = useState('');
+  const [showCompletionDatePicker, setShowCompletionDatePicker] = useState(false);
+  const [completionDateReminderId, setCompletionDateReminderId] = useState<string | null>(null);
+  const [selectedCompletionDate, setSelectedCompletionDate] = useState<Date>(new Date());
+  const [completionDateInput, setCompletionDateInput] = useState('');
   const [creatingEventForApplication, setCreatingEventForApplication] = useState<JobApplication | null>(null);
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [showLinkEventModal, setShowLinkEventModal] = useState(false);
@@ -243,6 +475,22 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
     loadFollowUpReminders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Clean up auto-scroll interval when drag ends
+  useEffect(() => {
+    if (!draggedCard && autoScrollIntervalRef.current) {
+      clearInterval(autoScrollIntervalRef.current);
+      autoScrollIntervalRef.current = null;
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (autoScrollIntervalRef.current) {
+        clearInterval(autoScrollIntervalRef.current);
+        autoScrollIntervalRef.current = null;
+      }
+    };
+  }, [draggedCard]);
 
   // Handle scrolling to initial application when it's provided
   useEffect(() => {
@@ -632,11 +880,12 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
         
         // Auto-update application status to 'interview' if it's currently 'applied'
         if (creatingEventForApplication.status === 'applied') {
+          const previousStatus = creatingEventForApplication.status;
           const updatedApp: JobApplication = {
             ...creatingEventForApplication,
             status: 'interview',
           };
-          await saveApplication(updatedApp);
+          await saveApplication(updatedApp, previousStatus);
         }
       }
 
@@ -668,17 +917,19 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
 
   const loadApplications = async () => {
     try {
-      let allApps = await getAllApplications();
+      const allApps = await getAllApplications();
+      setAllApplications(allApps); // Store all applications for kanban view
       
       // Apply status filter
+      let filteredApps = allApps;
       if (filterStatus !== 'all') {
-        allApps = allApps.filter(app => app.status === filterStatus);
+        filteredApps = filteredApps.filter(app => app.status === filterStatus);
       }
       
       // Apply week filter
       if (selectedWeek) {
         const weekStart = getWeekStart(selectedWeek);
-        allApps = allApps.filter(app => {
+        filteredApps = filteredApps.filter(app => {
           // Extract date components to avoid timezone issues
           const appliedDateUTC = new Date(app.appliedDate);
           const appliedDate = new Date(
@@ -691,7 +942,7 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
         });
       }
       
-      setApplications(allApps);
+      setApplications(filteredApps);
     } catch (error) {
       console.error('Error loading applications:', error);
       Alert.alert('Error', 'Failed to load applications');
@@ -899,7 +1150,8 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
         }
       }
 
-      await saveApplication(application);
+      const previousStatus = editingApplication?.status;
+      await saveApplication(application, previousStatus);
       
       // Create follow-up reminder if this is a new application with status "applied"
       if (!editingApplication && application.status === 'applied' && preferences?.followUpDaysAfterApplication) {
@@ -929,13 +1181,14 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
     }
   };
 
-  const handleStatusChange = async (app: JobApplication, newStatus: 'applied' | 'rejected' | 'interview') => {
+  const handleStatusChange = async (app: JobApplication, newStatus: 'applied' | 'rejected' | 'interview' | 'no-response') => {
     try {
+      const previousStatus = app.status;
       const updatedApp: JobApplication = {
         ...app,
         status: newStatus,
       };
-      await saveApplication(updatedApp);
+      await saveApplication(updatedApp, previousStatus);
       
       // If status changed to rejected, automatically complete any application follow-up reminders
       if (newStatus === 'rejected') {
@@ -963,12 +1216,141 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
 
   const handleCompleteFollowUp = async (reminderId: string) => {
     try {
-      await completeFollowUpReminder(reminderId);
+      const nextReminder = await completeFollowUpReminderAndCreateNext(reminderId, true);
       await loadFollowUpReminders();
       await loadApplications(); // Reload to refresh any follow-up displays
+      
+      if (nextReminder) {
+        Alert.alert(
+          'Follow-up Completed',
+          `Next follow-up scheduled for ${new Date(nextReminder.dueDate).toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric',
+            year: 'numeric'
+          })}`,
+          [{ text: 'OK' }]
+        );
+      }
     } catch (error) {
       console.error('Error completing follow-up reminder:', error);
       Alert.alert('Error', 'Failed to complete follow-up reminder');
+    }
+  };
+
+  const handleMarkFollowUpCompleted = async (reminderId: string, completedDate?: Date) => {
+    try {
+      await completeFollowUpReminder(reminderId, completedDate);
+      await loadFollowUpReminders();
+      await loadApplications(); // Reload to refresh any follow-up displays
+      const dateStr = completedDate 
+        ? completedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : 'today';
+      Alert.alert('Success', `Follow-up marked as completed on ${dateStr}`);
+    } catch (error) {
+      console.error('Error marking follow-up as completed:', error);
+      Alert.alert('Error', 'Failed to mark follow-up as completed');
+    }
+  };
+
+  const handleSelectCompletionDate = (reminderId: string) => {
+    setCompletionDateReminderId(reminderId);
+    const today = new Date();
+    setSelectedCompletionDate(today);
+    // Initialize input with today's date in YYYY-MM-DD format
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    setCompletionDateInput(`${year}-${month}-${day}`);
+    setShowCompletionDatePicker(true);
+  };
+
+  const handleConfirmCompletionDate = async () => {
+    if (completionDateReminderId) {
+      // Parse the input date
+      const dateMatch = completionDateInput.match(/(\d{4})-(\d{2})-(\d{2})/) || completionDateInput.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      let dateToUse = selectedCompletionDate;
+      
+      if (dateMatch) {
+        let year, month, day;
+        if (dateMatch[0].includes('/')) {
+          // MM/DD/YYYY format
+          month = parseInt(dateMatch[1], 10) - 1;
+          day = parseInt(dateMatch[2], 10);
+          year = parseInt(dateMatch[3], 10);
+        } else {
+          // YYYY-MM-DD format
+          year = parseInt(dateMatch[1], 10);
+          month = parseInt(dateMatch[2], 10) - 1;
+          day = parseInt(dateMatch[3], 10);
+        }
+        const parsedDate = new Date(year, month, day);
+        if (!isNaN(parsedDate.getTime())) {
+          dateToUse = parsedDate;
+        }
+      }
+      
+      await handleMarkFollowUpCompleted(completionDateReminderId, dateToUse);
+      setShowCompletionDatePicker(false);
+      setCompletionDateReminderId(null);
+      setCompletionDateInput('');
+    }
+  };
+
+  const handleAddNote = (app: JobApplication) => {
+    setAddNoteApplication(app);
+    setNewNoteText('');
+    setShowAddNoteModal(true);
+  };
+
+  const handleSaveNote = async () => {
+    if (!addNoteApplication || !newNoteText.trim()) {
+      Alert.alert('Error', 'Please enter a note');
+      return;
+    }
+
+    try {
+      const now = new Date();
+      const timezone = preferences?.timezoneMode === 'custom' && preferences?.timezone
+        ? preferences.timezone
+        : undefined;
+      const use12Hour = preferences?.use12HourClock ?? false;
+      
+      const dateStr = now.toLocaleDateString('en-US', {
+        timeZone: timezone,
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+      const timeStr = now.toLocaleTimeString('en-US', {
+        timeZone: timezone,
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: use12Hour,
+      });
+      
+      const timestamp = `${dateStr} at ${timeStr}`;
+      const noteEntry = `[${timestamp}] ${newNoteText.trim()}`;
+      
+      const updatedNotes = addNoteApplication.notes
+        ? `${addNoteApplication.notes}\n${noteEntry}`
+        : noteEntry;
+      
+      const updatedApplication = {
+        ...addNoteApplication,
+        notes: updatedNotes,
+      };
+      
+      await saveApplication(updatedApplication, addNoteApplication.status);
+      await loadApplications();
+      
+      setShowAddNoteModal(false);
+      setAddNoteApplication(null);
+      setNewNoteText('');
+      
+      Alert.alert('Success', 'Note added successfully');
+    } catch (error) {
+      console.error('Error adding note:', error);
+      Alert.alert('Error', 'Failed to add note');
     }
   };
 
@@ -1593,15 +1975,25 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
             </TouchableOpacity>
           </View>
 
-          {/* Search */}
+          {/* Search and View Toggle */}
           <View style={[styles.searchContainer, { backgroundColor: colorScheme.colors.surface }]}>
-            <TextInput
-              style={[styles.searchInput, { backgroundColor: colorScheme.colors.background, color: colorScheme.colors.text, borderColor: colorScheme.colors.border }]}
-              value={searchTerm}
-              onChangeText={setSearchTerm}
-              placeholder="Search by company, position, or source..."
-              placeholderTextColor={colorScheme.colors.textSecondary}
-            />
+            <View style={styles.searchRow}>
+              <TextInput
+                style={[styles.searchInput, { backgroundColor: colorScheme.colors.background, color: colorScheme.colors.text, borderColor: colorScheme.colors.border, flex: 1 }]}
+                value={searchTerm}
+                onChangeText={setSearchTerm}
+                placeholder="Search by company, position, or source..."
+                placeholderTextColor={colorScheme.colors.textSecondary}
+              />
+              <TouchableOpacity
+                style={[styles.viewToggleButton, { backgroundColor: colorScheme.colors.background, borderColor: colorScheme.colors.border }]}
+                onPress={() => setViewMode(viewMode === 'list' ? 'kanban' : 'list')}
+              >
+                <Text style={[styles.viewToggleText, { color: colorScheme.colors.text }]}>
+                  {viewMode === 'list' ? '📋' : '📝'} {viewMode === 'list' ? 'Kanban' : 'List'}
+                </Text>
+              </TouchableOpacity>
+            </View>
         <View style={styles.weekFilterContainer}>
           <Text style={[styles.weekFilterLabel, { color: colorScheme.colors.textSecondary }]}>Week:</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.weekFilterScroll}>
@@ -1641,20 +2033,541 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
         </View>
       </View>
 
-      {/* Applications List */}
-      <ScrollView 
-        ref={applicationsScrollViewRef}
-        style={styles.scrollView} 
-        contentContainerStyle={styles.listContent}
-      >
-        {applications.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colorScheme.colors.textSecondary }]}>
-              {searchTerm ? 'No applications found' : 'No applications yet. Tap "+ Add" to get started!'}
-            </Text>
-          </View>
-        ) : (
-          applications.map((app) => (
+      {/* Applications List or Kanban Board */}
+      {viewMode === 'kanban' ? (
+        <>
+        <ScrollView 
+          ref={kanbanScrollViewRef}
+          horizontal 
+          showsHorizontalScrollIndicator={true}
+          style={styles.kanbanScrollView}
+          contentContainerStyle={styles.kanbanContent}
+          scrollEnabled={!draggedCard}
+          onScroll={(event) => {
+            kanbanScrollX.current = event.nativeEvent.contentOffset.x;
+          }}
+          scrollEventThrottle={16}
+        >
+          {(['applied', 'interview', 'rejected', 'no-response'] as const).map((status) => {
+            // For kanban view, use allApplications and filter by status and search term only (ignore status filter)
+            const allStatusApps = (() => {
+              let filtered = allApplications.filter(app => app.status === status);
+              
+              // Apply search filter if present
+              if (searchTerm.trim()) {
+                const searchLower = searchTerm.toLowerCase();
+                filtered = filtered.filter(app => 
+                  app.company.toLowerCase().includes(searchLower) ||
+                  app.positionTitle.toLowerCase().includes(searchLower) ||
+                  app.source.toLowerCase().includes(searchLower)
+                );
+              }
+              
+              // Apply week filter if present
+              if (selectedWeek) {
+                const weekStart = getWeekStart(selectedWeek);
+                filtered = filtered.filter(app => {
+                  const appliedDateUTC = new Date(app.appliedDate);
+                  const appliedDate = new Date(
+                    appliedDateUTC.getFullYear(),
+                    appliedDateUTC.getMonth(),
+                    appliedDateUTC.getDate(),
+                    0, 0, 0, 0
+                  );
+                  return isDateInWeek(appliedDate, weekStart);
+                });
+              }
+              
+              return filtered;
+            })().sort((a, b) => {
+              // Sort by last updated or status change timestamp, most recent first
+              const aDate = a.statusChangeTimestamps?.[status] || a.lastUpdated || a.appliedDate;
+              const bDate = b.statusChangeTimestamps?.[status] || b.lastUpdated || b.appliedDate;
+              return new Date(bDate).getTime() - new Date(aDate).getTime();
+            });
+            
+            const isExpanded = expandedKanbanColumns.has(status);
+            const cardsPerColumn = preferences?.kanbanCardsPerColumn || 5;
+            const statusApps = isExpanded 
+              ? allStatusApps 
+              : allStatusApps.slice(0, cardsPerColumn);
+            
+            const statusLabel = getStatusLabel(status);
+            const statusColor = getStatusColor(status);
+            
+            return (
+              <View 
+                key={status} 
+                ref={(ref) => {
+                  if (ref) {
+                    columnRefs.current.set(status, ref);
+                  } else {
+                    columnRefs.current.delete(status);
+                    columnPositions.current.delete(status);
+                  }
+                }}
+                onLayout={(event) => {
+                  const { x, y, width, height } = event.nativeEvent.layout;
+                  // Get absolute position
+                  const colRef = columnRefs.current.get(status);
+                  if (colRef) {
+                    colRef.measure((fx, fy, fwidth, fheight, pageX, pageY) => {
+                      columnPositions.current.set(status, { x: pageX, y: pageY, width, height });
+                    });
+                  }
+                }}
+                style={[
+                  styles.kanbanColumn, 
+                  { 
+                    backgroundColor: colorScheme.colors.surface, 
+                    borderColor: dragOverColumn === status ? colorScheme.colors.primary : colorScheme.colors.border,
+                    borderWidth: dragOverColumn === status ? 2 : 1,
+                  }
+                ]}
+              >
+                <View style={[styles.kanbanColumnHeader, { borderBottomColor: colorScheme.colors.border }]}>
+                  <Text style={[styles.kanbanColumnTitle, { color: colorScheme.colors.text }]}>
+                    {statusLabel}
+                  </Text>
+                  <Text style={[styles.kanbanColumnCount, { color: colorScheme.colors.textSecondary }]}>
+                    {allStatusApps.length}
+                  </Text>
+                </View>
+                <ScrollView 
+                  style={styles.kanbanColumnContent}
+                  contentContainerStyle={styles.kanbanColumnContentContainer}
+                  scrollEnabled={!draggedCard}
+                  nestedScrollEnabled={true}
+                >
+                  {statusApps.length === 0 ? (
+                    <View style={styles.kanbanEmptyColumn}>
+                      <Text style={[styles.kanbanEmptyText, { color: colorScheme.colors.textSecondary }]}>
+                        No applications
+                      </Text>
+                    </View>
+                  ) : (
+                    statusApps.map((app) => {
+                      const statusChangeDate = app.statusChangeTimestamps?.[status] || app.lastUpdated || app.appliedDate;
+                      const statusChangeTime = new Date(statusChangeDate);
+                      const timezone = preferences?.timezoneMode === 'custom' && preferences?.timezone
+                        ? preferences.timezone
+                        : undefined;
+                      const use12Hour = preferences?.use12HourClock ?? false;
+                      
+                      return (
+                        <DraggableKanbanCard
+                          key={app.id}
+                          app={app}
+                          currentStatus={status}
+                          statusChangeTime={statusChangeTime}
+                          timezone={timezone}
+                          use12Hour={use12Hour}
+                          draggedCard={draggedCard}
+                          dragPosition={dragPosition}
+                          columnRefs={columnRefs}
+                          cardRefs={cardRefs}
+                          colorScheme={colorScheme}
+                          onDragStart={(app, status) => {
+                            const cardPos = cardRefs.current.get(app.id);
+                            if (cardPos) {
+                              setDragStartPosition({ 
+                                x: dragPosition.x || cardPos.x + cardPos.width / 2, 
+                                y: dragPosition.y || cardPos.y + cardPos.height / 2,
+                                cardX: cardPos.x,
+                                cardY: cardPos.y,
+                              });
+                            }
+                            setDraggedCard({ app, status });
+                            // Show column selector immediately when dragging starts
+                            setShowColumnSelector(true);
+                          }}
+                          onDragMove={(x, y) => {
+                            setDragPosition({ x, y });
+                            
+                            // Auto-scroll when dragging near screen edges (less aggressive)
+                            const screenWidth = Dimensions.get('window').width;
+                            const edgeThreshold = 30; // Distance from edge to trigger scroll (reduced from 50)
+                            const scrollSpeed = 3; // Pixels to scroll per interval (reduced from 10)
+                            
+                            // Clear existing auto-scroll interval
+                            if (autoScrollIntervalRef.current) {
+                              clearInterval(autoScrollIntervalRef.current);
+                              autoScrollIntervalRef.current = null;
+                            }
+                            
+                            // Check if near left edge (only if dragging for a bit)
+                            if (x < edgeThreshold && kanbanScrollViewRef.current && draggedCard) {
+                              autoScrollIntervalRef.current = setInterval(() => {
+                                const newScrollX = Math.max(0, kanbanScrollX.current - scrollSpeed);
+                                kanbanScrollX.current = newScrollX;
+                                kanbanScrollViewRef.current?.scrollTo({
+                                  x: newScrollX,
+                                  animated: false,
+                                });
+                              }, 50); // Slower interval (reduced from 16ms)
+                            }
+                            // Check if near right edge (only if dragging for a bit)
+                            else if (x > screenWidth - edgeThreshold && kanbanScrollViewRef.current && draggedCard) {
+                              autoScrollIntervalRef.current = setInterval(() => {
+                                const newScrollX = kanbanScrollX.current + scrollSpeed;
+                                kanbanScrollX.current = newScrollX;
+                                kanbanScrollViewRef.current?.scrollTo({
+                                  x: newScrollX,
+                                  animated: false,
+                                });
+                              }, 50); // Slower interval (reduced from 16ms)
+                            }
+                            
+                            // Check which column we're over using stored positions
+                            const columns = ['applied', 'interview', 'rejected', 'no-response'] as const;
+                            
+                            // First check stored positions (faster)
+                            let foundColumn: string | null = null;
+                            for (const colStatus of columns) {
+                              const pos = columnPositions.current.get(colStatus);
+                              if (pos &&
+                                  x >= pos.x &&
+                                  x <= pos.x + pos.width &&
+                                  y >= pos.y &&
+                                  y <= pos.y + pos.height) {
+                                foundColumn = colStatus;
+                                setDragOverColumn(colStatus);
+                                break;
+                              }
+                            }
+                            
+                            // Update column positions continuously (for scrolling scenarios)
+                            for (const colStatus of columns) {
+                              const colRef = columnRefs.current.get(colStatus);
+                              if (colRef) {
+                                colRef.measure((fx, fy, width, height, pageX, pageY) => {
+                                  columnPositions.current.set(colStatus, { x: pageX, y: pageY, width, height });
+                                  
+                                  // Check if we're over this column (use updated position)
+                                  if (
+                                      x >= pageX &&
+                                      x <= pageX + width &&
+                                      y >= pageY &&
+                                      y <= pageY + height) {
+                                    setDragOverColumn(colStatus);
+                                  }
+                                });
+                              }
+                            }
+                          }}
+                          onDragEnd={(x, y) => {
+                            // Clear auto-scroll interval
+                            if (autoScrollIntervalRef.current) {
+                              clearInterval(autoScrollIntervalRef.current);
+                              autoScrollIntervalRef.current = null;
+                            }
+                            
+                            // Get the dragged card info
+                            const currentDraggedCard = draggedCard;
+                            if (!currentDraggedCard) {
+                              setDraggedCard(null);
+                              setDragOverColumn(null);
+                              setDragPosition({ x: 0, y: 0 });
+                              return;
+                            }
+                            
+                            const draggedApp = currentDraggedCard.app;
+                            const draggedStatus = currentDraggedCard.status;
+                            
+                            // Check if dropped over a different column
+                            const columns = ['applied', 'interview', 'rejected', 'no-response'] as const;
+                            let droppedOnStatus: string | null = null;
+                            
+                            // Use the dragOverColumn if it was set, otherwise check positions
+                            if (dragOverColumn && dragOverColumn !== draggedStatus) {
+                              droppedOnStatus = dragOverColumn;
+                            } else {
+                              // Check stored positions first
+                              for (const colStatus of columns) {
+                                const pos = columnPositions.current.get(colStatus);
+                                if (pos &&
+                                    x >= pos.x &&
+                                    x <= pos.x + pos.width &&
+                                    y >= pos.y &&
+                                    y <= pos.y + pos.height &&
+                                    colStatus !== draggedStatus) {
+                                  droppedOnStatus = colStatus;
+                                  break;
+                                }
+                              }
+                              
+                              // If not found in stored positions, measure directly
+                              if (!droppedOnStatus) {
+                                const measurePromises: Promise<void>[] = [];
+                                for (const colStatus of columns) {
+                                  const colRef = columnRefs.current.get(colStatus);
+                                  if (colRef) {
+                                    const promise = new Promise<void>((resolve) => {
+                                      colRef.measure((fx, fy, width, height, pageX, pageY) => {
+                                        if (
+                                          x >= pageX &&
+                                          x <= pageX + width &&
+                                          y >= pageY &&
+                                          y <= pageY + height &&
+                                          colStatus !== draggedStatus &&
+                                          !droppedOnStatus
+                                        ) {
+                                          droppedOnStatus = colStatus;
+                                        }
+                                        resolve();
+                                      });
+                                    });
+                                    measurePromises.push(promise);
+                                  }
+                                }
+                                
+                                // Wait for all measurements to complete
+                                Promise.all(measurePromises).then(() => {
+                                  if (droppedOnStatus && droppedOnStatus !== draggedApp.status) {
+                                    handleStatusChange(draggedApp, droppedOnStatus as 'applied' | 'rejected' | 'interview' | 'no-response');
+                                    // Close modal if successfully dropped on column
+                                    setDraggedCard(null);
+                                    setDragOverColumn(null);
+                                    setDragPosition({ x: 0, y: 0 });
+                                    setShowColumnSelector(false);
+                                  }
+                                  // If no column was dropped on, keep modal open for manual selection
+                                });
+                                return;
+                              }
+                            }
+                            
+                            // Handle drop immediately if we found a column
+                            if (droppedOnStatus && droppedOnStatus !== draggedApp.status) {
+                              handleStatusChange(draggedApp, droppedOnStatus as 'applied' | 'rejected' | 'interview' | 'no-response');
+                              // Close modal if successfully dropped on column
+                              setDraggedCard(null);
+                              setDragOverColumn(null);
+                              setDragPosition({ x: 0, y: 0 });
+                              setShowColumnSelector(false);
+                            }
+                            // If no column was dropped on, keep modal open for manual selection
+                            // Don't reset draggedCard - let user select from dropdown
+                          }}
+                          onPress={() => {
+                            // Show modal with edit and move options instead of immediately editing
+                            if (!draggedCard) {
+                              setDraggedCard({ app, status });
+                              setShowColumnSelector(true);
+                            }
+                          }}
+                        />
+                      );
+                    })
+                  )}
+                  {allStatusApps.length > cardsPerColumn && (
+                    <TouchableOpacity
+                      style={styles.kanbanMoreIndicator}
+                      onPress={() => {
+                        const newExpanded = new Set(expandedKanbanColumns);
+                        if (isExpanded) {
+                          newExpanded.delete(status);
+                        } else {
+                          newExpanded.add(status);
+                        }
+                        setExpandedKanbanColumns(newExpanded);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.kanbanMoreText, { color: colorScheme.colors.primary }]}>
+                        {isExpanded 
+                          ? 'Show less' 
+                          : `+${allStatusApps.length - cardsPerColumn} more`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </ScrollView>
+              </View>
+            );
+          })}
+        </ScrollView>
+        
+        {/* Column Selector Modal - appears when dragging */}
+        {draggedCard && showColumnSelector && (
+          <Modal
+            transparent={true}
+            visible={showColumnSelector}
+            animationType="fade"
+            onRequestClose={() => {
+              // Don't close on back button - require explicit cancel
+            }}
+          >
+            <View style={styles.columnSelectorOverlay}>
+              <TouchableOpacity
+                style={StyleSheet.absoluteFill}
+                activeOpacity={1}
+                onPress={() => {
+                  // Close modal and cancel drag
+                  setDraggedCard(null);
+                  setDragOverColumn(null);
+                  setDragPosition({ x: 0, y: 0 });
+                  setShowColumnSelector(false);
+                }}
+              />
+              <View
+                style={[
+                  styles.columnSelectorContainer,
+                  {
+                    backgroundColor: colorScheme.colors.surface,
+                    borderColor: colorScheme.colors.border,
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: [{ translateX: -100 }, { translateY: -150 }],
+                  },
+                ]}
+                onStartShouldSetResponder={() => true}
+              >
+                <Text
+                  style={[
+                    styles.columnSelectorTitle,
+                    { color: colorScheme.colors.text },
+                  ]}
+                >
+                  {draggedCard.app.company}
+                </Text>
+                <Text
+                  style={[
+                    styles.columnSelectorSubtitle,
+                    { color: colorScheme.colors.textSecondary },
+                  ]}
+                >
+                  {draggedCard.app.positionTitle}
+                </Text>
+                
+                {/* Edit Option */}
+                <TouchableOpacity
+                  style={[
+                    styles.columnSelectorOption,
+                    {
+                      backgroundColor: 'transparent',
+                      borderColor: colorScheme.colors.border,
+                      marginTop: 8,
+                    },
+                  ]}
+                  onPress={() => {
+                    const appToEdit = draggedCard.app;
+                    setDraggedCard(null);
+                    setDragOverColumn(null);
+                    setDragPosition({ x: 0, y: 0 });
+                    setShowColumnSelector(false);
+                    handleEdit(appToEdit);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.columnSelectorOptionText,
+                      { color: colorScheme.colors.text },
+                    ]}
+                  >
+                    ✏️ Edit Application
+                  </Text>
+                </TouchableOpacity>
+                
+                <View
+                  style={[
+                    styles.columnSelectorDivider,
+                    { backgroundColor: colorScheme.colors.border },
+                  ]}
+                />
+                
+                <Text
+                  style={[
+                    styles.columnSelectorSectionTitle,
+                    { color: colorScheme.colors.textSecondary },
+                  ]}
+                >
+                  Move to:
+                </Text>
+                {(['applied', 'interview', 'rejected', 'no-response'] as const)
+                  .filter((status) => status !== draggedCard.status)
+                  .map((status) => (
+                    <TouchableOpacity
+                      key={status}
+                      style={[
+                        styles.columnSelectorOption,
+                        {
+                          backgroundColor:
+                            dragOverColumn === status
+                              ? colorScheme.colors.primary + '20'
+                              : 'transparent',
+                          borderColor: colorScheme.colors.border,
+                        },
+                      ]}
+                      onPress={() => {
+                        handleStatusChange(
+                          draggedCard.app,
+                          status as 'applied' | 'rejected' | 'interview' | 'no-response'
+                        );
+                        setDraggedCard(null);
+                        setDragOverColumn(null);
+                        setDragPosition({ x: 0, y: 0 });
+                        setShowColumnSelector(false);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.columnSelectorOptionText,
+                          {
+                            color:
+                              dragOverColumn === status
+                                ? colorScheme.colors.primary
+                                : colorScheme.colors.text,
+                          },
+                        ]}
+                      >
+                        {getStatusLabel(status)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                <TouchableOpacity
+                  style={[
+                    styles.columnSelectorCancel,
+                    { borderTopColor: colorScheme.colors.border },
+                  ]}
+                  onPress={() => {
+                    setDraggedCard(null);
+                    setDragOverColumn(null);
+                    setDragPosition({ x: 0, y: 0 });
+                    setShowColumnSelector(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.columnSelectorCancelText,
+                      { color: colorScheme.colors.textSecondary },
+                    ]}
+                  >
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        )}
+        </>
+      ) : (
+        <ScrollView 
+          ref={applicationsScrollViewRef}
+          style={styles.scrollView} 
+          contentContainerStyle={styles.listContent}
+        >
+          {applications.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={[styles.emptyText, { color: colorScheme.colors.textSecondary }]}>
+                {searchTerm ? 'No applications found' : 'No applications yet. Tap "+ Add" to get started!'}
+              </Text>
+            </View>
+          ) : (
+            applications.map((app) => (
             <View
               key={app.id}
               ref={(ref) => {
@@ -1867,7 +2780,15 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                                   [
                                     { text: 'Cancel', style: 'cancel' },
                                     {
-                                      text: 'Mark as Done',
+                                      text: 'Mark as Completed (Today)',
+                                      onPress: () => handleMarkFollowUpCompleted(reminder.id),
+                                    },
+                                    {
+                                      text: 'Mark as Completed (Select Date)',
+                                      onPress: () => handleSelectCompletionDate(reminder.id),
+                                    },
+                                    {
+                                      text: 'Complete & Create Next',
                                       onPress: () => handleCompleteFollowUp(reminder.id),
                                     },
                                   ]
@@ -2038,6 +2959,13 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
                     </Text>
                   </TouchableOpacity>
                 )}
+                <TouchableOpacity
+                  onPress={() => handleAddNote(app)}
+                >
+                  <Text style={[styles.linkText, { color: colorScheme.colors.primary }]}>
+                    📝 Add Note
+                  </Text>
+                </TouchableOpacity>
                 {/* Email Template Actions */}
                 {preferences?.enableEmailTemplates !== false && (
                   <View style={styles.emailActionsContainer}>
@@ -2128,6 +3056,7 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
           ))
         )}
       </ScrollView>
+      )}
         </>
       )}
 
@@ -2769,6 +3698,190 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
           }}
         />
       )}
+      {/* Add Note Modal */}
+      <Modal
+        visible={showAddNoteModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setShowAddNoteModal(false);
+          setAddNoteApplication(null);
+          setNewNoteText('');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colorScheme.colors.surface }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colorScheme.colors.border, flexDirection: 'column', alignItems: 'flex-start' }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.modalTitle, { color: colorScheme.colors.text }]}>
+                  Add Note
+                </Text>
+                {addNoteApplication && (
+                  <Text style={[styles.modalSubtitle, { color: colorScheme.colors.textSecondary, marginTop: 4 }]}>
+                    {addNoteApplication.company} - {addNoteApplication.positionTitle}
+                  </Text>
+                )}
+              </View>
+            </View>
+            <View style={styles.modalBody}>
+              <Text style={[styles.label, { color: colorScheme.colors.text }]}>
+                Note
+              </Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: colorScheme.colors.background,
+                    borderColor: colorScheme.colors.border,
+                    color: colorScheme.colors.text,
+                  }
+                ]}
+                value={newNoteText}
+                onChangeText={setNewNoteText}
+                placeholder="Enter your note..."
+                placeholderTextColor={colorScheme.colors.textSecondary}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                autoFocus
+              />
+            </View>
+            <View style={[styles.modalFooter, { borderTopColor: colorScheme.colors.border }]}>
+              <TouchableOpacity
+                style={[styles.modalButton, { borderColor: colorScheme.colors.border }]}
+                onPress={() => {
+                  setShowAddNoteModal(false);
+                  setAddNoteApplication(null);
+                  setNewNoteText('');
+                }}
+              >
+                <Text style={[styles.modalButtonText, { color: colorScheme.colors.text }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary, { backgroundColor: colorScheme.colors.primary }]}
+                onPress={handleSaveNote}
+              >
+                <Text style={[styles.modalButtonText, { color: '#fff' }]}>
+                  Add Note
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      {/* Completion Date Picker Modal */}
+      <Modal
+        visible={showCompletionDatePicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setShowCompletionDatePicker(false);
+          setCompletionDateReminderId(null);
+          setCompletionDateInput('');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colorScheme.colors.surface }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colorScheme.colors.border, flexDirection: 'column', alignItems: 'flex-start' }]}>
+              <Text style={[styles.modalTitle, { color: colorScheme.colors.text }]}>
+                Select Completion Date
+              </Text>
+              <Text style={[styles.modalSubtitle, { color: colorScheme.colors.textSecondary, marginTop: 4 }]}>
+                When was this follow-up completed?
+              </Text>
+            </View>
+            <View style={styles.modalBody}>
+              <Text style={[styles.label, { color: colorScheme.colors.text }]}>
+                Date (YYYY-MM-DD or MM/DD/YYYY)
+              </Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: colorScheme.colors.background,
+                    borderColor: colorScheme.colors.border,
+                    color: colorScheme.colors.text,
+                  }
+                ]}
+                value={completionDateInput}
+                onChangeText={(text) => {
+                  setCompletionDateInput(text);
+                  // Try to parse and update the date preview as user types
+                  const dateMatch = text.match(/(\d{4})-(\d{2})-(\d{2})/) || text.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+                  if (dateMatch) {
+                    let year, month, day;
+                    if (dateMatch[0].includes('/')) {
+                      // MM/DD/YYYY format
+                      month = parseInt(dateMatch[1], 10) - 1;
+                      day = parseInt(dateMatch[2], 10);
+                      year = parseInt(dateMatch[3], 10);
+                    } else {
+                      // YYYY-MM-DD format
+                      year = parseInt(dateMatch[1], 10);
+                      month = parseInt(dateMatch[2], 10) - 1;
+                      day = parseInt(dateMatch[3], 10);
+                    }
+                    const newDate = new Date(year, month, day);
+                    if (!isNaN(newDate.getTime())) {
+                      setSelectedCompletionDate(newDate);
+                    }
+                  }
+                }}
+                placeholder="YYYY-MM-DD or MM/DD/YYYY"
+                placeholderTextColor={colorScheme.colors.textSecondary}
+                keyboardType="numeric"
+                autoFocus
+              />
+              <Text style={[styles.hint, { color: colorScheme.colors.textSecondary, marginTop: 8 }]}>
+                {(() => {
+                  const dateMatch = completionDateInput.match(/(\d{4})-(\d{2})-(\d{2})/) || completionDateInput.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+                  if (dateMatch) {
+                    let year, month, day;
+                    if (dateMatch[0].includes('/')) {
+                      month = parseInt(dateMatch[1], 10) - 1;
+                      day = parseInt(dateMatch[2], 10);
+                      year = parseInt(dateMatch[3], 10);
+                    } else {
+                      year = parseInt(dateMatch[1], 10);
+                      month = parseInt(dateMatch[2], 10) - 1;
+                      day = parseInt(dateMatch[3], 10);
+                    }
+                    const parsedDate = new Date(year, month, day);
+                    if (!isNaN(parsedDate.getTime())) {
+                      return `Selected: ${parsedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+                    }
+                  }
+                  return 'Enter date in YYYY-MM-DD or MM/DD/YYYY format';
+                })()}
+              </Text>
+            </View>
+            <View style={[styles.modalFooter, { borderTopColor: colorScheme.colors.border }]}>
+              <TouchableOpacity
+                style={[styles.modalButton, { borderColor: colorScheme.colors.border }]}
+                onPress={() => {
+                  setShowCompletionDatePicker(false);
+                  setCompletionDateReminderId(null);
+                  setCompletionDateInput('');
+                }}
+              >
+                <Text style={[styles.modalButtonText, { color: colorScheme.colors.text }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary, { backgroundColor: colorScheme.colors.primary }]}
+                onPress={handleConfirmCompletionDate}
+              >
+                <Text style={[styles.modalButtonText, { color: '#fff' }]}>
+                  Mark as Completed
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -3832,6 +4945,19 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
+  modalBody: {
+    padding: 16,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    padding: 16,
+    borderTopWidth: 1,
+    gap: 12,
+  },
+  modalButtonPrimary: {
+    borderWidth: 0,
+  },
   modalCloseButton: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -3884,6 +5010,160 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  viewToggleButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  viewToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  kanbanScrollView: {
+    flex: 1,
+  },
+  kanbanContent: {
+    paddingHorizontal: 8,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  kanbanColumn: {
+    width: 280,
+    marginHorizontal: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    maxHeight: '90%',
+    flexDirection: 'column',
+    flexShrink: 0,
+  },
+  kanbanColumnHeader: {
+    padding: 12,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  kanbanColumnTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  kanbanColumnCount: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  kanbanColumnContent: {
+    flex: 1,
+  },
+  kanbanColumnContentContainer: {
+    padding: 8,
+  },
+  kanbanEmptyColumn: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  kanbanEmptyText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  kanbanCard: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 8,
+    minHeight: 100,
+  },
+  kanbanCardCompany: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  kanbanCardTitle: {
+    fontSize: 14,
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  kanbanCardDate: {
+    fontSize: 12,
+    marginTop: 'auto',
+  },
+  kanbanMoreIndicator: {
+    padding: 8,
+    alignItems: 'center',
+  },
+  kanbanMoreText: {
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  columnSelectorOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  columnSelectorContainer: {
+    minWidth: 220,
+    maxWidth: 280,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
+  },
+  columnSelectorTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+    paddingHorizontal: 8,
+  },
+  columnSelectorSubtitle: {
+    fontSize: 14,
+    marginBottom: 8,
+    paddingHorizontal: 8,
+  },
+  columnSelectorDivider: {
+    height: 1,
+    marginVertical: 8,
+  },
+  columnSelectorSectionTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 8,
+    paddingHorizontal: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  columnSelectorOption: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 4,
+    borderWidth: 1,
+  },
+  columnSelectorOptionText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  columnSelectorCancel: {
+    padding: 12,
+    borderTopWidth: 1,
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  columnSelectorCancelText: {
+    fontSize: 14,
   },
 });
 

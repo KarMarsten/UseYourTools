@@ -8,16 +8,17 @@ import {
   Linking,
   Platform,
   StatusBar,
+  AppState,
 } from 'react-native';
 import { usePreferences } from '../context/PreferencesContext';
-import { getAllEvents, Event, getPendingThankYouNotesCount, getOverdueThankYouNotesCount } from '../utils/events';
-import { getActiveFollowUpReminders, FollowUpReminder, getOverdueFollowUpRemindersCount } from '../utils/followUpReminders';
+import { getAllEvents, Event, getOverdueThankYouNotesCount } from '../utils/events';
+import { getAllFollowUpReminders, FollowUpReminder } from '../utils/followUpReminders';
 import { getDateKey } from '../utils/timeFormatter';
 
 interface HomeScreenProps {
   onNavigateToCalendar: () => void;
   onNavigateToDailyPlanner: (date?: Date) => void;
-  onNavigateToApplications: () => void;
+  onNavigateToApplications: (applicationId?: string) => void;
   onNavigateToOffers: () => void;
   onNavigateToReferences: () => void;
   onNavigateToReports: () => void;
@@ -47,23 +48,39 @@ export default function HomeScreen({
   const [showSettingsTooltip, setShowSettingsTooltip] = useState(false);
   const [pendingThankYouCount, setPendingThankYouCount] = useState<number>(0);
   const [overdueCount, setOverdueCount] = useState<number>(0);
+  const [showAllUpcomingItems, setShowAllUpcomingItems] = useState(false);
 
   useEffect(() => {
     loadUpcomingItems();
     loadPendingThankYouCount();
     loadOverdueCount();
+    
     // Refresh every minute to update the banner
     const interval = setInterval(() => {
       loadUpcomingItems();
       loadPendingThankYouCount();
       loadOverdueCount();
     }, 60000);
-    return () => clearInterval(interval);
+    
+    // Refresh when app comes to foreground
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        loadUpcomingItems();
+        loadPendingThankYouCount();
+        loadOverdueCount();
+      }
+    });
+    
+    return () => {
+      clearInterval(interval);
+      subscription.remove();
+    };
   }, []);
 
   const loadPendingThankYouCount = async () => {
     try {
-      const count = await getPendingThankYouNotesCount();
+      // Use overdue count to match what's shown in ThankYouNotesScreen
+      const count = await getOverdueThankYouNotesCount();
       setPendingThankYouCount(count);
     } catch (error) {
       console.error('Error loading pending thank you notes count:', error);
@@ -72,9 +89,10 @@ export default function HomeScreen({
 
   const loadOverdueCount = async () => {
     try {
+      // Only count overdue thank you notes since clicking the banner navigates to ThankYouNotesScreen
+      // which only shows thank you notes, not follow-up reminders
       const overdueThankYous = await getOverdueThankYouNotesCount();
-      const overdueFollowUps = await getOverdueFollowUpRemindersCount();
-      setOverdueCount(overdueThankYous + overdueFollowUps);
+      setOverdueCount(overdueThankYous);
     } catch (error) {
       console.error('Error loading overdue count:', error);
     }
@@ -101,8 +119,33 @@ export default function HomeScreen({
       }
       
       // Load follow-up reminders
-      const activeReminders = await getActiveFollowUpReminders();
-      for (const reminder of activeReminders) {
+      const allReminders = await getAllFollowUpReminders();
+      const today = new Date();
+      const todayKey = getDateKey(today);
+      
+      for (const reminder of allReminders) {
+        // Skip completed reminders
+        if (reminder.completed) {
+          continue;
+        }
+        
+        // Skip reminders that were completed today (check completedAt date)
+        // This handles cases where completed flag might not be set yet but completedAt is
+        if (reminder.completedAt) {
+          try {
+            const completedDate = new Date(reminder.completedAt);
+            // Use local date components to avoid timezone issues
+            const completedDateKey = getDateKey(completedDate);
+            // Compare date keys (YYYY-MM-DD format) to check if completed today
+            if (completedDateKey === todayKey) {
+              continue; // Skip reminders completed today
+            }
+          } catch (error) {
+            // If date parsing fails, log but don't skip (might be invalid date format)
+            console.warn('Could not parse completedAt date:', reminder.completedAt, error);
+          }
+        }
+        
         const reminderDateTime = new Date(reminder.dueDate);
         
         // Only include reminders in the next 24 hours that haven't passed
@@ -140,8 +183,9 @@ export default function HomeScreen({
       const eventDate = new Date(year, month - 1, day);
       onNavigateToDailyPlanner(eventDate);
     } else {
-      // For follow-up reminders, navigate to applications
-      onNavigateToApplications();
+      // For follow-up reminders, navigate to the specific application
+      const reminder = item.data as FollowUpReminder;
+      onNavigateToApplications(reminder.applicationId);
     }
   };
 
@@ -368,7 +412,7 @@ export default function HomeScreen({
               <Text style={[styles.upcomingBannerTitle, { color: colorScheme.colors.text }]}>
                 ⏰ Upcoming in Next 24 Hours
               </Text>
-            {upcomingItems.slice(0, 3).map((item, index) => {
+            {(showAllUpcomingItems ? upcomingItems : upcomingItems.slice(0, 3)).map((item, index) => {
               const isEvent = item.type === 'event';
               const event = isEvent ? item.data as Event : null;
               const reminder = !isEvent ? item.data as FollowUpReminder : null;
@@ -412,9 +456,16 @@ export default function HomeScreen({
               );
             })}
             {upcomingItems.length > 3 && (
-              <Text style={[styles.upcomingBannerMore, { color: colorScheme.colors.textSecondary }]}>
-                +{upcomingItems.length - 3} more
-              </Text>
+              <TouchableOpacity
+                onPress={() => setShowAllUpcomingItems(!showAllUpcomingItems)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.upcomingBannerMore, { color: colorScheme.colors.primary }]}>
+                  {showAllUpcomingItems 
+                    ? 'Show less' 
+                    : `+${upcomingItems.length - 3} more`}
+                </Text>
+              </TouchableOpacity>
             )}
             </View>
             <View style={[styles.bannerSeparator, { backgroundColor: colorScheme.colors.border }]} />
@@ -781,7 +832,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     marginTop: 4,
-    fontStyle: 'italic',
+    paddingVertical: 4,
+    fontWeight: '600',
   },
 });
 
