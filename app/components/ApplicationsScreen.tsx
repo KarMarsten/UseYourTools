@@ -586,7 +586,7 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
       await loadResumesAndCoverLetters();
       setEditingResumeName(null);
       setNewResumeName('');
-      Alert.alert('Success', 'Resume renamed');
+      // Removed success alert for smoother inline editing experience
     } catch (error) {
       console.error('Error renaming resume:', error);
       Alert.alert('Error', 'Failed to rename resume');
@@ -3079,41 +3079,90 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
               >
                 <View style={styles.documentHeader}>
                   <View style={styles.documentHeaderTop}>
-                    <Text style={[styles.documentName, { color: colorScheme.colors.text }]}>
-                      {resume.name}
-                    </Text>
-                    <TouchableOpacity
-                      style={[
-                        styles.activeBadge,
-                        {
-                          backgroundColor: (resume.isActive ?? true) 
-                            ? colorScheme.colors.primary + '20' 
-                            : colorScheme.colors.textSecondary + '20',
-                          borderColor: (resume.isActive ?? true)
-                            ? colorScheme.colors.primary
-                            : colorScheme.colors.textSecondary,
-                        },
-                      ]}
-                      onPress={() => handleToggleResumeActive(resume)}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={[
-                          styles.activeBadgeText,
-                          {
-                            color: (resume.isActive ?? true)
-                              ? colorScheme.colors.primary
-                              : colorScheme.colors.textSecondary,
-                          },
-                        ]}
-                      >
-                        {(resume.isActive ?? true) ? '✓ Active' : '○ Inactive'}
-                      </Text>
-                    </TouchableOpacity>
+                    {editingResumeName?.id === resume.id ? (
+                      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <TextInput
+                          style={[
+                            styles.inlineEditInput,
+                            {
+                              backgroundColor: colorScheme.colors.background,
+                              color: colorScheme.colors.text,
+                              borderColor: colorScheme.colors.border,
+                            },
+                          ]}
+                          value={newResumeName}
+                          onChangeText={setNewResumeName}
+                          autoFocus
+                          onSubmitEditing={saveRenameResume}
+                        />
+                        <TouchableOpacity
+                          style={[
+                            styles.inlineEditButton,
+                            { backgroundColor: colorScheme.colors.primary },
+                          ]}
+                          onPress={saveRenameResume}
+                        >
+                          <Text style={styles.inlineEditButtonText}>✓</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            styles.inlineEditButton,
+                            {
+                              backgroundColor: colorScheme.colors.background,
+                              borderColor: colorScheme.colors.border,
+                            },
+                          ]}
+                          onPress={() => {
+                            setEditingResumeName(null);
+                            setNewResumeName('');
+                          }}
+                        >
+                          <Text style={[styles.inlineEditButtonText, { color: colorScheme.colors.text }]}>✕</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <>
+                        <View style={{ flex: 1, flexShrink: 1, marginRight: 8 }}>
+                          <Text style={[styles.documentName, { color: colorScheme.colors.text }]} numberOfLines={2}>
+                            {resume.name}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={[
+                            styles.activeBadge,
+                            {
+                              backgroundColor: (resume.isActive ?? true) 
+                                ? colorScheme.colors.primary + '20' 
+                                : colorScheme.colors.textSecondary + '20',
+                              borderColor: (resume.isActive ?? true)
+                                ? colorScheme.colors.primary
+                                : colorScheme.colors.textSecondary,
+                            },
+                          ]}
+                          onPress={() => handleToggleResumeActive(resume)}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={[
+                              styles.activeBadgeText,
+                              {
+                                color: (resume.isActive ?? true)
+                                  ? colorScheme.colors.primary
+                                  : colorScheme.colors.textSecondary,
+                              },
+                            ]}
+                          >
+                            {(resume.isActive ?? true) ? '✓ Active' : '○ Inactive'}
+                          </Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
                   </View>
-                  <Text style={[styles.documentFileName, { color: colorScheme.colors.textSecondary }]}>
-                    {resume.fileName}
-                  </Text>
+                  {editingResumeName?.id !== resume.id && (
+                    <Text style={[styles.documentFileName, { color: colorScheme.colors.textSecondary }]}>
+                      {resume.fileName}
+                    </Text>
+                  )}
                 </View>
 
                 <View style={styles.documentDetails}>
@@ -3497,49 +3546,6 @@ export default function ApplicationsScreen({ onBack, onSelectDate, onCreateOffer
               <Text style={{ color: colorScheme.colors.text }}>Loading preview...</Text>
             </View>
           )}
-        </View>
-      </Modal>
-
-      {/* Resume Rename Modal */}
-      <Modal
-        visible={editingResumeName !== null}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setEditingResumeName(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colorScheme.colors.surface }]}>
-            <Text style={[styles.modalTitle, { color: colorScheme.colors.text }]}>
-              Rename Resume
-            </Text>
-            <TextInput
-              style={[styles.modalInput, { backgroundColor: colorScheme.colors.background, color: colorScheme.colors.text, borderColor: colorScheme.colors.border }]}
-              value={newResumeName}
-              onChangeText={setNewResumeName}
-              placeholder="Enter new name"
-              placeholderTextColor={colorScheme.colors.textSecondary}
-              autoFocus
-            />
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: colorScheme.colors.background, borderColor: colorScheme.colors.border }]}
-                onPress={() => {
-                  setEditingResumeName(null);
-                  setNewResumeName('');
-                }}
-              >
-                <Text style={[styles.modalButtonText, { color: colorScheme.colors.text }]}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: colorScheme.colors.primary }]}
-                onPress={saveRenameResume}
-              >
-                <Text style={[styles.modalButtonText, { color: '#fff' }]}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
         </View>
       </Modal>
 
@@ -4487,6 +4493,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 4,
+    gap: 8,
   },
   nameContainer: {
     flex: 1,
@@ -4499,7 +4506,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#4A3A2A',
-    marginRight: 8,
   },
   templateBadge: {
     paddingHorizontal: 8,
@@ -4526,6 +4532,27 @@ const styles = StyleSheet.create({
   activeBadgeText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  inlineEditInput: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '600',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  inlineEditButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  inlineEditButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
   },
   documentFileName: {
     fontSize: 14,
@@ -4641,9 +4668,11 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: '#E7D7C1',
     borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    width: '80%',
+    paddingLeft: 28,
+    paddingRight: 28,
+    paddingTop: 28,
+    paddingBottom: 28,
+    width: '82%',
     maxWidth: 400,
     overflow: 'hidden',
   },
@@ -4651,33 +4680,33 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#4A3A2A',
+    marginBottom: 20,
   },
   modalInput: {
     backgroundColor: '#f5f5dc',
     borderRadius: 8,
-    padding: 12,
+    padding: 14,
     fontSize: 16,
     color: '#4A3A2A',
     borderWidth: 1,
     borderColor: '#C9A66B',
-    marginBottom: 16,
-    marginTop: 8,
+    marginBottom: 28,
+    marginTop: 0,
   },
   modalActions: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 20,
-    paddingTop: 4,
+    gap: 12,
+    marginTop: 0,
   },
   modalButton: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    minHeight: 40,
+    minHeight: 44,
   },
   modalButtonText: {
     fontSize: 14,

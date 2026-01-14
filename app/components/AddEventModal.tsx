@@ -392,6 +392,7 @@ export default function AddEventModal({
               <>
                 <Text style={[styles.label, { color: colorScheme.text }]}>Title</Text>
                 <TextInput
+                  accessibilityLabel="Event title"
                   style={[
                     styles.input,
                     {
@@ -571,6 +572,7 @@ export default function AddEventModal({
                   <>
                     <Text style={[styles.label, { color: colorScheme.text }]}>Company</Text>
                   <TextInput
+                    accessibilityLabel="Company name"
                     style={[
                       styles.input,
                       {
@@ -741,6 +743,7 @@ export default function AddEventModal({
                   <>
                     <Text style={[styles.label, { color: colorScheme.text }]}>Phone</Text>
                     <TextInput
+                      accessibilityLabel="Phone number"
                       style={[
                         styles.input,
                         {
@@ -772,6 +775,7 @@ export default function AddEventModal({
               <>
                 <Text style={[styles.label, { color: colorScheme.text }]}>Notes</Text>
                 <TextInput
+                  accessibilityLabel="Event notes"
                   style={[
                     styles.textArea,
                     {

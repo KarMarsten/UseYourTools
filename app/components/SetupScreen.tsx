@@ -34,7 +34,9 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
   const [showGoogleCalendarPicker, setShowGoogleCalendarPicker] = useState(false);
   const [followUpDaysAfterApplication, setFollowUpDaysAfterApplication] = useState('7');
   const [followUpDaysAfterInterview, setFollowUpDaysAfterInterview] = useState('2');
+  const [followUpDaysBetweenFollowUps, setFollowUpDaysBetweenFollowUps] = useState('2');
   const [thankYouNoteDaysAfterInterview, setThankYouNoteDaysAfterInterview] = useState('1');
+  const [kanbanCardsPerColumn, setKanbanCardsPerColumn] = useState('5');
   const [loading, setLoading] = useState(true);
   const [showTimeBlockDropdown, setShowTimeBlockDropdown] = useState<number | null>(null); // Index of the time block being edited
   const { refreshPreferences } = usePreferences();
@@ -138,7 +140,9 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
       setGoogleCalendarId(prefs.googleCalendarId);
       setFollowUpDaysAfterApplication(String(prefs.followUpDaysAfterApplication ?? 7));
       setFollowUpDaysAfterInterview(String(prefs.followUpDaysAfterInterview ?? 2));
+      setFollowUpDaysBetweenFollowUps(String(prefs.followUpDaysBetweenFollowUps ?? 2));
       setThankYouNoteDaysAfterInterview(String(prefs.thankYouNoteDaysAfterInterview ?? 1));
+      setKanbanCardsPerColumn(String(prefs.kanbanCardsPerColumn ?? 5));
     } catch (error) {
       console.error('Error loading preferences:', error);
     } finally {
@@ -182,12 +186,20 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         hasCompletedSetup: false,
         use12HourClock: false, // Preview always uses 24-hour format
         colorScheme: 'earth-tone', // Preview uses default colors
+        darkMode: false,
         mapAppPreference: 'apple-maps', // Preview uses default
         timezoneMode: 'device',
         timezone: '',
         calendarSyncProvider: 'none',
         followUpDaysAfterApplication: 7,
         followUpDaysAfterInterview: 2,
+        followUpDaysBetweenFollowUps: 2,
+        thankYouNoteDaysAfterInterview: 1,
+        kanbanCardsPerColumn: 5,
+        showZenQuotes: true,
+        enableEmailTemplates: true,
+        emailClient: 'default',
+        aiToneRewriting: 'none',
       };
 
       return generateTimeBlocks(tempPreferences);
@@ -216,6 +228,8 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
     const finalEndTime = `${String(finalEndHours).padStart(2, '0')}:${String(finalEndMins).padStart(2, '0')}`;
     
     try {
+      // Load existing preferences to preserve fields not edited in this screen
+      const existingPrefs = await loadPreferences();
       const preferences: UserPreferences = {
         startTime,
         endTime: finalEndTime, // Always save as 9 hours after start
@@ -234,7 +248,12 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         googleCalendarId: calendarSyncProvider === 'google' ? googleCalendarId : undefined,
         followUpDaysAfterApplication: parseInt(followUpDaysAfterApplication, 10) || 7,
         followUpDaysAfterInterview: parseInt(followUpDaysAfterInterview, 10) || 2,
+        followUpDaysBetweenFollowUps: parseInt(followUpDaysBetweenFollowUps, 10) || 2,
         thankYouNoteDaysAfterInterview: parseInt(thankYouNoteDaysAfterInterview, 10) || 1,
+        kanbanCardsPerColumn: parseInt(kanbanCardsPerColumn, 10) || 5,
+        aiToneRewriting: existingPrefs.aiToneRewriting ?? 'none',
+        openaiApiKey: existingPrefs.openaiApiKey,
+        geminiApiKey: existingPrefs.geminiApiKey,
       };
       await savePreferences(preferences);
       await refreshPreferences(); // Refresh preferences context
@@ -1012,6 +1031,35 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
           }]}>
             <View style={styles.settingContent}>
               <Text style={[styles.settingLabel, { color: currentColorScheme.colors.text }]}>
+                Days Between Follow-Ups
+              </Text>
+              <Text style={[styles.settingDescription, { color: currentColorScheme.colors.textSecondary }]}>
+                Days between follow-up reminders when one is completed (default: 2)
+              </Text>
+            </View>
+            <TextInput
+              style={[
+                styles.followUpInput,
+                {
+                  backgroundColor: currentColorScheme.colors.background,
+                  borderColor: currentColorScheme.colors.border,
+                  color: currentColorScheme.colors.text,
+                }
+              ]}
+              value={followUpDaysBetweenFollowUps}
+              onChangeText={setFollowUpDaysBetweenFollowUps}
+              placeholder="2"
+              placeholderTextColor={currentColorScheme.colors.textSecondary}
+              keyboardType="numeric"
+            />
+          </View>
+          <View style={[styles.settingRow, {
+            backgroundColor: currentColorScheme.colors.surface,
+            borderColor: currentColorScheme.colors.border,
+            marginTop: 12,
+          }]}>
+            <View style={styles.settingContent}>
+              <Text style={[styles.settingLabel, { color: currentColorScheme.colors.text }]}>
                 Days After Interview (Thank You Note)
               </Text>
               <Text style={[styles.settingDescription, { color: currentColorScheme.colors.textSecondary }]}>
@@ -1030,6 +1078,35 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
               value={thankYouNoteDaysAfterInterview}
               onChangeText={setThankYouNoteDaysAfterInterview}
               placeholder="1"
+              placeholderTextColor={currentColorScheme.colors.textSecondary}
+              keyboardType="numeric"
+            />
+          </View>
+          <View style={[styles.settingRow, {
+            backgroundColor: currentColorScheme.colors.surface,
+            borderColor: currentColorScheme.colors.border,
+            marginTop: 12,
+          }]}>
+            <View style={styles.settingContent}>
+              <Text style={[styles.settingLabel, { color: currentColorScheme.colors.text }]}>
+                Kanban Cards Per Column
+              </Text>
+              <Text style={[styles.settingDescription, { color: currentColorScheme.colors.textSecondary }]}>
+                Number of application cards to show per column in kanban board (default: 5)
+              </Text>
+            </View>
+            <TextInput
+              style={[
+                styles.followUpInput,
+                {
+                  backgroundColor: currentColorScheme.colors.background,
+                  borderColor: currentColorScheme.colors.border,
+                  color: currentColorScheme.colors.text,
+                }
+              ]}
+              value={kanbanCardsPerColumn}
+              onChangeText={setKanbanCardsPerColumn}
+              placeholder="5"
               placeholderTextColor={currentColorScheme.colors.textSecondary}
               keyboardType="numeric"
             />

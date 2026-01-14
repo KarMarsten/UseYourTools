@@ -20,6 +20,10 @@ export interface JobApplication {
     recipientEmail?: string; // Email address of recipient
     templateId?: string; // ID of template used
   }>; // Track emails sent for this application
+  statusChangeTimestamps?: {
+    [status in 'applied' | 'rejected' | 'no-response' | 'interview']?: string; // ISO 8601 date string when status was set
+  }; // Track when each status was set
+  lastUpdated?: string; // ISO 8601 date string of last update
 }
 
 const APPLICATIONS_KEY_PREFIX = 'application_';
@@ -35,12 +39,28 @@ const generateApplicationId = (): string => {
 /**
  * Save a job application
  */
-export const saveApplication = async (application: JobApplication): Promise<void> => {
+export const saveApplication = async (application: JobApplication, previousStatus?: string): Promise<void> => {
   try {
     // If no ID, generate one
     if (!application.id) {
       application.id = generateApplicationId();
     }
+
+    // Track status change timestamps
+    if (!application.statusChangeTimestamps) {
+      application.statusChangeTimestamps = {};
+    }
+    
+    // If status changed, record the timestamp
+    if (previousStatus && previousStatus !== application.status) {
+      application.statusChangeTimestamps[application.status] = new Date().toISOString();
+    } else if (!previousStatus && !application.statusChangeTimestamps[application.status]) {
+      // First time setting status (new application)
+      application.statusChangeTimestamps[application.status] = new Date().toISOString();
+    }
+    
+    // Update last updated timestamp
+    application.lastUpdated = new Date().toISOString();
 
     const key = `${APPLICATIONS_KEY_PREFIX}${application.id}`;
     await AsyncStorage.setItem(key, JSON.stringify(application));

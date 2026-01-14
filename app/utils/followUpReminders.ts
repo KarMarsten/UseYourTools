@@ -174,16 +174,35 @@ export const getFollowUpRemindersForApplication = async (applicationId: string):
 };
 
 /**
- * Mark a follow-up reminder as completed
+ * Get a follow-up reminder by ID
  */
-export const completeFollowUpReminder = async (reminderId: string): Promise<void> => {
+export const getFollowUpReminderById = async (reminderId: string): Promise<FollowUpReminder | null> => {
+  try {
+    const key = `${FOLLOW_UP_REMINDERS_KEY_PREFIX}${reminderId}`;
+    const stored = await AsyncStorage.getItem(key);
+    if (stored) {
+      return JSON.parse(stored) as FollowUpReminder;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting follow-up reminder by ID:', error);
+    return null;
+  }
+};
+
+/**
+ * Mark a follow-up reminder as completed
+ * @param reminderId - ID of the reminder to complete
+ * @param completedDate - Optional date to mark as completed (defaults to now)
+ */
+export const completeFollowUpReminder = async (reminderId: string, completedDate?: Date): Promise<void> => {
   try {
     const key = `${FOLLOW_UP_REMINDERS_KEY_PREFIX}${reminderId}`;
     const stored = await AsyncStorage.getItem(key);
     if (stored) {
       const reminder = JSON.parse(stored) as FollowUpReminder;
       reminder.completed = true;
-      reminder.completedAt = new Date().toISOString();
+      reminder.completedAt = (completedDate || new Date()).toISOString();
       
       // Cancel notification if it exists
       if (reminder.notificationId) {
@@ -198,6 +217,82 @@ export const completeFollowUpReminder = async (reminderId: string): Promise<void
     }
   } catch (error) {
     console.error('Error completing follow-up reminder:', error);
+    throw error;
+  }
+};
+
+/**
+ * Mark a follow-up reminder as completed and create the next follow-up reminder
+ * @param reminderId - ID of the follow-up reminder to complete
+ * @param createNext - Whether to create a new follow-up reminder (default: true)
+ * @returns The newly created follow-up reminder, or null if not created
+ */
+export const completeFollowUpReminderAndCreateNext = async (
+  reminderId: string,
+  createNext: boolean = true
+): Promise<FollowUpReminder | null> => {
+  try {
+    // Get the reminder before completing it
+    const reminder = await getFollowUpReminderById(reminderId);
+    if (!reminder) {
+      throw new Error(`Follow-up reminder ${reminderId} not found`);
+    }
+
+    // Complete the current reminder
+    await completeFollowUpReminder(reminderId);
+
+    // Create next follow-up if requested
+    if (createNext) {
+      const { loadPreferences } = await import('./preferences');
+      const prefs = await loadPreferences();
+      const daysBetweenFollowUps = prefs.followUpDaysBetweenFollowUps || 2;
+
+      // Check if application is rejected - don't create next follow-up if rejected
+      const { getAllApplications } = await import('./applications');
+      const allApplications = await getAllApplications();
+      const application = allApplications.find(app => app.id === reminder.applicationId);
+      
+      if (application && application.status === 'rejected') {
+        return null; // Don't create next follow-up for rejected applications
+      }
+
+      // For interview follow-ups, check if a thank you note exists
+      if (reminder.type === 'interview') {
+        const { getAllEvents } = await import('./events');
+        const allEvents = await getAllEvents();
+        const interviewEvents = allEvents.filter(
+          e => e.type === 'interview' && 
+          e.applicationId === reminder.applicationId &&
+          (e.thankYouNoteStatus === 'sent' || e.thankYouNoteStatus === 'pending')
+        );
+        
+        // If a thank you note exists, don't create a follow-up reminder
+        if (interviewEvents.length > 0) {
+          return null;
+        }
+      }
+
+      // Create the next follow-up reminder
+      if (reminder.type === 'application') {
+        return await createApplicationFollowUp(
+          reminder.applicationId,
+          reminder.company,
+          reminder.positionTitle,
+          daysBetweenFollowUps
+        );
+      } else {
+        return await createInterviewFollowUp(
+          reminder.applicationId,
+          reminder.company,
+          reminder.positionTitle,
+          daysBetweenFollowUps
+        );
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error completing follow-up reminder and creating next:', error);
     throw error;
   }
 };

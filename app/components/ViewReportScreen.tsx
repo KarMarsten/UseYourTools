@@ -24,7 +24,7 @@ export default function ViewReportScreen({ html, title, onBack }: ViewReportScre
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Text style={[styles.backButtonText, { color: colorScheme.colors.text }]}>← Back</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, dynamicStyles.title]}>{title}</Text>
+        <Text style={[styles.title, dynamicStyles.title]} numberOfLines={2} ellipsizeMode="tail">{title || 'Report'}</Text>
       </View>
       
       <WebView
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e0e0e0',
   },
   backButton: {
-    marginBottom: 10,
+    marginBottom: 12,
   },
   backButtonText: {
     fontSize: 18,
@@ -65,6 +65,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
+    flexShrink: 1,
+    minHeight: 30,
+    lineHeight: 30,
   },
   webview: {
     flex: 1,

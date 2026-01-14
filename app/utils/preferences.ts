@@ -17,7 +17,9 @@ export interface UserPreferences {
   googleCalendarId?: string; // ID of the selected Google Calendar (only used when calendarSyncProvider is 'google')
   followUpDaysAfterApplication: number; // Number of days after application to schedule follow-up reminder (default: 7)
   followUpDaysAfterInterview: number; // Number of days after interview to schedule follow-up reminder (default: 2)
+  followUpDaysBetweenFollowUps: number; // Number of days between follow-ups when one is completed (default: 2)
   thankYouNoteDaysAfterInterview: number; // Number of days after interview to show thank you note reminder (default: 1)
+  kanbanCardsPerColumn: number; // Number of cards to show per column in kanban board (default: 5)
   showZenQuotes: boolean; // Show daily zen quotes in Daily Planner (default: true)
   enableEmailTemplates: boolean; // Enable email template functionality (default: true)
   emailClient: 'default' | 'gmail'; // Preferred email client (default: 'default')
@@ -41,7 +43,9 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   googleCalendarId: undefined,
   followUpDaysAfterApplication: 7, // Default: 7 days after application
   followUpDaysAfterInterview: 2, // Default: 2 days after interview
+  followUpDaysBetweenFollowUps: 2, // Default: 2 days between follow-ups
   thankYouNoteDaysAfterInterview: 1, // Default: 1 day after interview
+  kanbanCardsPerColumn: 5, // Default: 5 cards per column
   showZenQuotes: true, // Default: show zen quotes
   enableEmailTemplates: true, // Default: enable email templates
   emailClient: 'default', // Default: use default email client

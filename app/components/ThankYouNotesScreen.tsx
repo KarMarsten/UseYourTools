@@ -12,7 +12,7 @@ import {
 import { usePreferences } from '../context/PreferencesContext';
 import { getAllEvents, Event, setEventThankYouStatus } from '../utils/events';
 import { getDateKey, formatTime12Hour } from '../utils/timeFormatter';
-import { getApplicationById, JobApplication } from '../utils/applications';
+import { getApplicationById, JobApplication, getAllApplications } from '../utils/applications';
 import EmailTemplateModal from './EmailTemplateModal';
 
 interface ThankYouNotesScreenProps {
@@ -35,13 +35,56 @@ export default function ThankYouNotesScreen({ onBack }: ThankYouNotesScreenProps
   const loadPendingThankYouNotes = async () => {
     try {
       const allEvents = await getAllEvents();
-      const interviewEvents = allEvents.filter(
-        e => e.type === 'interview' && 
-        (!e.thankYouNoteStatus || e.thankYouNoteStatus === 'pending')
-      );
+      const { loadPreferences } = await import('../utils/preferences');
+      const prefs = await loadPreferences();
+      const daysAfterInterview = prefs.thankYouNoteDaysAfterInterview || 1;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayKey = getDateKey(today);
+      
+      // Load all applications to check for rejected status
+      const allApplications = await getAllApplications();
+      const applicationStatusMap = new Map<string, string>();
+      allApplications.forEach(app => {
+        applicationStatusMap.set(app.id, app.status);
+      });
+      
+      // Filter for overdue thank you notes (same logic as getOverdueThankYouNotesCount)
+      const overdueInterviewEvents = allEvents.filter(e => {
+        if (e.type !== 'interview') {
+          return false;
+        }
+        
+        // Check if thank you note status is pending (undefined or 'pending')
+        // If it's 'sent' or 'skipped', don't count it
+        if (e.thankYouNoteStatus && e.thankYouNoteStatus !== 'pending') {
+          return false;
+        }
+        
+        // Skip if the linked application is rejected
+        if (e.applicationId) {
+          const appStatus = applicationStatusMap.get(e.applicationId);
+          if (appStatus === 'rejected') {
+            return false;
+          }
+        }
+        
+        // Calculate when the thank you note is due (interview date + daysAfterInterview)
+        const [year, month, day] = e.dateKey.split('-').map(Number);
+        const interviewDate = new Date(year, month - 1, day);
+        interviewDate.setHours(0, 0, 0, 0);
+        const dueDate = new Date(interviewDate);
+        dueDate.setDate(dueDate.getDate() + daysAfterInterview);
+        dueDate.setHours(0, 0, 0, 0);
+        const dueDateKey = getDateKey(dueDate);
+        
+        // Only count if interview has happened (interview date is in the past) AND due date is in the past
+        const interviewDateKey = getDateKey(interviewDate);
+        return interviewDateKey < todayKey && dueDateKey < todayKey;
+      });
 
       // Sort by date (most recent first)
-      interviewEvents.sort((a, b) => {
+      overdueInterviewEvents.sort((a, b) => {
         const dateA = new Date(a.dateKey);
         const dateB = new Date(b.dateKey);
         return dateB.getTime() - dateA.getTime();
@@ -49,7 +92,7 @@ export default function ThankYouNotesScreen({ onBack }: ThankYouNotesScreenProps
 
       // Load application details for each event
       const notesWithApps = await Promise.all(
-        interviewEvents.map(async (event) => {
+        overdueInterviewEvents.map(async (event) => {
           let application: JobApplication | undefined;
           if (event.applicationId) {
             try {
@@ -128,7 +171,7 @@ export default function ThankYouNotesScreen({ onBack }: ThankYouNotesScreenProps
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Text style={[styles.backButtonText, { color: colorScheme.colors.primary }]}>← Back</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colorScheme.colors.text }]}>Pending Thank You Notes</Text>
+        <Text style={[styles.title, { color: colorScheme.colors.text }]}>Overdue Thank You Notes</Text>
         <View style={{ width: 60 }} />
       </View>
 
@@ -136,14 +179,14 @@ export default function ThankYouNotesScreen({ onBack }: ThankYouNotesScreenProps
         {pendingThankYouNotes.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={[styles.emptyText, { color: colorScheme.colors.textSecondary }]}>
-              🎉 All caught up!{'\n'}No pending thank you notes.
+              🎉 All caught up!{'\n'}No overdue thank you notes.
             </Text>
           </View>
         ) : (
           <>
             <View style={styles.summaryContainer}>
               <Text style={[styles.summaryText, { color: colorScheme.colors.textSecondary }]}>
-                {pendingThankYouNotes.length} pending thank you note{pendingThankYouNotes.length !== 1 ? 's' : ''}
+                {pendingThankYouNotes.length} overdue thank you note{pendingThankYouNotes.length !== 1 ? 's' : ''}
               </Text>
             </View>
             {pendingThankYouNotes.map(({ event, application }) => (
