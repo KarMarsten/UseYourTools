@@ -8,7 +8,7 @@ import { generateTimeBlocks, GeneratedTimeBlock } from '../utils/timeBlockGenera
 import { usePreferences } from '../context/PreferencesContext';
 import { formatTimeRange, formatTime12Hour } from '../utils/timeFormatter';
 import { Event, loadEventsForDate, saveEvent, deleteEvent, getAllEvents } from '../utils/events';
-import { getApplicationById, getAllApplications } from '../utils/applications';
+import { getApplicationById, getAllApplications, JobApplication } from '../utils/applications';
 import { getAllFollowUpReminders, FollowUpReminder } from '../utils/followUpReminders';
 import { scheduleEventNotification, cancelEventNotification } from '../utils/eventNotifications';
 import { openAddressInMaps, openPhoneNumber, openEmail } from '../utils/eventActions';
@@ -27,12 +27,16 @@ interface DayEntries {
   [timeBlockId: string]: string;
 }
 
+type TabType = 'schedule' | 'applications' | 'events';
+
 export default function DailyPlannerScreen({ date, onBack, onDateChange, initialApplicationId, onNavigateToApplication }: DailyPlannerScreenProps) {
   const [entries, setEntries] = useState<DayEntries>({});
   const [timeBlocks, setTimeBlocks] = useState<GeneratedTimeBlock[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [pendingThankYouNotes, setPendingThankYouNotes] = useState<Event[]>([]);
   const [followUpReminders, setFollowUpReminders] = useState<FollowUpReminder[]>([]);
+  const [applications, setApplications] = useState<JobApplication[]>([]);
+  const [activeTab, setActiveTab] = useState<TabType>('schedule');
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | undefined>(undefined);
   const [viewingEvent, setViewingEvent] = useState<Event | undefined>(undefined);
@@ -89,6 +93,7 @@ export default function DailyPlannerScreen({ date, onBack, onDateChange, initial
     loadEntries();
     loadCustomTimeBlocks();
     loadEvents();
+    loadApplicationsForDate();
     // If we have an initialApplicationId, load the application and open the event modal
     if (initialApplicationId) {
       loadApplicationForEvent(initialApplicationId);
@@ -152,6 +157,26 @@ export default function DailyPlannerScreen({ date, onBack, onDateChange, initial
       await loadFollowUpReminders();
     } catch (error) {
       console.error('Error loading events:', error);
+    }
+  };
+
+  const loadApplicationsForDate = async () => {
+    try {
+      const allApplications = await getAllApplications();
+      // Filter applications created on this date
+      const applicationsForDate = allApplications.filter(app => {
+        const appliedDate = new Date(app.appliedDate);
+        appliedDate.setHours(0, 0, 0, 0);
+        const appliedDateKey = getDateKey(appliedDate);
+        return appliedDateKey === dateKey;
+      });
+      // Sort by applied date (newest first)
+      applicationsForDate.sort((a, b) => {
+        return new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime();
+      });
+      setApplications(applicationsForDate);
+    } catch (error) {
+      console.error('Error loading applications for date:', error);
     }
   };
 
@@ -346,6 +371,11 @@ export default function DailyPlannerScreen({ date, onBack, onDateChange, initial
     return date.toLocaleDateString('en-US', options);
   };
 
+  // Calculate counts for tabs
+  const applicationsCount = applications.length;
+  const eventsCount = events.length + pendingThankYouNotes.length + followUpReminders.length;
+  const scheduleBlocksCount = timeBlocks.length;
+
   const dynamicStyles = {
     container: { backgroundColor: colorScheme.colors.background },
     header: { backgroundColor: colorScheme.colors.surface, borderBottomColor: colorScheme.colors.border },
@@ -404,10 +434,190 @@ export default function DailyPlannerScreen({ date, onBack, onDateChange, initial
 
         <View style={[styles.divider, dynamicStyles.divider]} />
 
-        {/* Display Events */}
-        {(events.length > 0 || pendingThankYouNotes.length > 0 || followUpReminders.length > 0) && (
-          <View style={styles.eventsSection}>
-            <Text style={[styles.sectionTitle, { color: colorScheme.colors.text }]}>Events</Text>
+        {/* Tab Navigation Bar */}
+        <View style={[styles.tabBar, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}>
+          <TouchableOpacity
+            style={[
+              styles.tabButton,
+              {
+                backgroundColor: activeTab === 'schedule' ? colorScheme.colors.primary : 'transparent',
+                borderBottomColor: activeTab === 'schedule' ? colorScheme.colors.primary : 'transparent',
+              }
+            ]}
+            onPress={() => setActiveTab('schedule')}
+          >
+            <Text 
+              style={[
+                styles.tabButtonText,
+                { color: activeTab === 'schedule' ? '#FFF8E7' : colorScheme.colors.text }
+              ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.8}
+            >
+              Schedule {scheduleBlocksCount > 0 && `(${scheduleBlocksCount})`}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.tabButton,
+              {
+                backgroundColor: activeTab === 'applications' ? colorScheme.colors.primary : 'transparent',
+                borderBottomColor: activeTab === 'applications' ? colorScheme.colors.primary : 'transparent',
+              }
+            ]}
+            onPress={() => setActiveTab('applications')}
+          >
+            <Text 
+              style={[
+                styles.tabButtonText,
+                { color: activeTab === 'applications' ? '#FFF8E7' : colorScheme.colors.text }
+              ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.8}
+            >
+              Apps {applicationsCount > 0 && `(${applicationsCount})`}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.tabButton,
+              {
+                backgroundColor: activeTab === 'events' ? colorScheme.colors.primary : 'transparent',
+                borderBottomColor: activeTab === 'events' ? colorScheme.colors.primary : 'transparent',
+              }
+            ]}
+            onPress={() => setActiveTab('events')}
+          >
+            <Text 
+              style={[
+                styles.tabButtonText,
+                { color: activeTab === 'events' ? '#FFF8E7' : colorScheme.colors.text }
+              ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.8}
+            >
+              Events {eventsCount > 0 && `(${eventsCount})`}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Tab Content */}
+        {activeTab === 'schedule' && (
+          <View style={styles.tabContent}>
+            {timeBlocks.map((block) => (
+              <View key={block.id} style={[
+                styles.timeBlock,
+                {
+                  backgroundColor: colorScheme.colors.surface,
+                  borderColor: colorScheme.colors.border,
+                }
+              ]}>
+                <View style={styles.timeBlockHeader}>
+                  <Text style={[styles.timeText, { color: colorScheme.colors.primary }]}>
+                    {formatTimeRange(block.time, use12Hour)}
+                  </Text>
+                  <View style={styles.timeBlockTitleContainer}>
+                    <Text style={[styles.timeBlockTitle, { color: colorScheme.colors.text }]}>
+                      🌿 {block.title}
+                    </Text>
+                    {block.description && (
+                      <Text style={[styles.timeBlockDescription, { color: colorScheme.colors.textSecondary }]}>
+                        {block.description}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={[styles.textInput, dynamicStyles.textInput, { color: colorScheme.colors.text }]}
+                    multiline
+                    placeholder="Write your plans here..."
+                    placeholderTextColor={colorScheme.colors.textSecondary}
+                    value={entries[block.id] || ''}
+                    onChangeText={(text) => saveEntry(block.id, text)}
+                  />
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {activeTab === 'applications' && (
+          <View style={styles.tabContent}>
+            {applications.length > 0 ? (
+              applications.map((app) => (
+                <TouchableOpacity
+                  key={app.id}
+                  style={[
+                    styles.applicationCard,
+                    {
+                      backgroundColor: colorScheme.colors.surface,
+                      borderColor: colorScheme.colors.border,
+                    }
+                  ]}
+                  onPress={() => {
+                    if (onNavigateToApplication) {
+                      onNavigateToApplication(app.id);
+                    }
+                  }}
+                >
+                  <View style={styles.applicationContent}>
+                    <View style={styles.applicationHeader}>
+                      <Text style={[styles.applicationTitle, { color: colorScheme.colors.text }]}>
+                        💼 {app.positionTitle}
+                      </Text>
+                      <View style={[
+                        styles.statusBadge,
+                        {
+                          backgroundColor: app.status === 'applied' ? '#4CAF50' :
+                                          app.status === 'interview' ? '#2196F3' :
+                                          app.status === 'rejected' ? '#F44336' : '#FF9800',
+                        }
+                      ]}>
+                        <Text style={styles.statusBadgeText}>
+                          {app.status.charAt(0).toUpperCase() + app.status.slice(1).replace('-', ' ')}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.applicationCompany, { color: colorScheme.colors.text }]}>
+                      🏢 {app.company}
+                    </Text>
+                    {app.source && (
+                      <Text style={[styles.applicationSource, { color: colorScheme.colors.textSecondary }]}>
+                        📍 {app.source}
+                      </Text>
+                    )}
+                    {app.appliedDate && (
+                      <Text style={[styles.applicationDate, { color: colorScheme.colors.textSecondary }]}>
+                        📅 Applied: {formatDate(new Date(app.appliedDate))}
+                      </Text>
+                    )}
+                    {app.notes && (
+                      <Text style={[styles.applicationNotes, { color: colorScheme.colors.textSecondary }]}>
+                        {app.notes}
+                      </Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyStateText, { color: colorScheme.colors.textSecondary }]}>
+                  No applications created on this day
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {activeTab === 'events' && (
+          <View style={styles.tabContent}>
+            {/* Display Events */}
+            {(events.length > 0 || pendingThankYouNotes.length > 0 || followUpReminders.length > 0) ? (
+              <View style={styles.eventsSection}>
             {/* Display pending thank you notes */}
             {pendingThankYouNotes.map((event) => (
               <TouchableOpacity
@@ -614,46 +824,17 @@ export default function DailyPlannerScreen({ date, onBack, onDateChange, initial
                 </View>
               </TouchableOpacity>
             ))}
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyStateText, { color: colorScheme.colors.textSecondary }]}>
+                  No events scheduled for this day
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
-        {events.length > 0 && <View style={[styles.divider, dynamicStyles.divider]} />}
-
-        {timeBlocks.map((block) => (
-          <View key={block.id} style={[
-            styles.timeBlock,
-            {
-              backgroundColor: colorScheme.colors.surface,
-              borderColor: colorScheme.colors.border,
-            }
-          ]}>
-            <View style={styles.timeBlockHeader}>
-              <Text style={[styles.timeText, { color: colorScheme.colors.primary }]}>
-                {formatTimeRange(block.time, use12Hour)}
-              </Text>
-              <View style={styles.timeBlockTitleContainer}>
-                <Text style={[styles.timeBlockTitle, { color: colorScheme.colors.text }]}>
-                  🌿 {block.title}
-                </Text>
-                {block.description && (
-                  <Text style={[styles.timeBlockDescription, { color: colorScheme.colors.textSecondary }]}>
-                    {block.description}
-                  </Text>
-                )}
-              </View>
-            </View>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={[styles.textInput, dynamicStyles.textInput, { color: colorScheme.colors.text }]}
-                multiline
-                placeholder="Write your plans here..."
-                placeholderTextColor={colorScheme.colors.textSecondary}
-                value={entries[block.id] || ''}
-                onChangeText={(text) => saveEntry(block.id, text)}
-              />
-            </View>
-          </View>
-        ))}
       </ScrollView>
 
       <AddEventModal
@@ -669,6 +850,7 @@ export default function DailyPlannerScreen({ date, onBack, onDateChange, initial
         initialApplicationData={initialApplicationData}
         allowDateSelection={true}
       />
+
     </View>
   );
 }
@@ -819,7 +1001,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
-    marginLeft: 12,
   },
   addButtonText: {
     color: '#FFF8E7',
@@ -897,6 +1078,91 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontStyle: 'italic',
     lineHeight: 20,
+  },
+  tabContent: {
+    marginBottom: 20,
+  },
+  applicationCard: {
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  applicationContent: {
+    flex: 1,
+  },
+  applicationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  applicationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+    marginRight: 8,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  statusBadgeText: {
+    color: '#FFF8E7',
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  applicationCompany: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  applicationSource: {
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  applicationDate: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  applicationNotes: {
+    fontSize: 13,
+    marginTop: 8,
+    fontStyle: 'italic',
+    lineHeight: 18,
+  },
+  emptyState: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    marginBottom: 20,
+    borderRadius: 8,
+    padding: 4,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+    borderBottomWidth: 2,
+    marginHorizontal: 2,
+    minWidth: 0,
+  },
+  tabButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

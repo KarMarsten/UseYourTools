@@ -1,6 +1,11 @@
 # Feature Ideas for UseYourTools 🎯
 
-**Last Updated**: January 2025
+**Last Updated**: January 2026
+
+## ✅ Implemented Since Last Update
+
+### **Data Export & Backup** 💾
+You can now export a JSON backup and import it on another device. This includes all saved data plus stored resumes and cover letters.
 
 ## 🚀 Feature Ideas (Not Yet Implemented)
 
@@ -205,22 +210,7 @@
 
 ---
 
-### 15. **Data Export & Backup** 💾
-**Why**: Users need to backup their data and potentially export it for analysis or migration.
-
-**Features**:
-- Export all data to JSON/CSV format
-- Full backup/restore functionality
-- Export specific data types (applications, events, resumes, etc.)
-- Scheduled automatic backups
-- Cloud backup integration (iCloud, Google Drive)
-- Import data from backup files
-
-**Impact**: High - Data security and portability are critical
-
----
-
-### 16. **Universal Search** 🔍
+### 15. **Universal Search** 🔍
 **Why**: Finding specific information across all data quickly saves time.
 
 **Features**:
@@ -234,7 +224,7 @@
 
 ---
 
-### 17. **Application Status History & Timeline** 📅
+### 16. **Application Status History & Timeline** 📅
 **Why**: Tracking the progression of applications helps identify patterns and improve strategy.
 
 **Features**:
@@ -248,7 +238,7 @@
 
 ---
 
-### 18. **Offer Comparison Tool** ⚖️
+### 17. **Offer Comparison Tool** ⚖️
 **Why**: Comparing multiple offers side-by-side helps make informed decisions.
 
 **Features**:
@@ -263,7 +253,7 @@
 
 ---
 
-### 19. **Interview Location & Travel Planning** 🗺️
+### 18. **Interview Location & Travel Planning** 🗺️
 **Why**: Managing interview locations and travel logistics is important for planning.
 
 **Features**:
@@ -278,7 +268,7 @@
 
 ---
 
-### 20. **Document Version History** 📚
+### 19. **Document Version History** 📚
 **Why**: Tracking changes to resumes and cover letters helps maintain multiple versions.
 
 **Features**:
@@ -293,7 +283,7 @@
 
 ---
 
-### 21. **Interviewer Contact Management** 👤
+### 20. **Interviewer Contact Management** 👤
 **Why**: Keeping track of individual interviewers helps with follow-ups and networking.
 
 **Features**:
@@ -308,7 +298,7 @@
 
 ---
 
-### 22. **Recurring Reminders** 🔁
+### 21. **Recurring Reminders** 🔁
 **Why**: Some follow-ups need to happen regularly (e.g., check in with recruiter every 2 weeks).
 
 **Features**:
@@ -322,7 +312,7 @@
 
 ---
 
-### 23. **Application Priority & Ranking** ⭐
+### 22. **Application Priority & Ranking** ⭐
 **Why**: Not all applications are equal - prioritizing helps focus effort.
 
 **Features**:
@@ -336,7 +326,7 @@
 
 ---
 
-### 24. **Interview Preparation Time Tracker** ⏱️
+### 23. **Interview Preparation Time Tracker** ⏱️
 **Why**: Understanding how much time you spend preparing helps optimize your process.
 
 **Features**:
@@ -350,7 +340,7 @@
 
 ---
 
-### 25. **Company Rating & Notes** ⭐
+### 24. **Company Rating & Notes** ⭐
 **Why**: Rating companies based on interview experience helps remember which companies to prioritize.
 
 **Features**:

@@ -8,6 +8,7 @@ import { formatTimeRange } from '../utils/timeFormatter';
 import { usePreferences } from '../context/PreferencesContext';
 import { syncAllEventsToCalendar, getGoogleCalendars } from '../utils/calendarSync';
 import { getAllEvents } from '../utils/events';
+import { exportAppData, importAppData } from '../utils/dataTransfer';
 import * as Calendar from 'expo-calendar';
 
 interface SetupScreenProps {
@@ -37,8 +38,11 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
   const [followUpDaysBetweenFollowUps, setFollowUpDaysBetweenFollowUps] = useState('2');
   const [thankYouNoteDaysAfterInterview, setThankYouNoteDaysAfterInterview] = useState('1');
   const [kanbanCardsPerColumn, setKanbanCardsPerColumn] = useState('5');
+  const [homeFollowUpRemindersCount, setHomeFollowUpRemindersCount] = useState('2');
   const [loading, setLoading] = useState(true);
   const [showTimeBlockDropdown, setShowTimeBlockDropdown] = useState<number | null>(null); // Index of the time block being edited
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const { refreshPreferences } = usePreferences();
   
   const currentColorScheme = getColorScheme(colorScheme, darkMode);
@@ -143,6 +147,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
       setFollowUpDaysBetweenFollowUps(String(prefs.followUpDaysBetweenFollowUps ?? 2));
       setThankYouNoteDaysAfterInterview(String(prefs.thankYouNoteDaysAfterInterview ?? 1));
       setKanbanCardsPerColumn(String(prefs.kanbanCardsPerColumn ?? 5));
+      setHomeFollowUpRemindersCount(String(prefs.homeFollowUpRemindersCount ?? 2));
     } catch (error) {
       console.error('Error loading preferences:', error);
     } finally {
@@ -196,6 +201,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         followUpDaysBetweenFollowUps: 2,
         thankYouNoteDaysAfterInterview: 1,
         kanbanCardsPerColumn: 5,
+        homeFollowUpRemindersCount: 2,
         showZenQuotes: true,
         enableEmailTemplates: true,
         emailClient: 'default',
@@ -251,6 +257,7 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         followUpDaysBetweenFollowUps: parseInt(followUpDaysBetweenFollowUps, 10) || 2,
         thankYouNoteDaysAfterInterview: parseInt(thankYouNoteDaysAfterInterview, 10) || 1,
         kanbanCardsPerColumn: parseInt(kanbanCardsPerColumn, 10) || 5,
+        homeFollowUpRemindersCount: parseInt(homeFollowUpRemindersCount, 10) || 2,
         aiToneRewriting: existingPrefs.aiToneRewriting ?? 'none',
         openaiApiKey: existingPrefs.openaiApiKey,
         geminiApiKey: existingPrefs.geminiApiKey,
@@ -263,6 +270,52 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
     } catch (error) {
       Alert.alert('Error', 'Failed to save preferences.');
     }
+  };
+
+  const handleExportData = async () => {
+    if (isExporting || isImporting) {
+      return;
+    }
+    setIsExporting(true);
+    try {
+      await exportAppData();
+      Alert.alert('Export Ready', 'Share the export file to transfer your data to another device.');
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      Alert.alert('Error', 'Failed to export data.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportData = () => {
+    if (isExporting || isImporting) {
+      return;
+    }
+    Alert.alert(
+      'Import Data',
+      'Importing will replace your current data on this device. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Import',
+          style: 'destructive',
+          onPress: async () => {
+            setIsImporting(true);
+            try {
+              await importAppData();
+              await refreshPreferences();
+              Alert.alert('Import Complete', 'Data imported. Restart the app if anything looks out of date.');
+            } catch (error) {
+              console.error('Error importing data:', error);
+              Alert.alert('Error', 'Failed to import data.');
+            } finally {
+              setIsImporting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleSelectTimeBlock = (index: number, blockId: string) => {
@@ -1114,6 +1167,38 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
         </View>
 
         <View style={styles.section}>
+          <View style={[styles.settingRow, {
+            backgroundColor: currentColorScheme.colors.surface,
+            borderColor: currentColorScheme.colors.border,
+            marginTop: 12,
+          }]}>
+            <View style={styles.settingContent}>
+              <Text style={[styles.settingLabel, { color: currentColorScheme.colors.text }]}>
+                Home Screen Follow-Up Reminders
+              </Text>
+              <Text style={[styles.settingDescription, { color: currentColorScheme.colors.textSecondary }]}>
+                Number of follow-up reminders to show on the home screen by default (default: 2)
+              </Text>
+            </View>
+            <TextInput
+              style={[
+                styles.followUpInput,
+                {
+                  backgroundColor: currentColorScheme.colors.background,
+                  borderColor: currentColorScheme.colors.border,
+                  color: currentColorScheme.colors.text,
+                }
+              ]}
+              value={homeFollowUpRemindersCount}
+              onChangeText={setHomeFollowUpRemindersCount}
+              placeholder="2"
+              placeholderTextColor={currentColorScheme.colors.textSecondary}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: currentColorScheme.colors.text }]}>
             Color Scheme
           </Text>
@@ -1176,6 +1261,50 @@ export default function SetupScreen({ onComplete, onBack }: SetupScreenProps) {
             </View>
           </View>
         )}
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: currentColorScheme.colors.text }]}>
+            Data Transfer
+          </Text>
+          <Text style={[styles.sectionDescription, { color: currentColorScheme.colors.textSecondary }]}>
+            Export your data to a file and import it on another device.
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.syncButton,
+              {
+                backgroundColor: currentColorScheme.colors.primary,
+                borderColor: currentColorScheme.colors.primary,
+                opacity: isExporting || isImporting ? 0.6 : 1,
+              },
+            ]}
+            onPress={handleExportData}
+            disabled={isExporting || isImporting}
+          >
+            <Text style={styles.syncButtonText}>
+              {isExporting ? 'Exporting...' : '📤 Export Data'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.syncButton,
+              {
+                backgroundColor: currentColorScheme.colors.secondary,
+                borderColor: currentColorScheme.colors.secondary,
+                opacity: isExporting || isImporting ? 0.6 : 1,
+              },
+            ]}
+            onPress={handleImportData}
+            disabled={isExporting || isImporting}
+          >
+            <Text style={styles.syncButtonText}>
+              {isImporting ? 'Importing...' : '📥 Import Data'}
+            </Text>
+          </TouchableOpacity>
+          <Text style={[styles.sectionDescription, { color: currentColorScheme.colors.textSecondary }]}>
+            Import replaces local data on this device.
+          </Text>
+        </View>
 
         <TouchableOpacity style={[styles.saveButton, { backgroundColor: currentColorScheme.colors.primary }]} onPress={handleSave}>
           <Text style={styles.saveButtonText}>Save Preferences</Text>

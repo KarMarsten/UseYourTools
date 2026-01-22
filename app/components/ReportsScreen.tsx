@@ -3,17 +3,20 @@ import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert } from 'rea
 import { usePreferences } from '../context/PreferencesContext';
 import { getAllEvents } from '../utils/events';
 import { getAllApplications } from '../utils/applications';
-import { exportWeeklySchedulePDF, exportUnemploymentReportPDF, exportJobApplicationsReportPDF, generateWeeklyScheduleHTML, generateUnemploymentReportHTML, generateJobApplicationsReportHTML } from '../utils/pdfExports';
+import { exportWeeklySchedulePDF, exportUnemploymentReportPDF, exportJobApplicationsReportPDF, generateWeeklyScheduleHTML, generateUnemploymentReportHTML, generateJobApplicationsReportHTML, generateActivityStatsReportHTML, exportActivityStatsReportPDF } from '../utils/pdfExports';
 import { getDateKey } from '../utils/timeFormatter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface ReportsScreenProps {
   onBack: () => void;
   onViewReport: (html: string, title: string) => void;
+  onViewActivityStatsVisualization: (periodType: 'daily' | 'weekly' | 'monthly', startDate: Date) => void;
 }
 
-export default function ReportsScreen({ onBack, onViewReport }: ReportsScreenProps) {
+export default function ReportsScreen({ onBack, onViewReport, onViewActivityStatsVisualization }: ReportsScreenProps) {
   const [selectedWeekDate, setSelectedWeekDate] = useState(new Date());
+  const [selectedStatsPeriod, setSelectedStatsPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [selectedStatsDate, setSelectedStatsDate] = useState(new Date());
   const { colorScheme, preferences } = usePreferences();
 
   // Week filter persistence key (same as ApplicationsScreen)
@@ -204,6 +207,29 @@ export default function ReportsScreen({ onBack, onViewReport }: ReportsScreenPro
     }
   };
 
+  const handleViewActivityStatsReport = async () => {
+    try {
+      // Navigate to visualization screen instead of HTML view
+      onViewActivityStatsVisualization(selectedStatsPeriod, selectedStatsDate);
+    } catch (error) {
+      console.error('Error opening activity statistics visualization:', error);
+      Alert.alert('Error', 'Failed to open activity statistics visualization');
+    }
+  };
+
+  const handleExportActivityStatsReport = async () => {
+    try {
+      const allEvents = await getAllEvents();
+      const allApplications = await getAllApplications();
+      
+      await exportActivityStatsReportPDF(selectedStatsPeriod, selectedStatsDate, allEvents, allApplications, colorScheme);
+      // Success message is handled by the sharing dialog
+    } catch (error) {
+      console.error('Error exporting activity statistics report:', error);
+      Alert.alert('Error', 'Failed to export activity statistics report');
+    }
+  };
+
   const dynamicStyles = {
     container: { backgroundColor: colorScheme.colors.background },
     header: { backgroundColor: colorScheme.colors.surface },
@@ -341,6 +367,161 @@ export default function ReportsScreen({ onBack, onViewReport }: ReportsScreenPro
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* Activity Statistics Report Section */}
+          <View style={styles.reportSection}>
+            <Text style={[styles.reportTitle, dynamicStyles.title]}>📊 Activity Statistics Report</Text>
+            <Text style={[styles.reportDescription, dynamicStyles.description]}>
+              View or generate a PDF report showing daily, weekly, or monthly statistics for applications, interviews, and events
+            </Text>
+            
+            {/* Period Selector */}
+            <View style={[styles.periodSelector, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}>
+              <Text style={[styles.periodSelectorLabel, dynamicStyles.title]}>Period Type</Text>
+              <View style={styles.periodButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.periodButton,
+                    {
+                      backgroundColor: selectedStatsPeriod === 'daily' ? colorScheme.colors.primary : colorScheme.colors.secondary,
+                    }
+                  ]}
+                  onPress={() => setSelectedStatsPeriod('daily')}
+                >
+                  <Text 
+                    style={[
+                      styles.periodButtonText,
+                      { color: selectedStatsPeriod === 'daily' ? '#FFF8E7' : colorScheme.colors.text }
+                    ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit={true}
+                    minimumFontScale={0.85}
+                  >
+                    Daily
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.periodButton,
+                    {
+                      backgroundColor: selectedStatsPeriod === 'weekly' ? colorScheme.colors.primary : colorScheme.colors.secondary,
+                    }
+                  ]}
+                  onPress={() => setSelectedStatsPeriod('weekly')}
+                >
+                  <Text 
+                    style={[
+                      styles.periodButtonText,
+                      { color: selectedStatsPeriod === 'weekly' ? '#FFF8E7' : colorScheme.colors.text }
+                    ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit={true}
+                    minimumFontScale={0.85}
+                  >
+                    Weekly
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.periodButton,
+                    {
+                      backgroundColor: selectedStatsPeriod === 'monthly' ? colorScheme.colors.primary : colorScheme.colors.secondary,
+                    }
+                  ]}
+                  onPress={() => setSelectedStatsPeriod('monthly')}
+                >
+                  <Text 
+                    style={[
+                      styles.periodButtonText,
+                      { color: selectedStatsPeriod === 'monthly' ? '#FFF8E7' : colorScheme.colors.text }
+                    ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit={true}
+                    minimumFontScale={0.85}
+                  >
+                    Monthly
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Date Selector */}
+            <View style={[styles.dateSelector, { backgroundColor: colorScheme.colors.surface, borderColor: colorScheme.colors.border }]}>
+              <Text style={[styles.dateSelectorLabel, dynamicStyles.title]}>
+                {selectedStatsPeriod === 'daily' ? 'Select Date' : selectedStatsPeriod === 'weekly' ? 'Select Week' : 'Select Month'}
+              </Text>
+              <View style={styles.dateNavigator}>
+                <TouchableOpacity
+                  onPress={() => {
+                    const newDate = new Date(selectedStatsDate);
+                    if (selectedStatsPeriod === 'daily') {
+                      newDate.setDate(selectedStatsDate.getDate() - 1);
+                    } else if (selectedStatsPeriod === 'weekly') {
+                      newDate.setDate(selectedStatsDate.getDate() - 7);
+                    } else {
+                      newDate.setMonth(selectedStatsDate.getMonth() - 1);
+                    }
+                    setSelectedStatsDate(newDate);
+                  }}
+                  style={[styles.dateNavButton, { backgroundColor: colorScheme.colors.secondary }]}
+                >
+                  <Text style={[styles.dateNavButtonText, { color: colorScheme.colors.text }]}>‹</Text>
+                </TouchableOpacity>
+                <View style={styles.dateRangeContainer}>
+                  <Text style={[styles.dateRangeText, { color: colorScheme.colors.text }]}>
+                    {selectedStatsPeriod === 'daily'
+                      ? selectedStatsDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                      : selectedStatsPeriod === 'weekly'
+                      ? formatWeekRange(selectedStatsDate)
+                      : selectedStatsDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setSelectedStatsDate(new Date())}
+                    style={styles.currentDateButton}
+                  >
+                    <Text style={[styles.currentDateButtonText, { color: colorScheme.colors.primary }]}>
+                      Current {selectedStatsPeriod === 'daily' ? 'Day' : selectedStatsPeriod === 'weekly' ? 'Week' : 'Month'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    const newDate = new Date(selectedStatsDate);
+                    if (selectedStatsPeriod === 'daily') {
+                      newDate.setDate(selectedStatsDate.getDate() + 1);
+                    } else if (selectedStatsPeriod === 'weekly') {
+                      newDate.setDate(selectedStatsDate.getDate() + 7);
+                    } else {
+                      newDate.setMonth(selectedStatsDate.getMonth() + 1);
+                    }
+                    setSelectedStatsDate(newDate);
+                  }}
+                  style={[styles.dateNavButton, { backgroundColor: colorScheme.colors.secondary }]}
+                >
+                  <Text style={[styles.dateNavButtonText, { color: colorScheme.colors.text }]}>›</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: colorScheme.colors.primary, flex: 1, marginRight: 8 }]}
+                onPress={handleViewActivityStatsReport}
+              >
+                <Text style={[styles.actionButtonText, { color: '#FFF8E7' }]}>
+                  View
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: colorScheme.colors.accent, flex: 1, marginLeft: 8 }]}
+                onPress={handleExportActivityStatsReport}
+              >
+                <Text style={[styles.actionButtonText, { color: '#FFF8E7' }]}>
+                  Export PDF
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -468,6 +649,79 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  periodSelector: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+  },
+  periodSelectorLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  periodButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  periodButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+  periodButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  dateSelector: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+  },
+  dateSelectorLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  dateNavigator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  dateNavButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateNavButtonText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  dateRangeContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  dateRangeText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  currentDateButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  currentDateButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
 

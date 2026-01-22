@@ -96,6 +96,13 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           </View>
 
           <View style={styles.subsection}>
+            <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>🔁 Data Transfer</Text>
+            <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
+              Export a secure JSON backup of your data and import it on another device. This includes applications, events, preferences, and stored documents like resumes and cover letters.
+            </Text>
+          </View>
+
+          <View style={styles.subsection}>
             <Text style={[styles.subsectionTitle, { color: colorScheme.colors.text }]}>📊 Reports</Text>
             <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
               Generate PDF reports for your weekly schedule, unemployment filing, or job applications. Weekly schedule reports include all your time blocks and events. Unemployment reports include interviews, appointments, and rejected applications with rejection reasons. Job applications reports show all applications submitted during the selected week with status tracking. Applications that progress through interviews show as "Interview Rejected" with interview dates.
@@ -166,6 +173,9 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
             • Use the kanban board view to visually organize applications - drag cards between columns to change status
           </Text>
+          <Text style={[styles.bullet, { color: colorScheme.colors.textSecondary }]}>
+            • Use Settings → Data Transfer to export and import your data between devices
+          </Text>
         </View>
 
         <View style={styles.section}>
@@ -178,7 +188,7 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colorScheme.colors.text }]}>🔒 Your Privacy</Text>
           <Text style={[styles.text, { color: colorScheme.colors.textSecondary }]}>
-            All your data stays on your device. We don't use servers or cloud storage. Your job search information is yours alone.
+            All your data stays on your device. We don't use servers or cloud storage. You can export and import your data manually for device transfers, and your job search information stays under your control.
           </Text>
         </View>
 

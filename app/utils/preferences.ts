@@ -20,6 +20,7 @@ export interface UserPreferences {
   followUpDaysBetweenFollowUps: number; // Number of days between follow-ups when one is completed (default: 2)
   thankYouNoteDaysAfterInterview: number; // Number of days after interview to show thank you note reminder (default: 1)
   kanbanCardsPerColumn: number; // Number of cards to show per column in kanban board (default: 5)
+  homeFollowUpRemindersCount: number; // Number of follow-up reminders to show on home screen (default: 2)
   showZenQuotes: boolean; // Show daily zen quotes in Daily Planner (default: true)
   enableEmailTemplates: boolean; // Enable email template functionality (default: true)
   emailClient: 'default' | 'gmail'; // Preferred email client (default: 'default')
@@ -46,6 +47,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   followUpDaysBetweenFollowUps: 2, // Default: 2 days between follow-ups
   thankYouNoteDaysAfterInterview: 1, // Default: 1 day after interview
   kanbanCardsPerColumn: 5, // Default: 5 cards per column
+  homeFollowUpRemindersCount: 2, // Default: 2 follow-up reminders on home screen
   showZenQuotes: true, // Default: show zen quotes
   enableEmailTemplates: true, // Default: enable email templates
   emailClient: 'default', // Default: use default email client

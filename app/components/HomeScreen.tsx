@@ -26,6 +26,7 @@ interface HomeScreenProps {
   onNavigateToThankYouNotes: () => void;
   onNavigateToSettings: () => void;
   onNavigateToAbout: () => void;
+  onNavigateToUniversalSearch?: () => void;
   onViewReport?: (html: string, title: string) => void;
 }
 
@@ -40,6 +41,7 @@ export default function HomeScreen({
   onNavigateToThankYouNotes,
   onNavigateToSettings,
   onNavigateToAbout,
+  onNavigateToUniversalSearch,
 }: HomeScreenProps) {
   const { colorScheme, preferences } = usePreferences();
   const statusBarHeight = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0;
@@ -49,15 +51,19 @@ export default function HomeScreen({
   const [pendingThankYouCount, setPendingThankYouCount] = useState<number>(0);
   const [overdueCount, setOverdueCount] = useState<number>(0);
   const [showAllUpcomingItems, setShowAllUpcomingItems] = useState(false);
+  const [showAllFollowUps, setShowAllFollowUps] = useState(false);
+  const [followUpReminders, setFollowUpReminders] = useState<FollowUpReminder[]>([]);
 
   useEffect(() => {
     loadUpcomingItems();
+    loadFollowUpReminders();
     loadPendingThankYouCount();
     loadOverdueCount();
     
     // Refresh every minute to update the banner
     const interval = setInterval(() => {
       loadUpcomingItems();
+      loadFollowUpReminders();
       loadPendingThankYouCount();
       loadOverdueCount();
     }, 60000);
@@ -66,6 +72,7 @@ export default function HomeScreen({
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'active') {
         loadUpcomingItems();
+        loadFollowUpReminders();
         loadPendingThankYouCount();
         loadOverdueCount();
       }
@@ -105,7 +112,7 @@ export default function HomeScreen({
       
       const items: Array<{ type: 'event' | 'followup'; data: Event | FollowUpReminder; dateTime: Date }> = [];
       
-      // Load events
+      // Load events only (follow-ups are handled separately)
       const allEvents = await getAllEvents();
       for (const event of allEvents) {
         const [year, month, day] = event.dateKey.split('-').map(Number);
@@ -118,10 +125,24 @@ export default function HomeScreen({
         }
       }
       
-      // Load follow-up reminders
+      // Sort by date/time (earliest first)
+      items.sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
+      
+      setUpcomingItems(items);
+    } catch (error) {
+      console.error('Error loading upcoming items:', error);
+    }
+  };
+
+  const loadFollowUpReminders = async () => {
+    try {
+      const now = new Date();
+      const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
       const allReminders = await getAllFollowUpReminders();
       const today = new Date();
       const todayKey = getDateKey(today);
+      
+      const reminders: FollowUpReminder[] = [];
       
       for (const reminder of allReminders) {
         // Skip completed reminders
@@ -130,18 +151,14 @@ export default function HomeScreen({
         }
         
         // Skip reminders that were completed today (check completedAt date)
-        // This handles cases where completed flag might not be set yet but completedAt is
         if (reminder.completedAt) {
           try {
             const completedDate = new Date(reminder.completedAt);
-            // Use local date components to avoid timezone issues
             const completedDateKey = getDateKey(completedDate);
-            // Compare date keys (YYYY-MM-DD format) to check if completed today
             if (completedDateKey === todayKey) {
               continue; // Skip reminders completed today
             }
           } catch (error) {
-            // If date parsing fails, log but don't skip (might be invalid date format)
             console.warn('Could not parse completedAt date:', reminder.completedAt, error);
           }
         }
@@ -150,16 +167,16 @@ export default function HomeScreen({
         
         // Only include reminders in the next 24 hours that haven't passed
         if (reminderDateTime > now && reminderDateTime <= in24Hours) {
-          items.push({ type: 'followup', data: reminder, dateTime: reminderDateTime });
+          reminders.push(reminder);
         }
       }
       
       // Sort by date/time (earliest first)
-      items.sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
+      reminders.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
       
-      setUpcomingItems(items);
+      setFollowUpReminders(reminders);
     } catch (error) {
-      console.error('Error loading upcoming items:', error);
+      console.error('Error loading follow-up reminders:', error);
     }
   };
 
@@ -351,6 +368,14 @@ export default function HomeScreen({
           </Text>
         </View>
         <View style={styles.headerRight}>
+          {onNavigateToUniversalSearch && (
+            <TouchableOpacity
+              style={styles.settingsButton}
+              onPress={onNavigateToUniversalSearch}
+            >
+              <Text style={[styles.settingsIcon, { color: colorScheme.colors.text }]}>🔍</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={styles.settingsButton}
             onPress={onNavigateToAbout}
@@ -405,17 +430,79 @@ export default function HomeScreen({
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Upcoming Items Banner */}
+        {/* Follow-Up Reminders Banner */}
+        {followUpReminders.length > 0 && (() => {
+          const defaultCount = preferences?.homeFollowUpRemindersCount ?? 2;
+          const displayedReminders = showAllFollowUps ? followUpReminders : followUpReminders.slice(0, defaultCount);
+          
+          return (
+            <View>
+              <View style={[styles.upcomingBanner, { backgroundColor: colorScheme.colors.background }]}>
+                <Text style={[styles.upcomingBannerTitle, { color: colorScheme.colors.text }]}>
+                  📋 Follow-Up Reminders
+                </Text>
+                {displayedReminders.map((reminder) => {
+                  const reminderDateTime = new Date(reminder.dueDate);
+                  
+                  return (
+                    <TouchableOpacity
+                      key={reminder.id}
+                      style={[styles.upcomingItem, { backgroundColor: colorScheme.colors.surface }]}
+                      onPress={() => onNavigateToApplications(reminder.applicationId)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.upcomingItemIcon, { color: colorScheme.colors.primary }]}>
+                        {reminder.type === 'interview' ? '💼' : '📋'}
+                      </Text>
+                      <View style={styles.upcomingItemContent}>
+                        <Text style={[styles.upcomingItemTitle, { color: colorScheme.colors.text }]} numberOfLines={1}>
+                          {reminder.type === 'interview' 
+                            ? `Interview Follow-Up: ${reminder.company}`
+                            : `Application Follow-Up: ${reminder.company}`}
+                        </Text>
+                        <Text style={[styles.upcomingItemTime, { color: colorScheme.colors.textSecondary }]}>
+                          {reminderDateTime.toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: preferences?.use12HourClock ?? false
+                          })}
+                          {' • '}
+                          {formatTimeUntil(reminderDateTime)}
+                        </Text>
+                      </View>
+                      <Text style={[styles.upcomingItemArrow, { color: colorScheme.colors.primary }]}>→</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                {followUpReminders.length > defaultCount && (
+                  <TouchableOpacity
+                    onPress={() => setShowAllFollowUps(!showAllFollowUps)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.upcomingBannerMore, { color: colorScheme.colors.primary }]}>
+                      {showAllFollowUps 
+                        ? 'Show less' 
+                        : `+${followUpReminders.length - defaultCount} more`}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <View style={[styles.bannerSeparator, { backgroundColor: colorScheme.colors.border }]} />
+            </View>
+          );
+        })()}
+
+        {/* Upcoming Events Banner */}
         {upcomingItems.length > 0 && (
           <View>
             <View style={[styles.upcomingBanner, { backgroundColor: colorScheme.colors.background }]}>
               <Text style={[styles.upcomingBannerTitle, { color: colorScheme.colors.text }]}>
-                ⏰ Upcoming in Next 24 Hours
+                ⏰ Upcoming Events
               </Text>
             {(showAllUpcomingItems ? upcomingItems : upcomingItems.slice(0, 3)).map((item, index) => {
-              const isEvent = item.type === 'event';
-              const event = isEvent ? item.data as Event : null;
-              const reminder = !isEvent ? item.data as FollowUpReminder : null;
+              const event = item.data as Event;
               
               return (
                 <TouchableOpacity
@@ -425,19 +512,11 @@ export default function HomeScreen({
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.upcomingItemIcon, { color: colorScheme.colors.primary }]}>
-                    {isEvent 
-                      ? (event?.type === 'interview' ? '📞' : event?.type === 'appointment' ? '📍' : '⏰')
-                      : (reminder?.type === 'interview' ? '💼' : '📋')}
+                    {event?.type === 'interview' ? '📞' : event?.type === 'appointment' ? '📍' : '⏰'}
                   </Text>
                   <View style={styles.upcomingItemContent}>
                     <Text style={[styles.upcomingItemTitle, { color: colorScheme.colors.text }]} numberOfLines={1}>
-                      {isEvent 
-                        ? event?.title || 'Event'
-                        : reminder 
-                          ? (reminder.type === 'interview' 
-                            ? `Interview Follow-Up: ${reminder.company}`
-                            : `Application Follow-Up: ${reminder.company}`)
-                          : 'Follow-Up'}
+                      {event?.title || 'Event'}
                     </Text>
                     <Text style={[styles.upcomingItemTime, { color: colorScheme.colors.textSecondary }]}>
                       {item.dateTime.toLocaleDateString('en-US', { 

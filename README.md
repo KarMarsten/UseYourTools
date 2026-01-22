@@ -271,6 +271,7 @@ Choose from five beautiful color schemes:
 - **Follow-up reminders**: Configure days after application and days after interview for automatic follow-up reminders
 - **Thank you note reminders**: Configure days after interview for automatic thank you note reminders (default: 1 day)
 - **Dark mode**: Available for the Modern color scheme (toggle in settings)
+- **Data transfer**: Export a JSON backup and import it on another device (includes stored documents)
 
 **Interface:**
 - Long-press the About (ℹ️) or Settings (⚙️) icons in the header for tooltips

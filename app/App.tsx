@@ -12,6 +12,8 @@ import ReferencesScreen from './components/ReferencesScreen';
 import AboutScreen from './components/AboutScreen';
 import InterviewPrepScreen from './components/InterviewPrepScreen';
 import ThankYouNotesScreen from './components/ThankYouNotesScreen';
+import ActivityStatsVisualizationScreen from './components/ActivityStatsVisualizationScreen';
+import UniversalSearchScreen from './components/UniversalSearchScreen';
 import { PreferencesProvider } from './context/PreferencesContext';
 import { loadPreferences } from './utils/preferences';
 
@@ -74,7 +76,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-type Screen = 'home' | 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport' | 'applications' | 'offers' | 'references' | 'about' | 'interviewPrep' | 'thankYouNotes';
+type Screen = 'home' | 'calendar' | 'dailyPlanner' | 'setup' | 'reports' | 'viewReport' | 'applications' | 'offers' | 'references' | 'about' | 'interviewPrep' | 'thankYouNotes' | 'activityStatsVisualization' | 'universalSearch';
 
 interface InterviewPrepParams {
   companyName?: string;
@@ -89,6 +91,10 @@ function AppContent() {
   const [reportHtml, setReportHtml] = useState<string>('');
   const [reportTitle, setReportTitle] = useState<string>('');
   const [interviewPrepParams, setInterviewPrepParams] = useState<InterviewPrepParams>({});
+  const [activityStatsParams, setActivityStatsParams] = useState<{
+    periodType: 'daily' | 'weekly' | 'monthly';
+    startDate: Date;
+  } | null>(null);
 
   useEffect(() => {
     checkSetupStatus();
@@ -145,6 +151,18 @@ function AppContent() {
     setCurrentScreen('reports');
   }, []);
 
+  const handleViewActivityStatsVisualization = useCallback((
+    periodType: 'daily' | 'weekly' | 'monthly',
+    startDate: Date
+  ) => {
+    setActivityStatsParams({ periodType, startDate });
+    setCurrentScreen('activityStatsVisualization');
+  }, []);
+
+  const handleBackFromActivityStatsVisualization = useCallback(() => {
+    setCurrentScreen('reports');
+  }, []);
+
   const handleViewApplications = useCallback((applicationId?: string) => {
     if (applicationId) {
       setSelectedApplicationId(applicationId);
@@ -173,6 +191,7 @@ function AppContent() {
   const navigateToInterviewPrep = useCallback(() => setCurrentScreen('interviewPrep'), []);
   const navigateToThankYouNotes = useCallback(() => setCurrentScreen('thankYouNotes'), []);
   const navigateToAbout = useCallback(() => setCurrentScreen('about'), []);
+  const navigateToUniversalSearch = useCallback(() => setCurrentScreen('universalSearch'), []);
 
   // Memoize the daily planner back handler - must be defined before early returns
   const handleDailyPlannerBack = useCallback(() => {
@@ -213,6 +232,26 @@ function AppContent() {
   const handleNavigateToInterviewPrepFromApps = useCallback((companyName?: string, applicationId?: string) => {
     setInterviewPrepParams({ companyName, applicationId });
     setCurrentScreen('interviewPrep');
+  }, []);
+
+  const handleNavigateToEventFromSearch = useCallback(async (eventId: string) => {
+    // Navigate to calendar and select the event's date
+    try {
+      const { getEventById } = await import('./utils/events');
+      const event = await getEventById(eventId);
+      if (event) {
+        const [year, month, day] = event.dateKey.split('-').map(Number);
+        const eventDate = new Date(year, month - 1, day);
+        setSelectedDate(eventDate);
+        setCurrentScreen('calendar');
+        setCalendarRefreshTrigger(prev => prev + 1);
+      } else {
+        setCurrentScreen('calendar');
+      }
+    } catch (error) {
+      console.error('Error loading event:', error);
+      setCurrentScreen('calendar');
+    }
   }, []);
 
   const handleOffersBack = useCallback(() => {
@@ -272,7 +311,36 @@ function AppContent() {
   }
 
   if (currentScreen === 'reports') {
-    return <ReportsScreen onBack={handleBackToHome} onViewReport={handleViewReport} />;
+    return <ReportsScreen onBack={handleBackToHome} onViewReport={handleViewReport} onViewActivityStatsVisualization={handleViewActivityStatsVisualization} />;
+  }
+
+  if (currentScreen === 'activityStatsVisualization' && activityStatsParams) {
+    return (
+      <ActivityStatsVisualizationScreen
+        periodType={activityStatsParams.periodType}
+        startDate={activityStatsParams.startDate}
+        events={[]}
+        applications={[]}
+        onBack={handleBackFromActivityStatsVisualization}
+      />
+    );
+  }
+
+  if (currentScreen === 'universalSearch') {
+    return (
+      <UniversalSearchScreen
+        onBack={handleBackToHome}
+        onNavigateToApplication={(applicationId) => {
+          setSelectedApplicationId(applicationId);
+          setCurrentScreen('applications');
+        }}
+        onNavigateToEvent={handleNavigateToEventFromSearch}
+        onNavigateToInterviewPrep={(companyName, applicationId) => {
+          setInterviewPrepParams({ companyName, applicationId });
+          setCurrentScreen('interviewPrep');
+        }}
+      />
+    );
   }
 
   if (currentScreen === 'viewReport') {
@@ -356,6 +424,7 @@ function AppContent() {
       onNavigateToThankYouNotes={navigateToThankYouNotes}
       onNavigateToSettings={handleViewSettings}
       onNavigateToAbout={navigateToAbout}
+      onNavigateToUniversalSearch={navigateToUniversalSearch}
     />
   );
 }

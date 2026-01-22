@@ -5,8 +5,16 @@ import { Event } from './events';
 import { generateTimeBlocks } from './timeBlockGenerator';
 import { getDayThemeForDate } from './plannerData';
 import { formatTime12Hour, getDateKey } from './timeFormatter';
-import { ColorScheme } from './colorSchemes';
+import { ColorScheme, getColorScheme } from './colorSchemes';
 import { JobApplication } from './applications';
+
+/**
+ * Get light mode color scheme for printing (to save ink)
+ * Always returns light mode colors regardless of current theme
+ */
+const getPrintColorScheme = (colorScheme: ColorScheme): ColorScheme => {
+  return getColorScheme(colorScheme.name, false); // Force light mode (false)
+};
 
 /**
  * Generate HTML for weekly schedule PDF
@@ -472,7 +480,9 @@ export const exportWeeklySchedulePDF = async (
   colorScheme: ColorScheme
 ): Promise<void> => {
   try {
-    const html = generateWeeklyScheduleHTML(weekStart, preferences, entries, events, colorScheme);
+    // Use light mode colors for printing to save ink
+    const printColorScheme = getPrintColorScheme(colorScheme);
+    const html = generateWeeklyScheduleHTML(weekStart, preferences, entries, events, printColorScheme);
 
     // printToFileAsync creates a file in a shareable location, we can use it directly
     const { uri } = await Print.printToFileAsync({ html, base64: false });
@@ -497,7 +507,9 @@ export const exportWeeklySchedulePDF = async (
  */
 export const exportUnemploymentReportPDF = async (weekStart: Date, events: Event[], applications: JobApplication[], colorScheme: ColorScheme): Promise<void> => {
   try {
-    const html = generateUnemploymentReportHTML(weekStart, events, applications, colorScheme);
+    // Use light mode colors for printing to save ink
+    const printColorScheme = getPrintColorScheme(colorScheme);
+    const html = generateUnemploymentReportHTML(weekStart, events, applications, printColorScheme);
 
     // printToFileAsync creates a file in a shareable location, we can use it directly
     const { uri } = await Print.printToFileAsync({ html, base64: false });
@@ -676,7 +688,9 @@ export const generateJobApplicationsReportHTML = (weekStart: Date, applications:
  */
 export const exportJobApplicationsReportPDF = async (weekStart: Date, applications: JobApplication[], colorScheme: ColorScheme): Promise<void> => {
   try {
-    const html = generateJobApplicationsReportHTML(weekStart, applications, colorScheme);
+    // Use light mode colors for printing to save ink
+    const printColorScheme = getPrintColorScheme(colorScheme);
+    const html = generateJobApplicationsReportHTML(weekStart, applications, printColorScheme);
 
     // printToFileAsync creates a file in a shareable location, we can use it directly
     const { uri } = await Print.printToFileAsync({ html, base64: false });
@@ -696,3 +710,658 @@ export const exportJobApplicationsReportPDF = async (weekStart: Date, applicatio
   }
 };
 
+/**
+ * Generate HTML for activity statistics report (daily/weekly/monthly)
+ */
+export const generateActivityStatsReportHTML = (
+  periodType: 'daily' | 'weekly' | 'monthly',
+  startDate: Date,
+  events: Event[],
+  applications: JobApplication[],
+  colorScheme: ColorScheme
+): string => {
+  const getDateRange = () => {
+    const endDate = new Date(startDate);
+    if (periodType === 'daily') {
+      return { start: startDate, end: startDate, label: startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) };
+    } else if (periodType === 'weekly') {
+      const weekStart = new Date(startDate);
+      const day = weekStart.getDay();
+      const diff = weekStart.getDate() - day;
+      weekStart.setDate(diff);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+      return {
+        start: weekStart,
+        end: weekEnd,
+        label: `Week of ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+      };
+    } else {
+      const monthStart = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      monthStart.setHours(0, 0, 0, 0);
+      const monthEnd = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+      monthEnd.setHours(23, 59, 59, 999);
+      return {
+        start: monthStart,
+        end: monthEnd,
+        label: startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      };
+    }
+  };
+
+  const { start, end, label } = getDateRange();
+
+  // Calculate statistics
+  const statsByDay: Record<string, {
+    applications: number;
+    interviews: number;
+    events: number;
+  }> = {};
+
+  // Process applications
+  applications.forEach(app => {
+    const appliedDate = new Date(app.appliedDate);
+    appliedDate.setHours(0, 0, 0, 0);
+    if (appliedDate >= start && appliedDate <= end) {
+      const dateKey = getDateKey(appliedDate);
+      if (!statsByDay[dateKey]) {
+        statsByDay[dateKey] = { applications: 0, interviews: 0, events: 0 };
+      }
+      statsByDay[dateKey].applications++;
+    }
+  });
+
+  // Process events (interviews and other events)
+  events.forEach(event => {
+    const [year, month, day] = event.dateKey.split('-').map(Number);
+    const eventDate = new Date(year, month - 1, day);
+    eventDate.setHours(0, 0, 0, 0);
+    if (eventDate >= start && eventDate <= end) {
+      const dateKey = event.dateKey;
+      if (!statsByDay[dateKey]) {
+        statsByDay[dateKey] = { applications: 0, interviews: 0, events: 0 };
+      }
+      if (event.type === 'interview') {
+        statsByDay[dateKey].interviews++;
+      }
+      statsByDay[dateKey].events++;
+    }
+  });
+
+  // Calculate totals
+  const totalApplications = Object.values(statsByDay).reduce((sum, day) => sum + day.applications, 0);
+  const totalInterviews = Object.values(statsByDay).reduce((sum, day) => sum + day.interviews, 0);
+  const totalEvents = Object.values(statsByDay).reduce((sum, day) => sum + day.events, 0);
+
+  // Sort days
+  const sortedDays = Object.keys(statsByDay).sort();
+
+  let html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          margin: 0;
+          padding: 20px;
+          background-color: ${colorScheme.colors.background};
+          color: ${colorScheme.colors.text};
+        }
+        .report-header {
+          text-align: center;
+          margin-bottom: 30px;
+        }
+        .report-title {
+          font-size: 24px;
+          font-weight: bold;
+          color: ${colorScheme.colors.primary};
+          margin-bottom: 10px;
+        }
+        .report-subtitle {
+          font-size: 14px;
+          color: ${colorScheme.colors.textSecondary};
+        }
+        .summary-section {
+          display: flex;
+          justify-content: space-around;
+          margin: 30px 0;
+          flex-wrap: wrap;
+        }
+        .summary-card {
+          background-color: ${colorScheme.colors.surface};
+          padding: 20px;
+          border-radius: 8px;
+          border: 1px solid ${colorScheme.colors.border};
+          min-width: 150px;
+          text-align: center;
+          margin: 10px;
+        }
+        .summary-label {
+          font-size: 14px;
+          color: ${colorScheme.colors.textSecondary};
+          margin-bottom: 8px;
+        }
+        .summary-value {
+          font-size: 32px;
+          font-weight: bold;
+          color: ${colorScheme.colors.primary};
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 20px;
+          background-color: ${colorScheme.colors.background};
+        }
+        th {
+          background-color: ${colorScheme.colors.surface};
+          padding: 12px;
+          text-align: left;
+          border: 1px solid ${colorScheme.colors.border};
+          font-weight: 600;
+          color: ${colorScheme.colors.text};
+          font-size: 12px;
+        }
+        td {
+          padding: 10px;
+          border: 1px solid ${colorScheme.colors.border};
+          font-size: 12px;
+          color: ${colorScheme.colors.text};
+          text-align: center;
+        }
+        tr:nth-child(even) {
+          background-color: ${colorScheme.colors.surface};
+        }
+        .date-cell {
+          text-align: left;
+        }
+        .no-data {
+          text-align: center;
+          padding: 40px;
+          color: ${colorScheme.colors.textSecondary};
+          font-style: italic;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="report-header">
+        <div class="report-title">Activity Statistics Report</div>
+        <div class="report-subtitle">${periodType.charAt(0).toUpperCase() + periodType.slice(1)}: ${label}</div>
+      </div>
+      <div class="summary-section">
+        <div class="summary-card">
+          <div class="summary-label">Applications</div>
+          <div class="summary-value">${totalApplications}</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Interviews</div>
+          <div class="summary-value">${totalInterviews}</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Events</div>
+          <div class="summary-value">${totalEvents}</div>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Applications</th>
+            <th>Interviews</th>
+            <th>Events</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  if (sortedDays.length === 0) {
+    html += `
+      <tr>
+        <td colspan="4" class="no-data">No activity for this period</td>
+      </tr>
+    `;
+  } else {
+    sortedDays.forEach(dateKey => {
+      const [year, month, day] = dateKey.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const dayStats = statsByDay[dateKey];
+      html += `
+        <tr>
+          <td class="date-cell">${dateStr}</td>
+          <td>${dayStats.applications}</td>
+          <td>${dayStats.interviews}</td>
+          <td>${dayStats.events}</td>
+        </tr>
+      `;
+    });
+  }
+
+  html += `
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+
+  return html;
+};
+
+/**
+ * Export activity statistics report as PDF
+ */
+export const exportActivityStatsReportPDF = async (
+  periodType: 'daily' | 'weekly' | 'monthly',
+  startDate: Date,
+  events: Event[],
+  applications: JobApplication[],
+  colorScheme: ColorScheme
+): Promise<void> => {
+  try {
+    // Use light mode colors for printing to save ink
+    const printColorScheme = getPrintColorScheme(colorScheme);
+    const html = generateActivityStatsReportHTML(periodType, startDate, events, applications, printColorScheme);
+    const { uri } = await Print.printToFileAsync({ html });
+    
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri);
+    } else {
+      console.log('Sharing not available. File saved at:', uri);
+    }
+  } catch (error) {
+    console.error('Error exporting activity statistics report PDF:', error);
+    throw error;
+  }
+};
+
+/**
+ * Options for daily planner PDF export
+ */
+export interface DailyPlannerExportOptions {
+  includeSchedule: boolean;
+  includeApplications: boolean;
+  includeEvents: boolean;
+}
+
+/**
+ * Generate HTML for daily planner PDF
+ */
+export const generateDailyPlannerHTML = (
+  date: Date,
+  preferences: UserPreferences,
+  entries: Record<string, string>,
+  events: Event[],
+  applications: JobApplication[],
+  options: DailyPlannerExportOptions,
+  colorScheme: ColorScheme
+): string => {
+  const dateKey = getDateKey(date);
+  const timeBlocks = generateTimeBlocks(preferences);
+  const use12Hour = preferences.use12HourClock;
+  const dayTheme = getDayThemeForDate(date);
+  const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+  const dateStr = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  const formatTimeDisplay = (time: string): string => {
+    if (!time) return '';
+    if (use12Hour) {
+      return formatTime12Hour(time);
+    }
+    return time;
+  };
+
+  const formatTimeRange = (timeRange: string): string => {
+    if (!timeRange || timeRange.toLowerCase().includes('evening')) {
+      return timeRange;
+    }
+    const parts = timeRange.split('–');
+    if (parts.length !== 2) {
+      return timeRange;
+    }
+    if (use12Hour) {
+      return `${formatTime12Hour(parts[0])}–${formatTime12Hour(parts[1])}`;
+    }
+    return timeRange;
+  };
+
+  // Filter events for this date
+  const dayEvents = events.filter(e => e.dateKey === dateKey).sort((a, b) => {
+    const [aH, aM] = a.startTime.split(':').map(Number);
+    const [bH, bM] = b.startTime.split(':').map(Number);
+    return (aH * 60 + aM) - (bH * 60 + bM);
+  });
+
+  // Filter applications for this date
+  const dayApplications = applications.filter(app => {
+    const appliedDate = new Date(app.appliedDate);
+    appliedDate.setHours(0, 0, 0, 0);
+    return getDateKey(appliedDate) === dateKey;
+  }).sort((a, b) => {
+    return new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime();
+  });
+
+  let html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          margin: 0;
+          padding: 20px;
+          background-color: ${colorScheme.colors.background};
+          color: ${colorScheme.colors.text};
+        }
+        .day-header {
+          text-align: center;
+          margin-bottom: 30px;
+        }
+        .day-title {
+          font-size: 24px;
+          font-weight: bold;
+          color: ${colorScheme.colors.primary};
+          margin-bottom: 10px;
+        }
+        .day-date {
+          font-size: 14px;
+          color: ${colorScheme.colors.textSecondary};
+          margin-bottom: 10px;
+        }
+        .day-theme {
+          font-size: 14px;
+          color: ${colorScheme.colors.textSecondary};
+          font-style: italic;
+          background-color: ${colorScheme.colors.surface};
+          padding: 10px;
+          border-radius: 8px;
+          margin-top: 10px;
+        }
+        .section {
+          margin-bottom: 30px;
+          page-break-inside: avoid;
+        }
+        .section-title {
+          font-size: 18px;
+          font-weight: bold;
+          color: ${colorScheme.colors.text};
+          margin-bottom: 15px;
+          padding-bottom: 8px;
+          border-bottom: 2px solid ${colorScheme.colors.border};
+        }
+        .time-block {
+          background-color: ${colorScheme.colors.surface};
+          border: 1px solid ${colorScheme.colors.border};
+          border-radius: 8px;
+          padding: 15px;
+          margin-bottom: 15px;
+        }
+        .time-block-header {
+          display: flex;
+          margin-bottom: 10px;
+        }
+        .time-block-time {
+          font-weight: 600;
+          color: ${colorScheme.colors.primary};
+          width: 100px;
+          font-size: 14px;
+        }
+        .time-block-title {
+          font-weight: 600;
+          color: ${colorScheme.colors.text};
+          flex: 1;
+          font-size: 16px;
+        }
+        .time-block-description {
+          font-size: 13px;
+          color: ${colorScheme.colors.textSecondary};
+          font-style: italic;
+          margin-bottom: 10px;
+        }
+        .entry-content {
+          font-size: 14px;
+          color: ${colorScheme.colors.text};
+          line-height: 1.6;
+          white-space: pre-wrap;
+        }
+        .event-card, .application-card {
+          background-color: ${colorScheme.colors.surface};
+          border: 1px solid ${colorScheme.colors.border};
+          border-radius: 8px;
+          padding: 15px;
+          margin-bottom: 12px;
+        }
+        .event-title, .application-title {
+          font-size: 16px;
+          font-weight: 600;
+          color: ${colorScheme.colors.text};
+          margin-bottom: 8px;
+        }
+        .event-time {
+          font-size: 14px;
+          color: ${colorScheme.colors.primary};
+          margin-bottom: 8px;
+        }
+        .event-type {
+          font-size: 12px;
+          color: ${colorScheme.colors.textSecondary};
+          text-transform: uppercase;
+          margin-bottom: 8px;
+        }
+        .event-details, .application-details {
+          font-size: 13px;
+          color: ${colorScheme.colors.textSecondary};
+          margin-top: 8px;
+        }
+        .event-detail-row, .application-detail-row {
+          margin-bottom: 4px;
+        }
+        .application-status {
+          display: inline-block;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 600;
+          text-transform: uppercase;
+          margin-left: 8px;
+        }
+        .status-applied {
+          background-color: #4CAF50;
+          color: #FFF8E7;
+        }
+        .status-interview {
+          background-color: #2196F3;
+          color: #FFF8E7;
+        }
+        .status-rejected {
+          background-color: #F44336;
+          color: #FFF8E7;
+        }
+        .status-no-response {
+          background-color: #FF9800;
+          color: #FFF8E7;
+        }
+        .empty-state {
+          text-align: center;
+          padding: 30px;
+          color: ${colorScheme.colors.textSecondary};
+          font-style: italic;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="day-header">
+        <div class="day-title">${dayName}</div>
+        <div class="day-date">${dateStr}</div>
+        <div class="day-theme">🌿 ${dayTheme.theme}</div>
+      </div>
+  `;
+
+  // Add schedule section
+  if (options.includeSchedule) {
+    html += `
+      <div class="section">
+        <div class="section-title">Daily Schedule</div>
+    `;
+
+    if (timeBlocks.length === 0) {
+      html += `<div class="empty-state">No time blocks configured</div>`;
+    } else {
+      timeBlocks.forEach(block => {
+        const entry = entries[block.id] || '';
+        html += `
+          <div class="time-block">
+            <div class="time-block-header">
+              <div class="time-block-time">${formatTimeRange(block.time)}</div>
+              <div class="time-block-title">${block.title}</div>
+            </div>
+        `;
+        if (block.description) {
+          html += `<div class="time-block-description">${block.description}</div>`;
+        }
+        html += `
+            <div class="entry-content">${entry || '(No entry)'}</div>
+          </div>
+        `;
+      });
+    }
+
+    html += `</div>`;
+  }
+
+  // Add applications section
+  if (options.includeApplications) {
+    html += `
+      <div class="section">
+        <div class="section-title">Job Applications</div>
+    `;
+
+    if (dayApplications.length === 0) {
+      html += `<div class="empty-state">No applications created on this day</div>`;
+    } else {
+      dayApplications.forEach(app => {
+        const statusClass = `status-${app.status}`;
+        html += `
+          <div class="application-card">
+            <div class="application-title">
+              ${app.positionTitle}
+              <span class="application-status ${statusClass}">${app.status.charAt(0).toUpperCase() + app.status.slice(1).replace('-', ' ')}</span>
+            </div>
+            <div class="application-details">
+              <div class="application-detail-row"><strong>Company:</strong> ${app.company}</div>
+        `;
+        if (app.source) {
+          html += `<div class="application-detail-row"><strong>Source:</strong> ${app.source}</div>`;
+        }
+        html += `<div class="application-detail-row"><strong>Applied:</strong> ${new Date(app.appliedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>`;
+        if (app.notes) {
+          html += `<div class="application-detail-row"><strong>Notes:</strong> ${app.notes}</div>`;
+        }
+        html += `
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    html += `</div>`;
+  }
+
+  // Add events section
+  if (options.includeEvents) {
+    html += `
+      <div class="section">
+        <div class="section-title">Events & Interviews</div>
+    `;
+
+    if (dayEvents.length === 0) {
+      html += `<div class="empty-state">No events scheduled for this day</div>`;
+    } else {
+      dayEvents.forEach(event => {
+        const eventIcon = event.type === 'interview' ? '💼' : event.type === 'appointment' ? '📅' : '🔔';
+        const startTimeStr = formatTimeDisplay(event.startTime);
+        const endTimeStr = event.endTime ? formatTimeDisplay(event.endTime) : '';
+        const timeStr = endTimeStr ? `${startTimeStr} - ${endTimeStr}` : startTimeStr;
+
+        html += `
+          <div class="event-card">
+            <div class="event-title">${eventIcon} ${event.title}</div>
+            <div class="event-time">${timeStr}</div>
+            <div class="event-type">${event.type.charAt(0).toUpperCase() + event.type.slice(1)}</div>
+            <div class="event-details">
+        `;
+        if (event.company) {
+          html += `<div class="event-detail-row"><strong>Company:</strong> ${event.company}</div>`;
+        }
+        if (event.jobTitle) {
+          html += `<div class="event-detail-row"><strong>Job Title:</strong> ${event.jobTitle}</div>`;
+        }
+        if (event.contactName) {
+          html += `<div class="event-detail-row"><strong>Contact:</strong> ${event.contactName}</div>`;
+        }
+        if (event.address) {
+          html += `<div class="event-detail-row"><strong>Address:</strong> ${event.address}</div>`;
+        }
+        if (event.phone) {
+          html += `<div class="event-detail-row"><strong>Phone:</strong> ${event.phone}</div>`;
+        }
+        if (event.email) {
+          html += `<div class="event-detail-row"><strong>Email:</strong> ${event.email}</div>`;
+        }
+        if (event.notes) {
+          html += `<div class="event-detail-row"><strong>Notes:</strong> ${event.notes}</div>`;
+        }
+        html += `
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    html += `</div>`;
+  }
+
+  html += `
+      </body>
+    </html>
+  `;
+
+  return html;
+};
+
+/**
+ * Export daily planner as PDF
+ */
+export const exportDailyPlannerPDF = async (
+  date: Date,
+  preferences: UserPreferences,
+  entries: Record<string, string>,
+  events: Event[],
+  applications: JobApplication[],
+  options: DailyPlannerExportOptions,
+  colorScheme: ColorScheme
+): Promise<void> => {
+  try {
+    // Use light mode colors for printing to save ink
+    const printColorScheme = getPrintColorScheme(colorScheme);
+    const html = generateDailyPlannerHTML(date, preferences, entries, events, applications, options, printColorScheme);
+    // printToFileAsync creates a file in a shareable location, we can use it directly
+    const { uri } = await Print.printToFileAsync({ html, base64: false });
+    
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Share Daily Planner',
+        UTI: 'com.adobe.pdf', // iOS specific: specify PDF UTI
+      });
+    } else {
+      console.log('Sharing not available. File saved at:', uri);
+    }
+  } catch (error) {
+    console.error('Error exporting daily planner PDF:', error);
+    throw error;
+  }
+};
