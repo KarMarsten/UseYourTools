@@ -414,6 +414,17 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
+## 🔒 Security
+
+Run the Android dependency scan (uses the repo policy file):
+
+```bash
+cd app
+npm run snyk:test:android
+```
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License.

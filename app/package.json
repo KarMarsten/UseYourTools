@@ -8,7 +8,8 @@
     "start:lan": "expo start --dev-client --lan",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "snyk:test:android": "snyk test --file=android/build.gradle --all-sub-projects --policy-path=../.snyk"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.1.2",
@@ -40,6 +41,7 @@
   },
   "overrides": {
     "glob": "^10.4.2",
+    "tar": "7.5.7",
     "undici": "^6.23.0"
   },
   "private": true

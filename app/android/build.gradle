@@ -31,6 +31,39 @@ allprojects {
     mavenCentral()
     maven { url 'https://www.jitpack.io' }
   }
+
+  configurations.all {
+    resolutionStrategy {
+      // Snyk flagged protobuf in Android testing/build dependencies.
+      // Force a patched version across subprojects.
+      force 'com.google.protobuf:protobuf-java:3.25.5'
+      force 'com.google.protobuf:protobuf-java-util:3.25.5'
+      // Snyk flagged netty in Android testing/build dependencies.
+      force 'io.netty:netty-codec-http2:4.1.125.Final'
+      force 'io.netty:netty-codec-http:4.1.129.Final'
+      force 'io.netty:netty-handler:4.1.118.Final'
+      force 'io.netty:netty-common:4.1.118.Final'
+      // Misc vulnerable build/test deps surfaced by Snyk.
+      force 'commons-io:commons-io:2.14.0'
+      force 'commons-codec:commons-codec:1.14'
+      force 'junit:junit:4.13.1'
+      force 'com.google.code.gson:gson:2.8.9'
+      force 'org.json:json:20231013'
+      // Test/build deps flagged in Expo subprojects.
+      force 'com.google.truth:truth:1.1.4'
+      force 'com.google.guava:guava:32.0.0-android'
+      force 'com.squareup.okhttp3:okhttp:4.12.0'
+      force 'org.robolectric:robolectric:4.15'
+      force 'org.bouncycastle:bcprov-jdk18on:1.79'
+      force 'org.bouncycastle:bcutil-jdk15to18:1.79'
+      // Kotlin stdlib info exposure (low) in build/test deps.
+      force 'org.jetbrains.kotlin:kotlin-stdlib:2.1.0'
+      force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.0'
+      force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.0'
+      force 'org.jetbrains.kotlin:kotlin-stdlib-common:2.1.0'
+      force 'org.jetbrains.kotlin:kotlin-reflect:2.1.0'
+    }
+  }
 }
 
 apply plugin: "expo-root-project"
