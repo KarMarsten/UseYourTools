@@ -16,4 +16,8 @@ ignore:
     - '*':
         reason: No upstream fix for okhttp-brotli; test/build dependency only
         expires: '2026-03-31T23:59:59.999Z'
+  snyk:lic:npm:lightningcss:MPL-2.0:
+    - '*':
+        reason: MPL-2.0 approved for lightningcss (via expo)
+        expires: '2026-03-31T23:59:59.999Z'
 
