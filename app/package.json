@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.1.2",
-    "@tamagui/config": "^1.141.5",
+    "@tamagui/config": "^1.144.2",
     "expo": "~53.0.0",
     "expo-asset": "~11.1.7",
     "expo-calendar": "~14.1.4",
