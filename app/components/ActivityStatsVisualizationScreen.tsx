@@ -9,8 +9,8 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { usePreferences } from '../context/PreferencesContext';
-import { Event } from '../utils/events';
-import { JobApplication } from '../utils/applications';
+import { Event, getAllEvents } from '../utils/events';
+import { JobApplication, getAllApplications } from '../utils/applications';
 import { getDateKey } from '../utils/timeFormatter';
 
 interface ActivityStatsVisualizationScreenProps {
