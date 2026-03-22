@@ -1,6 +1,6 @@
 # Feature Ideas for UseYourTools 🎯
 
-**Last Updated**: January 2026
+**Last Updated**: March 2026
 
 ## ✅ Implemented Since Last Update
 
@@ -37,21 +37,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 3. **Application Tags & Custom Notes** 🏷️
-**Why**: Organizing applications with custom tags and detailed notes helps track priorities and follow-ups.
-
-**Features**:
-- Custom tags for applications (e.g., "Dream Job", "Remote Only", "High Priority", "Applied via Referral")
-- Filter applications by tags
-- Enhanced notes section with formatting options
-- Private notes vs. shared notes (if collaborating)
-- Tag suggestions based on application data
-
-**Impact**: Medium - Better organization and tracking
-
----
-
-### 4. **Salary Negotiation Helper** 💰
+### 3. **Salary Negotiation Helper** 💰
 **Why**: Negotiating salary effectively can significantly impact long-term earnings.
 
 **Features**:
@@ -66,7 +52,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 5. **Interview Question Tracker** 📝
+### 4. **Interview Question Tracker** 📝
 **Why**: Building a personal database of interview questions helps prepare for future interviews.
 
 **Features**:
@@ -80,7 +66,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 6. **Networking Contact Management** 👥
+### 5. **Networking Contact Management** 👥
 **Why**: Networking is crucial but contacts get scattered.
 
 **Features**:
@@ -95,7 +81,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 7. **Application Analytics Dashboard** 📊
+### 6. **Application Analytics Dashboard** 📊
 **Why**: Data-driven insights help optimize job search strategy.
 
 **Features**:
@@ -110,7 +96,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 8. **Job Search Goals & Targets** 🎯
+### 7. **Job Search Goals & Targets** 🎯
 **Why**: Setting goals keeps job seekers motivated and focused.
 
 **Features**:
@@ -125,7 +111,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 9. **Skills & Qualifications Tracker** 🛠️
+### 8. **Skills & Qualifications Tracker** 🛠️
 **Why**: Job seekers need to track what skills they have vs what jobs require.
 
 **Features**:
@@ -140,7 +126,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 10. **Application Templates & Quick Apply** ⚡
+### 9. **Application Templates & Quick Apply** ⚡
 **Why**: Many applications ask for the same information repeatedly.
 
 **Features**:
@@ -155,7 +141,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 11. **Job Search Timeline & Milestones** 📅
+### 10. **Job Search Timeline & Milestones** 📅
 **Why**: Visualizing progress helps maintain motivation.
 
 **Features**:
@@ -169,7 +155,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 12. **Expense Tracking** 💳
+### 11. **Expense Tracking** 💳
 **Why**: Job searching can be expensive (travel, professional services, etc.).
 
 **Features**:
@@ -183,7 +169,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 13. **Rejection Analysis & Learning** 📉
+### 12. **Rejection Analysis & Learning** 📉
 **Why**: Understanding why applications are rejected helps improve.
 
 **Features**:
@@ -197,7 +183,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 14. **Integration with Job Boards** 🔗
+### 13. **Integration with Job Boards** 🔗
 **Why**: Automating application tracking saves time.
 
 **Features**:
@@ -210,7 +196,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 15. **Universal Search** 🔍
+### 14. **Universal Search** 🔍
 **Why**: Finding specific information across all data quickly saves time.
 
 **Features**:
@@ -224,7 +210,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 16. **Application Status History & Timeline** 📅
+### 15. **Application Status History & Timeline** 📅
 **Why**: Tracking the progression of applications helps identify patterns and improve strategy.
 
 **Features**:
@@ -238,7 +224,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 17. **Offer Comparison Tool** ⚖️
+### 16. **Offer Comparison Tool** ⚖️
 **Why**: Comparing multiple offers side-by-side helps make informed decisions.
 
 **Features**:
@@ -253,7 +239,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 18. **Interview Location & Travel Planning** 🗺️
+### 17. **Interview Location & Travel Planning** 🗺️
 **Why**: Managing interview locations and travel logistics is important for planning.
 
 **Features**:
@@ -268,7 +254,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 19. **Document Version History** 📚
+### 18. **Document Version History** 📚
 **Why**: Tracking changes to resumes and cover letters helps maintain multiple versions.
 
 **Features**:
@@ -283,7 +269,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 20. **Interviewer Contact Management** 👤
+### 19. **Interviewer Contact Management** 👤
 **Why**: Keeping track of individual interviewers helps with follow-ups and networking.
 
 **Features**:
@@ -298,7 +284,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 21. **Recurring Reminders** 🔁
+### 20. **Recurring Reminders** 🔁
 **Why**: Some follow-ups need to happen regularly (e.g., check in with recruiter every 2 weeks).
 
 **Features**:
@@ -312,7 +298,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 22. **Application Priority & Ranking** ⭐
+### 21. **Application Priority & Ranking** ⭐
 **Why**: Not all applications are equal - prioritizing helps focus effort.
 
 **Features**:
@@ -326,7 +312,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 23. **Interview Preparation Time Tracker** ⏱️
+### 22. **Interview Preparation Time Tracker** ⏱️
 **Why**: Understanding how much time you spend preparing helps optimize your process.
 
 **Features**:
@@ -340,7 +326,7 @@ You can now export a JSON backup and import it on another device. This includes 
 
 ---
 
-### 24. **Company Rating & Notes** ⭐
+### 23. **Company Rating & Notes** ⭐
 **Why**: Rating companies based on interview experience helps remember which companies to prioritize.
 
 **Features**:
@@ -359,13 +345,13 @@ You can now export a JSON backup and import it on another device. This includes 
 ### **Quick Wins** (1-2 weeks each):
 1. **Application Deadline Reminders** - Medium-high impact, builds on existing reminder system
 2. **Interview Prep Checklist** - Medium impact, simple but useful
-3. **Application Tags & Custom Notes** - Medium impact, enhances existing features
+3. **Interview Question Tracker** - Medium impact, builds a useful prep database over time
 
 ### **Medium-Term** (2-4 weeks each):
 1. **Networking Contact Management** - High impact, moderate complexity
 2. **Salary Negotiation Helper** - Medium-high impact, useful tool
 3. **Application Analytics Dashboard** - Good insights, requires data aggregation
-4. **Interview Question Tracker** - Medium impact, builds database over time
+4. **Offer Comparison Tool** - Medium impact, helps evaluate multiple offers side by side
 
 ### **Long-Term** (1-2 months):
 1. **Job Board Integration** - High impact but complex (API limitations)
