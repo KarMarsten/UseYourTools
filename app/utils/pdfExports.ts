@@ -8,6 +8,16 @@ import { formatTime12Hour, getDateKey } from './timeFormatter';
 import { ColorScheme, getColorScheme } from './colorSchemes';
 import { JobApplication } from './applications';
 
+const escapeHtml = (text: string | undefined | null): string => {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
 /**
  * Get light mode color scheme for printing (to save ink)
  * Always returns light mode colors regardless of current theme
@@ -199,30 +209,30 @@ export const generateWeeklyScheduleHTML = (
 
       html += `
         <div class="event-block">
-          <div class="event-title">${event.type.charAt(0).toUpperCase() + event.type.slice(1)}: ${event.title}</div>
+          <div class="event-title">${event.type.charAt(0).toUpperCase() + event.type.slice(1)}: ${escapeHtml(event.title)}</div>
           <div class="event-time">${timeStr}</div>
       `;
 
       if (event.company) {
-        html += `<div class="event-detail-row"><strong>Company:</strong> ${event.company}</div>`;
+        html += `<div class="event-detail-row"><strong>Company:</strong> ${escapeHtml(event.company)}</div>`;
       }
       if (event.jobTitle) {
-        html += `<div class="event-detail-row"><strong>Job Title:</strong> ${event.jobTitle}</div>`;
+        html += `<div class="event-detail-row"><strong>Job Title:</strong> ${escapeHtml(event.jobTitle)}</div>`;
       }
       if (event.contactName) {
-        html += `<div class="event-detail-row"><strong>Contact:</strong> ${event.contactName}</div>`;
+        html += `<div class="event-detail-row"><strong>Contact:</strong> ${escapeHtml(event.contactName)}</div>`;
       }
       if (event.address) {
-        html += `<div class="event-detail-row"><strong>Address:</strong> ${event.address}</div>`;
+        html += `<div class="event-detail-row"><strong>Address:</strong> ${escapeHtml(event.address)}</div>`;
       }
       if (event.phone) {
-        html += `<div class="event-detail-row"><strong>Phone:</strong> ${event.phone}</div>`;
+        html += `<div class="event-detail-row"><strong>Phone:</strong> ${escapeHtml(event.phone)}</div>`;
       }
       if (event.email) {
-        html += `<div class="event-detail-row"><strong>Email:</strong> ${event.email}</div>`;
+        html += `<div class="event-detail-row"><strong>Email:</strong> ${escapeHtml(event.email)}</div>`;
       }
       if (event.notes) {
-        html += `<div class="event-detail-row"><strong>Notes:</strong> ${event.notes}</div>`;
+        html += `<div class="event-detail-row"><strong>Notes:</strong> ${escapeHtml(event.notes)}</div>`;
       }
 
       html += `</div>`;
@@ -246,7 +256,7 @@ export const generateWeeklyScheduleHTML = (
       }
 
       html += `
-          <div class="entry-lines">${entry || ''}</div>
+          <div class="entry-lines">${escapeHtml(entry)}</div>
         </div>
       `;
     });
@@ -419,12 +429,12 @@ export const generateUnemploymentReportHTML = (weekStart: Date, events: Event[],
           <td>${dateStr}</td>
           <td>${timeStr}</td>
           <td>${typeDisplay}</td>
-          <td>${event.company || '-'}</td>
-          <td>${event.jobTitle || '-'}</td>
-          <td>${event.contactName || '-'}</td>
-          <td>${event.phone || '-'}</td>
-          <td>${event.email || '-'}</td>
-          <td>${linkedRejectedApp?.rejectedReason || '-'}</td>
+          <td>${escapeHtml(event.company) || '-'}</td>
+          <td>${escapeHtml(event.jobTitle) || '-'}</td>
+          <td>${escapeHtml(event.contactName) || '-'}</td>
+          <td>${escapeHtml(event.phone) || '-'}</td>
+          <td>${escapeHtml(event.email) || '-'}</td>
+          <td>${escapeHtml(linkedRejectedApp?.rejectedReason) || '-'}</td>
         </tr>
       `;
     });
@@ -448,12 +458,12 @@ export const generateUnemploymentReportHTML = (weekStart: Date, events: Event[],
           <td>${dateStr}</td>
           <td>${timeStr}</td>
           <td>${typeDisplay}</td>
-          <td>${app.company || '-'}</td>
-          <td>${app.positionTitle || '-'}</td>
+          <td>${escapeHtml(app.company) || '-'}</td>
+          <td>${escapeHtml(app.positionTitle) || '-'}</td>
           <td>-</td>
           <td>-</td>
           <td>-</td>
-          <td>${app.rejectedReason || '-'}</td>
+          <td>${escapeHtml(app.rejectedReason) || '-'}</td>
         </tr>
       `;
     });
