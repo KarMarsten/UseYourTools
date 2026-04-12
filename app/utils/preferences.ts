@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { TimeBlock, TIME_BLOCKS } from './plannerData';
 import { ColorSchemeName } from './colorSchemes';
 
@@ -25,8 +26,8 @@ export interface UserPreferences {
   enableEmailTemplates: boolean; // Enable email template functionality (default: true)
   emailClient: 'default' | 'gmail'; // Preferred email client (default: 'default')
   aiToneRewriting: 'none' | 'openai' | 'gemini'; // AI service for tone rewriting (default: 'none')
-  openaiApiKey?: string; // OpenAI API key (stored securely)
-  geminiApiKey?: string; // Google Gemini API key (stored securely)
+  openaiApiKey?: string; // OpenAI API key (stored in SecureStore, held in memory only)
+  geminiApiKey?: string; // Google Gemini API key (stored in SecureStore, held in memory only)
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -57,10 +58,22 @@ const DEFAULT_PREFERENCES: UserPreferences = {
 };
 
 const PREFERENCES_KEY = 'planner_preferences';
+const SECURE_KEY_OPENAI = 'openai_api_key';
+const SECURE_KEY_GEMINI = 'gemini_api_key';
 
 export const savePreferences = async (preferences: UserPreferences): Promise<void> => {
   try {
-    await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
+    // Persist API keys to SecureStore (iOS Keychain / Android Keystore)
+    if (preferences.openaiApiKey !== undefined) {
+      await SecureStore.setItemAsync(SECURE_KEY_OPENAI, preferences.openaiApiKey);
+    }
+    if (preferences.geminiApiKey !== undefined) {
+      await SecureStore.setItemAsync(SECURE_KEY_GEMINI, preferences.geminiApiKey);
+    }
+
+    // Strip API keys from the AsyncStorage payload
+    const { openaiApiKey, geminiApiKey, ...rest } = preferences;
+    await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(rest));
   } catch (error) {
     console.error('Error saving preferences:', error);
     throw error;
@@ -70,15 +83,23 @@ export const savePreferences = async (preferences: UserPreferences): Promise<voi
 export const loadPreferences = async (): Promise<UserPreferences> => {
   try {
     const stored = await AsyncStorage.getItem(PREFERENCES_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      // Merge with defaults to handle missing fields
-      return { ...DEFAULT_PREFERENCES, ...parsed };
-    }
-    return DEFAULT_PREFERENCES;
+    const base: UserPreferences = stored
+      ? { ...DEFAULT_PREFERENCES, ...JSON.parse(stored) }
+      : DEFAULT_PREFERENCES;
+
+    // Load API keys from SecureStore and merge into the in-memory preferences object
+    const [openaiApiKey, geminiApiKey] = await Promise.all([
+      SecureStore.getItemAsync(SECURE_KEY_OPENAI),
+      SecureStore.getItemAsync(SECURE_KEY_GEMINI),
+    ]);
+
+    return {
+      ...base,
+      openaiApiKey: openaiApiKey ?? undefined,
+      geminiApiKey: geminiApiKey ?? undefined,
+    };
   } catch (error) {
     console.error('Error loading preferences:', error);
     return DEFAULT_PREFERENCES;
   }
 };
-
