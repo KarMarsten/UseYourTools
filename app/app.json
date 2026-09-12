@@ -6,12 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
-    "splash": {
-      "backgroundColor": "#f5f5dc",
-      "resizeMode": "contain",
-      "image": "./assets/icon.png"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -21,7 +15,6 @@
       "config": {
         "usesNonExemptEncryption": false
       },
-      "newArchEnabled": false,
       "infoPlist": {
         "NSCalendarsUsageDescription": "This app needs access to your calendar to sync events.",
         "NSCalendarsFullAccessUsageDescription": "This app needs full access to your calendar to sync events.",
@@ -33,7 +26,6 @@
       "adaptiveIcon": {
         "backgroundColor": "#f5f5dc"
       },
-      "newArchEnabled": false,
       "package": "com.useyourtools.app",
       "permissions": [
         "READ_CALENDAR",
@@ -51,6 +43,16 @@
         {
           "iCloudDocumentScope": "readOnly"
         }
+      ],
+      "expo-secure-store",
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#f5f5dc",
+          "resizeMode": "contain",
+          "image": "./assets/icon.png"
+        }
       ]
     ],
     "extra": {
@@ -62,8 +64,7 @@
     "updates": {
       "url": "https://u.expo.dev/43ad00a3-7e94-43eb-9462-340003fc7e70",
       "checkAutomatically": "ON_ERROR_RECOVERY",
-      "fallbackToCacheTimeout": 0,
-      "channel": "production"
+      "fallbackToCacheTimeout": 0
     }
   }
 }
