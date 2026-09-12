@@ -27,13 +27,13 @@ config.transformer = {
   }),
 };
 
-// Optimize resolver for faster module resolution
+// Ensure Expo's default extensions are preserved; add jsx only in development
+const defaultSourceExts = config.resolver.sourceExts ?? [];
 config.resolver = {
   ...config.resolver,
-  // Enable source maps only in development
-  sourceExts: process.env.NODE_ENV === 'production' 
-    ? ['js', 'json', 'ts', 'tsx']
-    : ['js', 'json', 'ts', 'tsx', 'jsx'],
+  sourceExts: process.env.NODE_ENV === 'production'
+    ? defaultSourceExts.filter(ext => ext !== 'jsx')
+    : [...new Set([...defaultSourceExts, 'jsx'])],
 };
 
 module.exports = config;
