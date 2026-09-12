@@ -57,11 +57,11 @@ allprojects {
       force 'org.bouncycastle:bcprov-jdk18on:1.79'
       force 'org.bouncycastle:bcutil-jdk15to18:1.79'
       // Kotlin stdlib info exposure (low) in build/test deps.
-      force 'org.jetbrains.kotlin:kotlin-stdlib:2.1.0'
-      force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.0'
-      force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.0'
-      force 'org.jetbrains.kotlin:kotlin-stdlib-common:2.1.0'
-      force 'org.jetbrains.kotlin:kotlin-reflect:2.1.0'
+      force 'org.jetbrains.kotlin:kotlin-stdlib:2.1.20'
+      force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.20'
+      force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.20'
+      force 'org.jetbrains.kotlin:kotlin-stdlib-common:2.1.20'
+      force 'org.jetbrains.kotlin:kotlin-reflect:2.1.20'
     }
   }
 }
